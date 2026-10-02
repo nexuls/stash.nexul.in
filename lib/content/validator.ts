@@ -1,3 +1,12 @@
+/**
+ * Build-time content validation suite.
+ *
+ * Enforces kebab-case directory naming, detects duplicate slugs, verifies YAML frontmatter schemas,
+ * confirms physical existence of referenced assets, and validates internal Stash links and heading anchors.
+ *
+ * Notable: Produces file- and line-specific actionable diagnostics; fails CI/build if errors exist.
+ */
+
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, normalize, relative } from "node:path";
 import { getContentDirectory, loadEntry } from "./discovery";

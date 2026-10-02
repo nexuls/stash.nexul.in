@@ -1,3 +1,12 @@
+/**
+ * Filesystem content loader and query API.
+ *
+ * Traverses the `content/` hierarchy to load entries, derive slugs, categories, permalinks,
+ * and provide lookup helpers (`getAllEntries`, `getEntryBySlug`, `getAllCategories`).
+ *
+ * Notable: Operates strictly at build/server time without database or CMS dependencies.
+ */
+
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { discoverAdjacentAssets } from "./assets";

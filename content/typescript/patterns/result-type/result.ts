@@ -1,3 +1,12 @@
+/**
+ * Type-safe Result pattern implementation.
+ *
+ * Implements functional Ok and Err discriminated unions to avoid uncaught runtime exceptions
+ * and enforce explicit error handling in TypeScript.
+ *
+ * Notable: Zero runtime dependencies; provides lightweight helpers (ok, err, isOk, isErr, unwrap).
+ */
+
 export type Ok<T> = { readonly ok: true; readonly value: T };
 export type Err<E> = { readonly ok: false; readonly error: E };
 export type Result<T, E = Error> = Ok<T> | Err<E>;

@@ -1,7 +1,9 @@
 /**
- * Stash Content System
+ * Public entrypoint for the Stash content domain module.
  *
- * Public entrypoint for content discovery, parsing, asset management, and validation.
+ * Re-exports content discovery, parsing, asset scanning, validation routines, and TypeScript types.
+ *
+ * Notable: Keeps content processing isolated from UI and routing components.
  */
 
 export * from "./assets";

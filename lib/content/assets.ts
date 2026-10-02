@@ -1,3 +1,12 @@
+/**
+ * Entry-adjacent asset discovery and categorization.
+ *
+ * Scans content entry directories for sibling code files, diagrams, and documents,
+ * determining file sizes, relative paths, and categorized asset types.
+ *
+ * Notable: Ignores README.mdx, dotfiles, and child entry directories; runs at build time.
+ */
+
 import { readdirSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import type { AssetType, ContentAsset } from "./types";

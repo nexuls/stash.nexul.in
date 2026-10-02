@@ -1,3 +1,12 @@
+/**
+ * Accessible button component primitive with variant styling.
+ *
+ * Provides standardized button styles (default, outline, secondary, ghost, destructive, link)
+ * built upon @base-ui/react and Tailwind CSS class variance authority (cva).
+ *
+ * Notable: Used across interactive UI elements; supports icon slots and aria states.
+ */
+
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";

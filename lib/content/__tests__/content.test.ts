@@ -1,3 +1,12 @@
+/**
+ * Automated test suite for the Stash content engine.
+ *
+ * Verifies Markdown parsing, heading extraction, anchor generation, frontmatter handling,
+ * asset discovery, and build-time validation failure modes.
+ *
+ * Notable: Executed via Bun's native test runner (`bun test`).
+ */
+
 import { describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

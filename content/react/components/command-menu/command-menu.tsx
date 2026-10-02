@@ -1,3 +1,12 @@
+/**
+ * Accessible modal command palette component.
+ *
+ * Provides a keyboard-navigable listbox dialog for search, navigation, and command execution.
+ *
+ * Notable: Client Component. Implements WAI-ARIA modal dialog and option patterns
+ * with keyboard shortcuts (ArrowUp, ArrowDown, Enter, Escape).
+ */
+
 import { useEffect, useState } from "react";
 
 export interface CommandItem {

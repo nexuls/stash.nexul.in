@@ -1,7 +1,12 @@
 /**
  * Centralized site configuration for Stash.
- * Do not scatter site name, description, author, or canonical URL.
+ *
+ * Stores immutable site metadata including application name, title, description,
+ * canonical URL, author details, and social links.
+ *
+ * Notable: Consumed across root layouts, OpenGraph generators, and metadata builders to prevent drift.
  */
+
 export const siteConfig = {
   name: "Stash",
   title: "Stash — Personal Engineering Archive",

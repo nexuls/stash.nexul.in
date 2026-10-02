@@ -1,5 +1,10 @@
 /**
- * Core types for the Stash content system.
+ * TypeScript type definitions for the Stash content system.
+ *
+ * Defines domain models for entries, frontmatter schemas, headings, links, assets,
+ * categories, and validation results.
+ *
+ * Notable: Acts as the type contract between filesystem loader, validator, and future UI routes.
  */
 
 export type AssetType = "code" | "image" | "document" | "other";

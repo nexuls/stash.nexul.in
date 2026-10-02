@@ -1,3 +1,13 @@
+/**
+ * Root application layout for Stash.
+ *
+ * Configures the HTML shell, global typography fonts (Inter, Geist Sans, Geist Mono),
+ * global CSS stylesheets, and default site-wide metadata using centralized site configuration.
+ *
+ * Notable: Renders as a Server Component. Default title and OpenGraph metadata are
+ * established here and inherited/templated across nested route segments.
+ */
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";

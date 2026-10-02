@@ -1,3 +1,12 @@
+/**
+ * Command-line script for content validation.
+ *
+ * Runs the content filesystem validator and prints formatted, actionable feedback
+ * for broken links, missing assets, malformed frontmatter, or path naming errors.
+ *
+ * Notable: Invoked via `bun run validate:content` and part of `bun run check`; exits non-zero on error.
+ */
+
 import { validateContent } from "../lib/content";
 
 async function main() {

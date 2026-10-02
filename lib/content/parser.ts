@@ -1,3 +1,12 @@
+/**
+ * Markdown and MDX parsing engine for Stash entries.
+ *
+ * Parses YAML frontmatter, extracts headings with anchor slugs, scans links/assets with line numbers,
+ * and derives sensible fallback titles and descriptions from document content.
+ *
+ * Notable: Strips code blocks when extracting headings or calculating reading time to prevent false matches.
+ */
+
 import { parse as parseYaml } from "yaml";
 import type {
   ContentFrontmatter,

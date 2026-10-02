@@ -1,12 +1,14 @@
+/**
+ * Custom React hook for debouncing frequently updating values.
+ *
+ * Delays updating internal state until a specified delay has elapsed since the last change.
+ * Useful for search inputs, window resize handlers, and auto-save triggers.
+ *
+ * Notable: Uses setTimeout with cleanup on unmount or subsequent value updates.
+ */
+
 import { useEffect, useState } from "react";
 
-/**
- * Custom hook to debounce rapidly updating state values.
- *
- * @param value The value to debounce.
- * @param delayMs Delay duration in milliseconds.
- * @returns The debounced value.
- */
 export function useDebounce<T>(value: T, delayMs: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 

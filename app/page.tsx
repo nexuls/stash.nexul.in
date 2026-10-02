@@ -1,3 +1,13 @@
+/**
+ * Stash landing / home page route.
+ *
+ * Serves as the primary public entrypoint (temporary starter template until Stage 4
+ * discovery-focused home page is implemented).
+ *
+ * Notable: Server Component. Will be replaced in Stage 4 to showcase recently added
+ * engineering notes, categories, and quick search entry points.
+ */
+
 import Image from "next/image";
 
 export default function Home() {
