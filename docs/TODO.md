@@ -20,12 +20,12 @@
 
 ## 3. Documentation routes and navigation
 
-- [ ] Create stable `/stash/[...slug]` routes derived from discovered entries.
-- [ ] Add a documentation page layout with semantic landmarks, breadcrumbs, heading anchors, and a table of contents.
-- [ ] Add category navigation derived from directories without a hard-coded taxonomy.
-- [ ] Add previous/next navigation, directory-aware related content, and a restrained “see also” experience.
-- [ ] Implement responsive navigation for phone, tablet, and desktop.
-- [ ] Add a useful `not-found` experience for invalid content URLs.
+- [x] Create stable `/stash/[...slug]` routes derived from discovered entries.
+- [x] Add a documentation page layout with semantic landmarks, breadcrumbs, heading anchors, and a table of contents.
+- [x] Add category navigation derived from directories without a hard-coded taxonomy.
+- [x] Add previous/next navigation, directory-aware related content, and a restrained “see also” experience.
+- [x] Implement responsive navigation for phone, tablet, and desktop.
+- [x] Add a useful `not-found` experience for invalid content URLs.
 
 ## 4. Homepage and visual system
 
@@ -53,7 +53,7 @@
 
 ## 7. Deployment and performance
 
-- [ ] Ensure full static export or pure prerendering works with `bun run build`.
+- [ ] Ensure full static export or pure prerendering works with `bun run build` .
 - [ ] Verify production bundle size and ensure scripts remain minimal.
 - [ ] Ensure mobile navigation, tables, and code blocks do not cause layout shifts or horizontal clipping.
 - [ ] Document the local development workflow and deployment instructions in `README.md`.

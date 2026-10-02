@@ -2,11 +2,11 @@
 
 This document records what has been decided, built, and verified. Update it whenever an architectural decision is approved or a milestone is reached.
 
-## Current milestone: Stage 2 (MDX and code presentation) — Completed
+## Current milestone: Stage 3 (Documentation routes and navigations) — Completed
 
 ### 1. Stage 1: Content foundation (Completed)
 - Filesystem content system implemented under `content/` and `lib/content/` (`types.ts`, `parser.ts`, `assets.ts`, `discovery.ts`, `validator.ts`) with strict Zod validation.
-- Site configuration in `lib/site-config.ts` strictly validated at load time via `siteConfigSchema`.
+- Site configuration in `lib/site-config.ts` strictly validated at load time via `siteConfigSchema` .
 - Example entries added under `content/react/hooks/use-debounce/`, `content/react/components/command-menu/`, and `content/typescript/patterns/result-type/`.
 - Build-time content validation script `scripts/validate-content.ts` and command `bun run validate:content`.
 
@@ -38,30 +38,36 @@ This document records what has been decided, built, and verified. Update it when
   - Production build `bun run build` succeeds cleanly.
   - Recorded in [ADR-0003](architecture/decisions/0003-mdx-and-code-presentation.md) and documented in `docs/development/content-authoring.md`.
 
+### 3. Stage 3: Documentation routes and navigations (Completed)
+- Shadcn UI Components integrated:
+  - Standardized on shadcn `base-luma` style with `@base-ui/react` primitives: `Sidebar`, `Sheet`, `Tooltip`, `Separator`, `Input`, `Breadcrumb`, `DropdownMenu`, `Badge`, `Skeleton`.
+  - Responsive `useIsMobile` hook wired to shadcn sidebar sheet drawer for phones/tablets and collapsible rail for desktops.
+- Theme System (`next-themes`):
+  - Installed `next-themes` and wired `ThemeProvider` in root layout (`app/layout.tsx`).
+  - Built `ThemeToggle` component with Light, Dark, and System modes, smooth transitions, and accessible dropdown menu.
+- Headings and Anchor Navigation:
+  - Integrated `rehype-slug` to generate predictable, clean IDs for MDX headings.
+  - MDX `h2`, `h3`, `h4` rendered with hoverable `#` anchor direct-links linking to `#${id}`.
+- Scroll-Aware Table of Contents (`DocsToc`):
+  - Client component tracking active headings dynamically via `IntersectionObserver` with smooth scroll behavior.
+  - Dual presentation: sticky right rail on desktop (`xl+`) and compact card for mobile/tablet.
+  - Filters to `h2` and `h3` levels with indented depth hierarchy and "Scroll to top" button.
+- Documentation Navigation Shell:
+  - `DocsSidebar`: Dynamic category taxonomy grouping without hard-coded taxonomy, active entry highlighting, domain badges, count indicators, author attribution footer, and search trigger.
+  - `DocsHeader`: Sticky header with `SidebarTrigger`, breadcrumbs (`Breadcrumb`), dummy search button with `⌘K` badge, external GitHub repository link, and `ThemeToggle`.
+  - `SearchTrigger`: Reusable client trigger component emitting `stash:open-search` for Stage 5 search dialog.
+  - `DocsPager`: Linear Previous / Next entry navigation cards, restrained "See Also & Related Notes" discovery section based on category/tag scoring, reading time, timestamp, and GitHub source links.
+- Routes & Pages:
+  - Dynamic route `/stash/[...slug]`: Implements `generateStaticParams()` and `generateMetadata()`, MDX rendering, adjacent companion files/assets section, mobile/desktop TOC, and pager.
+  - Archive index `/stash`: Visual hero, domain categorization cards, note directory with reading times and dates, and indexed topics/tags.
+  - Custom 404 pages: `/stash/not-found.tsx` and root `/app/not-found.tsx` with helpful recovery actions and search trigger.
+- Verification & Test Suite:
+  - 53 tests passing across 3 test suites (`bun test`).
+  - Strict Biome check, TypeScript check (`tsc --noEmit`), and content validation check (`bun run check`) pass with 0 errors.
+  - Production build `bun run build` verifies clean static generation (SSG) of all routes.
+
 ## Confirmed architecture
 
 - Stash is a personal engineering archive, not a project portfolio.
 - The filesystem is the content source of truth; a database or CMS is out of scope unless a concrete need changes that decision.
 - Content entries use a directory with `README.mdx` and optional neighboring assets.
-- Ordinary content additions are auto-discovered and do not require route, navigation, or search registry edits.
-- Zod is strictly used across the codebase for schema definitions, type inference, and runtime validation.
-- Search will be BM25-based, generated at build time where practical, and isolated from presentation.
-- The site favors static rendering, Server Components, accessibility, and minimal client JavaScript.
-
-See [ADR-0001](architecture/decisions/0001-filesystem-content-source.md) for the filesystem decision, [ADR-0002](architecture/decisions/0002-theme-support.md) for theme support, and [ADR-0003](architecture/decisions/0003-mdx-and-code-presentation.md) for MDX and code presentation.
-
-## Known limitations
-
-- The visible home page is the default Next.js starter page (to be replaced in Stage 4).
-- Route rendering for `/stash/[...slug]` is not yet wired up to the content loader (Stage 3).
-- Google Fonts are used in root layout; local/offline builds require network or cached font files.
-
-## Pending work
-
-The complete, selectable work list is [docs/TODO.md](TODO.md). Stage 0, Stage 1, and Stage 2 are completed. Proceed with Stage 3 (Documentation routes and navigation) as the next milestone unless directed otherwise.
-
-## Guardrails
-
-- Preserve the owner’s established package versions and shadcn setup unless there is a concrete reason to change them.
-- Do not add a CMS, database, authentication, admin UI, or runtime API without an owner-approved requirement and an ADR.
-- Do not treat proposed architecture documents as permission to implement their contents wholesale.
