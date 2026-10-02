@@ -20,18 +20,18 @@ Before changing code, read [the current project state](docs/PROJECT_STATE.md), t
 
 - Next.js 16 with the App Router, React 19, TypeScript, Tailwind CSS 4, and shadcn/ui.
 - Bun is the package manager and Biome is the formatter/linter.
-- The current application is a starter. The content and search systems have not been implemented; see [the backlog](docs/TODO.md).
+- The content foundation and discovery system are implemented under `content/` and `lib/content/`; see [the backlog](docs/TODO.md).
 
 ## Intended architecture
 
-- `content/` is the source of truth. An entry will be a directory containing `README.mdx` and optional adjacent assets.
-- `app/` composes routes; `components/` contains reusable presentation; `components/mdx/` will contain MDX components; `lib/content/` and `lib/search/` will keep domain logic out of UI.
+- `content/` is the source of truth. An entry is a directory containing `README.mdx` and optional adjacent assets.
+- `app/` composes routes; `components/` contains reusable presentation; `components/mdx/` will contain MDX components; `lib/content/` and `lib/search/` keep domain logic out of UI.
 - Search will be a build-time BM25 index with a small client-side interface. Do not introduce a database or CMS without a documented requirement and ADR.
-- Site-wide constants belong in a future `lib/site-config.ts`; do not scatter the site name, URL, or author.
+- Site-wide constants belong in `lib/site-config.ts`; do not scatter the site name, URL, or author.
 
 ## Content conventions
 
-Do not hand-maintain routes, navigation registries, or database rows for ordinary entries. Content hierarchy should come from directory paths. Keep frontmatter optional and minimal; the eventual loader must derive useful defaults from the path and document.
+Do not hand-maintain routes, navigation registries, or database rows for ordinary entries. Content hierarchy comes from directory paths. Keep frontmatter optional and minimal; the loader derives sensible defaults from the path, headings, and document.
 
 ## UI principles
 
@@ -45,10 +45,11 @@ Current commands:
 bun run dev
 bun run lint
 bun run format
+bun run test
+bun run validate:content
+bun run check
 bun run build
 ```
-
-`check`, tests, and content validation are planned work and must not be documented as available until implemented.
 
 ## Change and Git conventions
 

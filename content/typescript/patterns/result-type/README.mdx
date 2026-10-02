@@ -1,0 +1,53 @@
+---
+title: Type-Safe Result Pattern
+description: Idiomatic error handling in TypeScript using discriminated unions instead of throwing exceptions.
+date: 2026-10-02
+tags:
+  - typescript
+  - patterns
+  - error-handling
+---
+
+# Type-Safe Result Pattern
+
+In TypeScript, thrown exceptions are not represented in function signatures. Callers frequently forget to handle failure cases, leading to unhandled runtime errors.
+
+The `Result<T, E>` pattern models operations that may succeed with a value `T` or fail with an error `E` using a discriminated union.
+
+## Motivation
+
+When functions return `Result<T, E>`, TypeScript forces the caller to check `.ok` before accessing `.value` or `.error`:
+
+```typescript
+function parseConfig(raw: string): Result<Config, ConfigError> {
+  try {
+    const data = JSON.parse(raw);
+    return ok(data);
+  } catch (e) {
+    return err(new ConfigError("Invalid JSON"));
+  }
+}
+```
+
+## Implementation
+
+The full TypeScript implementation is located in [`result.ts`](./result.ts):
+
+```typescript
+export type Ok<T> = { readonly ok: true; readonly value: T };
+export type Err<E> = { readonly ok: false; readonly error: E };
+export type Result<T, E = Error> = Ok<T> | Err<E>;
+
+export function ok<T>(value: T): Ok<T> {
+  return { ok: true, value };
+}
+
+export function err<E>(error: E): Err<E> {
+  return { ok: false, error };
+}
+```
+
+## Related Entries
+
+- [useDebounce Hook](/stash/react/hooks/use-debounce) — Debounce async operations returning Results.
+- [Accessible Command Menu](/stash/react/components/command-menu) — Execute actions with typed error recovery.

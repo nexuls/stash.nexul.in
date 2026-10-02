@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 220" width="100%" height="220">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1.5; rx: 8; }
+      .input-box { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; rx: 4; }
+      .active-row { fill: #f1f5f9; rx: 4; }
+      .text-title { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600; fill: #0f172a; }
+      .text-body { font-family: system-ui, sans-serif; font-size: 13px; fill: #334155; }
+      .text-muted { font-family: system-ui, sans-serif; font-size: 11px; fill: #94a3b8; }
+      .badge { fill: #e2e8f0; rx: 3; }
+    </style>
+  </defs>
+  <rect x="10" y="10" width="480" height="200" class="bg" />
+  <rect x="25" y="25" width="450" height="36" class="input-box" />
+  <text x="40" y="48" class="text-body">Type a command or search...</text>
+  <rect x="420" y="33" width="40" height="20" class="badge" />
+  <text x="426" y="47" class="text-muted">ESC</text>
+  <rect x="25" y="75" width="450" height="34" class="active-row" />
+  <text x="40" y="97" class="text-body">Go to documentation</text>
+  <text x="40" y="132" class="text-body">Search all stash entries</text>
+  <text x="40" y="167" class="text-body">Toggle dark / light theme</text>
+  <line x1="25" y1="180" x2="475" y2="180" stroke="#f1f5f9" />
+  <text x="40" y="196" class="text-muted">Use ↑ ↓ arrows to navigate, ↵ to select</text>
+</svg>

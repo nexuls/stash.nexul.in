@@ -12,13 +12,13 @@ This is the selectable work queue. Nothing below is implemented unless [Project 
 
 ## 1. Content foundation
 
-- [ ] Add the `content/` directory and a filesystem-first entry convention using `README.mdx`.
-- [ ] Implement typed content discovery in `lib/content/`, including path-to-slug/category derivation and adjacent asset discovery.
-- [ ] Define minimal optional frontmatter and sensible title/description defaults.
-- [ ] Add example entries with Markdown, code, an asset, and a link between entries.
-- [ ] Add build-time content validation for invalid paths, duplicate slugs, malformed metadata, missing documents, and missing assets.
-- [ ] Validate internal Stash links and report file-specific, actionable failures.
-- [ ] Add a `bun run validate:content` command and include it in a future `bun run check` command.
+- [x] Add the `content/` directory and a filesystem-first entry convention using `README.mdx`.
+- [x] Implement typed content discovery in `lib/content/`, including path-to-slug/category derivation and adjacent asset discovery.
+- [x] Define minimal optional frontmatter and sensible title/description defaults.
+- [x] Add example entries with Markdown, code, an asset, and a link between entries.
+- [x] Add build-time content validation for invalid paths, duplicate slugs, malformed metadata, missing documents, and missing assets.
+- [x] Validate internal Stash links and report file-specific, actionable failures.
+- [x] Add a `bun run validate:content` command and include it in a future `bun run check` command.
 
 ## 2. MDX and code presentation
 
