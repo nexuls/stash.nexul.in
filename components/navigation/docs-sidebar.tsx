@@ -115,13 +115,13 @@ export function DocsSidebar({
           {/* Left background fill: fills from the left edge of the viewport to the sidebar's right border */}
           <div
             className={cn(
-              "absolute inset-y-0 right-0 w-[100vw] bg-sidebar border-r border-sidebar-border -z-10 pointer-events-none transition-opacity duration-300 ease-in-out",
+              "absolute inset-y-0 right-0 w-[100vw] bg-sidebar/50 border-r border-sidebar-border -z-10 pointer-events-none transition-opacity duration-300 ease-in-out",
               open ? "opacity-100" : "opacity-0",
             )}
           />
 
           {/* Docked Sidebar Content Container (retains fixed width during slot animation) */}
-          <div className="w-[280px] h-full flex flex-col py-2 pl-2 pr-3">
+          <div className="w-[280px] h-full flex flex-col">
             <DocsSidebarContent
               entries={entries}
               categories={categories}
@@ -145,7 +145,7 @@ export function DocsSidebar({
           {/* Floating Sidebar Card */}
           <aside
             className={cn(
-              "fixed left-4 top-3 bottom-3 z-50 w-[280px] rounded-2xl border border-sidebar-border bg-sidebar/95 backdrop-blur-md shadow-2xl transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
+              "fixed left-2 top-2 bottom-2 z-50 w-[280px] rounded-2xl border border-sidebar-border bg-sidebar/50 backdrop-blur-md shadow-2xl transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
               isFloatingOpen
                 ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
                 : "-translate-x-[calc(100%+2rem)] opacity-0 scale-95 pointer-events-none",
@@ -173,7 +173,7 @@ export function DocsSidebar({
         <Sheet open={openMobile} onOpenChange={setOpenMobile}>
           <SheetContent
             side="left"
-            className="w-[280px] p-0 bg-sidebar border-sidebar-border text-sidebar-foreground"
+            className="w-[280px] p-0 bg-sidebar/50 border-sidebar-border text-sidebar-foreground"
           >
             <SheetHeader className="sr-only">
               <SheetTitle>Navigation Menu</SheetTitle>

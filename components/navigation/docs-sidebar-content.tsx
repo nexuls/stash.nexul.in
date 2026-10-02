@@ -91,7 +91,7 @@ export function DocsSidebarContent({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col bg-sidebar text-sidebar-foreground select-none",
+        "flex h-full w-full flex-col text-sidebar-foreground select-none",
         className,
       )}
     >
@@ -222,7 +222,7 @@ export function DocsSidebarContent({
                                       href={entry.permalink}
                                       onClick={onNavigate}
                                       className={cn(
-                                        "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors line-clamp-1",
+                                        "flex! items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors line-clamp-1",
                                         isActive
                                           ? "bg-accent text-accent-foreground font-medium"
                                           : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -252,7 +252,7 @@ export function DocsSidebarContent({
                               href={entry.permalink}
                               onClick={onNavigate}
                               className={cn(
-                                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors line-clamp-1",
+                                "flex! items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors line-clamp-1",
                                 isActive
                                   ? "bg-accent text-accent-foreground font-medium"
                                   : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
