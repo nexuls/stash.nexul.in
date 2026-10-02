@@ -5,12 +5,16 @@
 import { describe, expect, it } from "bun:test";
 import type * as React from "react";
 import ReactDOMServer from "react-dom/server";
-import { DocsHeader } from "@/components/navigation/docs-header";
+import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
+import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
+import { DocsSidebar } from "@/components/navigation/docs-sidebar";
 import { DocsToc } from "@/components/navigation/docs-toc";
 import { SearchTrigger } from "@/components/search/search-trigger";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import {
+  getAllCategories,
   getAllEntries,
   getEntryBySlug,
   getPrevNextEntries,
@@ -116,25 +120,48 @@ describe("Documentation Pager (DocsPager)", () => {
   });
 });
 
-describe("Documentation Header (DocsHeader)", () => {
-  it("renders breadcrumb trail and brand root", () => {
-    const breadcrumbs = [
-      { title: "React", href: "/stash/react" },
-      { title: "Hooks", href: "/stash/react/hooks" },
-      { title: "useDebounce Hook" },
-    ];
+describe("Documentation Sidebar (DocsSidebar)", () => {
+  it("renders entries, categories, and theme toggle in sidebar", async () => {
+    const [entries, categories] = await Promise.all([
+      getAllEntries(),
+      getAllCategories(),
+    ]);
 
     const html = renderStatic(
-      <SidebarProvider>
-        <DocsHeader breadcrumbs={breadcrumbs} />
+      <SidebarProvider defaultOpen={true}>
+        <DocsSidebar entries={entries} categories={categories} />
       </SidebarProvider>,
     );
+
     expect(html).toContain("Stash");
-    expect(html).toContain("React");
-    expect(html).toContain("Hooks");
-    expect(html).toContain("useDebounce Hook");
-    expect(html).toContain("Search docs...");
-    expect(html).toContain("⌘K");
+    expect(html).toContain("Archive Index");
+    expect(html).toContain("GitHub");
+    // Theme toggle buttons in sidebar footer
+    expect(html).toContain("Light theme");
+    expect(html).toContain("Dark theme");
+  });
+});
+
+describe("Documentation Mobile Header (DocsMobileHeader)", () => {
+  it("renders mobile header with brand and search", () => {
+    const html = renderStatic(
+      <SidebarProvider>
+        <DocsMobileHeader />
+      </SidebarProvider>,
+    );
+
+    expect(html).toContain("Stash");
+    expect(html).toContain("Search");
+  });
+});
+
+describe("Copy Markdown Button", () => {
+  it("renders copy button with text", () => {
+    const html = renderStatic(
+      <CopyMarkdownButton content="# Test Markdown Content" />,
+    );
+
+    expect(html).toContain("Copy Markdown");
   });
 });
 
@@ -155,5 +182,13 @@ describe("Search Trigger Component", () => {
       <SearchTrigger variant="button">Find Documentation</SearchTrigger>,
     );
     expect(html).toContain("Find Documentation");
+  });
+});
+
+describe("Theme Toggle Component", () => {
+  it("renders compact variant with sun and moon buttons", () => {
+    const html = renderStatic(<ThemeToggle variant="compact" />);
+    expect(html).toContain("Light theme");
+    expect(html).toContain("Dark theme");
   });
 });

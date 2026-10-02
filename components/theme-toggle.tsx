@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Accessible theme switcher component using shadcn DropdownMenu and Button primitives.
+ * Accessible theme switcher component using next-themes.
  *
- * Allows switching between light, dark, and system color preferences.
+ * Supports dropdown menu variant and compact inline variant for sidebar footer.
  */
 
 import { Laptop, Moon, Sun } from "lucide-react";
@@ -16,14 +16,63 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle({ className }: { className?: string }) {
+interface ThemeToggleProps {
+  className?: string;
+  variant?: "dropdown" | "compact";
+}
+
+export function ThemeToggle({
+  className,
+  variant = "dropdown",
+}: ThemeToggleProps) {
   const { setTheme, theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  if (variant === "compact") {
+    return (
+      <div
+        className={cn(
+          "flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5",
+          className,
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => setTheme("light")}
+          className={cn(
+            "flex size-6 items-center justify-center rounded-md text-muted-foreground transition-all hover:text-foreground cursor-pointer",
+            mounted &&
+              resolvedTheme === "light" &&
+              "bg-background text-foreground shadow-xs",
+          )}
+          title="Light theme"
+          aria-label="Switch to light theme"
+        >
+          <Sun className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setTheme("dark")}
+          className={cn(
+            "flex size-6 items-center justify-center rounded-md text-muted-foreground transition-all hover:text-foreground cursor-pointer",
+            mounted &&
+              resolvedTheme === "dark" &&
+              "bg-background text-foreground shadow-xs",
+          )}
+          title="Dark theme"
+          aria-label="Switch to dark theme"
+        >
+          <Moon className="size-3.5" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <DropdownMenu>

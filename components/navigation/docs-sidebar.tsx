@@ -1,48 +1,30 @@
 "use client";
 
 /**
- * Documentation navigation sidebar using shadcn Sidebar components.
- *
- * Dynamically renders category hierarchy and entries discovered from the filesystem.
- * Includes search visual element (dummy for Stage 5) and responsive mobile/desktop handling.
+ * Documentation navigation sidebar supporting:
+ * 1. Centered in-flow desktop sidebar (pushed close to the content)
+ * 2. Floating pop-out sidebar on cursor hover when closed
+ * 3. Mobile sheet drawer on small screens
  */
 
-import {
-  Archive,
-  BookOpen,
-  ExternalLink,
-  FileText,
-  FolderOpen,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import * as React from "react";
-import { SearchTrigger } from "@/components/search/search-trigger";
-import { Badge } from "@/components/ui/badge";
+import { DocsSidebarContent } from "@/components/navigation/docs-sidebar-content";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail,
-} from "@/components/ui/sidebar";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useSidebar } from "@/components/ui/sidebar";
 import type { ContentCategory, ContentEntry } from "@/lib/content/types";
-import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
-interface DocsSidebarProps extends React.ComponentProps<typeof Sidebar> {
+interface DocsSidebarProps {
   entries: ContentEntry[];
   categories: ContentCategory[];
   currentSlug?: string;
+  className?: string;
 }
 
 export function DocsSidebar({
@@ -50,217 +32,126 @@ export function DocsSidebar({
   categories,
   currentSlug,
   className,
-  ...props
 }: DocsSidebarProps) {
-  const pathname = usePathname();
+  const { open, setOpen, openMobile, setOpenMobile, isMobile } = useSidebar();
+  const [isFloatingOpen, setIsFloatingOpen] = React.useState(false);
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Group entries by primary top-level category
-  const categorizedEntries = React.useMemo(() => {
-    const map = new Map<
-      string,
-      Map<string, ContentEntry[]> // topCategory -> subCategory -> entries
-    >();
+  // Clear hover timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
 
-    for (const entry of entries) {
-      const topCategory = entry.categories[0] || entry.category || "general";
-      const subCategory =
-        entry.categories.length > 1 ? entry.categories[1] : "default";
-
-      let subMap = map.get(topCategory);
-      if (!subMap) {
-        subMap = new Map();
-        map.set(topCategory, subMap);
-      }
-
-      let subList = subMap.get(subCategory);
-      if (!subList) {
-        subList = [];
-        subMap.set(subCategory, subList);
-      }
-      subList.push(entry);
+  // Window mouse listener when sidebar is closed on desktop
+  React.useEffect(() => {
+    if (open || isMobile) {
+      setIsFloatingOpen(false);
+      return;
     }
 
-    return map;
-  }, [entries]);
+    const handleMouseMove = (e: MouseEvent) => {
+      // Trigger floating sidebar when cursor is within 40px of left screen edge
+      if (e.clientX <= 40) {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        setIsFloatingOpen(true);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [open, isMobile]);
+
+  const handleFloatingMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setIsFloatingOpen(true);
+  };
+
+  const handleFloatingMouseLeave = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsFloatingOpen(false);
+    }, 200);
+  };
 
   return (
-    <Sidebar
-      className={cn("border-r border-sidebar-border", className)}
-      {...props}
-    >
-      <SidebarHeader className="border-b border-sidebar-border/60 pb-3">
-        <div className="flex items-center justify-between px-2 pt-1">
-          <Link
-            href="/stash"
-            className="flex items-center gap-2 font-semibold text-foreground tracking-tight hover:opacity-80 transition-opacity"
+    <>
+      {/* 1. Desktop In-flow Sidebar (Centered next to content when pinned open) */}
+      {!isMobile && open && (
+        <aside
+          className={cn(
+            "hidden md:flex flex-col w-[270px] shrink-0 sticky top-0 h-screen border-r border-border/40 py-2 pl-2 pr-3 bg-background/50",
+            className,
+          )}
+        >
+          <DocsSidebarContent
+            entries={entries}
+            categories={categories}
+            currentSlug={currentSlug}
+            onCollapse={() => setOpen(false)}
+          />
+        </aside>
+      )}
+
+      {/* 2. Desktop Floating Hover Trigger Zone & Floating Sidebar (When closed) */}
+      {!isMobile && !open && (
+        <>
+          {/* Subtle left hover detector strip */}
+          <div
+            className="fixed inset-y-0 left-0 w-8 z-40 group cursor-e-resize"
+            onMouseEnter={handleFloatingMouseEnter}
+            aria-hidden="true"
+          />
+
+          {/* Floating Sidebar Card */}
+          <aside
+            className={cn(
+              "fixed left-4 top-4 bottom-4 z-50 w-[275px] rounded-2xl border border-sidebar-border bg-sidebar/95 backdrop-blur-md shadow-2xl transition-all duration-200 flex flex-col overflow-hidden",
+              isFloatingOpen
+                ? "translate-x-0 opacity-100 pointer-events-auto"
+                : "-translate-x-full opacity-0 pointer-events-none",
+            )}
+            onMouseEnter={handleFloatingMouseEnter}
+            onMouseLeave={handleFloatingMouseLeave}
           >
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-              <Archive className="size-4" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-none">
-                {siteConfig.name}
-              </span>
-              <span className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                Technical Archive
-              </span>
-            </div>
-          </Link>
-          <Badge
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0 font-mono"
+            <DocsSidebarContent
+              entries={entries}
+              categories={categories}
+              currentSlug={currentSlug}
+              isFloating={true}
+              onPin={() => {
+                setOpen(true);
+                setIsFloatingOpen(false);
+              }}
+              onNavigate={() => {
+                setIsFloatingOpen(false);
+              }}
+            />
+          </aside>
+        </>
+      )}
+
+      {/* 3. Mobile Sheet Drawer */}
+      {isMobile && (
+        <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+          <SheetContent
+            side="left"
+            className="w-[280px] p-0 bg-sidebar border-sidebar-border text-sidebar-foreground"
           >
-            v0.1
-          </Badge>
-        </div>
-
-        {/* Dummy Search Trigger visual element (prepares for Stage 5 search dialog) */}
-        <div className="px-2 pt-2">
-          <SearchTrigger variant="sidebar" />
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="px-2">
-        {/* All Documentation Overview Link */}
-        <SidebarGroup className="py-2">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
-                  <Link href="/stash">
-                    <BookOpen className="size-4" />
-                    <span>Archive Index</span>
-                  </Link>
-                }
-                isActive={pathname === "/stash"}
-              />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-
-        {/* Dynamic Categorized Content Groups */}
-        {Array.from(categorizedEntries.entries()).map(
-          ([categoryKey, subMap]) => {
-            const formattedCategoryName = categoryKey
-              .split("-")
-              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(" ");
-
-            const totalCategoryEntries = Array.from(subMap.values()).reduce(
-              (acc, curr) => acc + curr.length,
-              0,
-            );
-
-            return (
-              <SidebarGroup key={categoryKey} className="py-2">
-                <SidebarGroupLabel className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 px-2">
-                  <span className="flex items-center gap-1.5">
-                    <FolderOpen className="size-3.5 text-muted-foreground" />
-                    <span>{formattedCategoryName}</span>
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                    {totalCategoryEntries}
-                  </span>
-                </SidebarGroupLabel>
-
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {Array.from(subMap.entries()).map(
-                      ([subKey, subEntries]) => {
-                        const hasSubcategory = subKey !== "default";
-                        const formattedSubName = subKey
-                          .split("-")
-                          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                          .join(" ");
-
-                        if (hasSubcategory) {
-                          return (
-                            <SidebarMenuItem key={subKey} className="my-1">
-                              <div className="px-2.5 py-1 text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wide">
-                                {formattedSubName}
-                              </div>
-                              <SidebarMenuSub>
-                                {subEntries.map((entry) => {
-                                  const isActive =
-                                    currentSlug === entry.slug ||
-                                    pathname === entry.permalink;
-
-                                  return (
-                                    <SidebarMenuSubItem key={entry.slug}>
-                                      <SidebarMenuSubButton
-                                        render={
-                                          <Link href={entry.permalink}>
-                                            <FileText className="size-3.5" />
-                                            <span className="truncate">
-                                              {entry.title}
-                                            </span>
-                                          </Link>
-                                        }
-                                        isActive={isActive}
-                                      />
-                                    </SidebarMenuSubItem>
-                                  );
-                                })}
-                              </SidebarMenuSub>
-                            </SidebarMenuItem>
-                          );
-                        }
-
-                        // Root entries in category
-                        return subEntries.map((entry) => {
-                          const isActive =
-                            currentSlug === entry.slug ||
-                            pathname === entry.permalink;
-
-                          return (
-                            <SidebarMenuItem key={entry.slug}>
-                              <SidebarMenuButton
-                                render={
-                                  <Link href={entry.permalink}>
-                                    <FileText className="size-4" />
-                                    <span className="truncate">
-                                      {entry.title}
-                                    </span>
-                                  </Link>
-                                }
-                                isActive={isActive}
-                              />
-                            </SidebarMenuItem>
-                          );
-                        });
-                      },
-                    )}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            );
-          },
-        )}
-      </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border/60 p-3">
-        <div className="flex flex-col gap-2 text-xs text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-foreground">
-              {siteConfig.author.name}
-            </span>
-            <a
-              href={siteConfig.links.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-            >
-              <span>GitHub</span>
-              <ExternalLink className="size-3" />
-            </a>
-          </div>
-          <p className="text-[11px] text-muted-foreground/70">
-            Curated engineering notes & reference.
-          </p>
-        </div>
-      </SidebarFooter>
-
-      <SidebarRail />
-    </Sidebar>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Navigation Menu</SheetTitle>
+              <SheetDescription>Browse documentation topics</SheetDescription>
+            </SheetHeader>
+            <DocsSidebarContent
+              entries={entries}
+              categories={categories}
+              currentSlug={currentSlug}
+              onNavigate={() => setOpenMobile(false)}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
+    </>
   );
 }
