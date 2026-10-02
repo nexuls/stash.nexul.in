@@ -4,11 +4,11 @@ This is the selectable work queue. Nothing below is implemented unless [Project 
 
 ## 0. Foundation and decisions
 
-- [ ] Confirm the intended deployment provider and add only the necessary deployment configuration.
-- [ ] Replace starter site metadata with centralized Stash site configuration.
-- [ ] Decide whether light and dark themes are part of the initial product; document the decision.
-- [ ] Review the existing shadcn primitives and add only components needed by selected UI work.
-- [ ] Record ADRs for any material deviation from the filesystem, MDX, static-index, or BM25 direction.
+- [x] Confirm the intended deployment provider and add only the necessary deployment configuration.
+- [x] Replace starter site metadata with centralized Stash site configuration.
+- [x] Decide whether light and dark themes are part of the initial product; document the decision.
+- [x] Review the existing shadcn primitives and add only components needed by selected UI work.
+- [x] Record ADRs for any material deviation from the filesystem, MDX, static-index, or BM25 direction.
 
 ## 1. Content foundation
 
