@@ -2,13 +2,14 @@
  * MDX compilation and plugin options.
  *
  * Configures remark and rehype plugins for Next.js App Router MDX evaluation,
- * including GitHub Flavored Markdown (remark-gfm) and syntax highlighting
- * with Shiki (rehype-pretty-code).
+ * including GitHub Flavored Markdown (remark-gfm), heading slug anchors (rehype-slug),
+ * and syntax highlighting with Shiki (rehype-pretty-code).
  */
 
 import rehypePrettyCode, {
   type Options as RehypePrettyCodeOptions,
 } from "rehype-pretty-code";
+import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 
 /**
@@ -44,6 +45,7 @@ export function getMdxOptions(
   return {
     remarkPlugins: [remarkGfm],
     rehypePlugins: [
+      rehypeSlug,
       [rehypePrettyCode, prettyCodeOptions] as [
         typeof rehypePrettyCode,
         RehypePrettyCodeOptions,

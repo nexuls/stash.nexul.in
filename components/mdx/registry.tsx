@@ -102,32 +102,83 @@ export const baseMdxComponents = {
       {...props}
     />
   ),
-  h2: ({ className, ...props }: React.ComponentPropsWithoutRef<"h2">) => (
+  h2: ({
+    className,
+    id,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<"h2">) => (
     <h2
+      id={id}
       className={cn(
-        "mt-10 scroll-mt-24 border-b border-border/60 pb-2 font-semibold text-foreground text-xl tracking-tight first:mt-0 lg:text-2xl",
+        "group mt-10 scroll-mt-24 border-b border-border/60 pb-2 font-semibold text-foreground text-xl tracking-tight first:mt-0 lg:text-2xl",
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {id ? (
+        <a
+          href={`#${id}`}
+          aria-label="Direct link to section"
+          className="ml-2 inline-block font-normal text-muted-foreground/0 transition-colors hover:!text-foreground group-hover:text-muted-foreground/60 select-none text-base"
+        >
+          #
+        </a>
+      ) : null}
+    </h2>
   ),
-  h3: ({ className, ...props }: React.ComponentPropsWithoutRef<"h3">) => (
+  h3: ({
+    className,
+    id,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<"h3">) => (
     <h3
+      id={id}
       className={cn(
-        "mt-8 scroll-mt-24 font-semibold text-foreground text-lg tracking-tight lg:text-xl",
+        "group mt-8 scroll-mt-24 font-semibold text-foreground text-lg tracking-tight lg:text-xl",
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {id ? (
+        <a
+          href={`#${id}`}
+          aria-label="Direct link to subsection"
+          className="ml-2 inline-block font-normal text-muted-foreground/0 transition-colors hover:!text-foreground group-hover:text-muted-foreground/60 select-none text-sm"
+        >
+          #
+        </a>
+      ) : null}
+    </h3>
   ),
-  h4: ({ className, ...props }: React.ComponentPropsWithoutRef<"h4">) => (
+  h4: ({
+    className,
+    id,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<"h4">) => (
     <h4
+      id={id}
       className={cn(
-        "mt-6 scroll-mt-24 font-semibold text-base text-foreground tracking-tight",
+        "group mt-6 scroll-mt-24 font-semibold text-base text-foreground tracking-tight",
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {id ? (
+        <a
+          href={`#${id}`}
+          aria-label="Direct link to subsection"
+          className="ml-2 inline-block font-normal text-muted-foreground/0 transition-colors hover:!text-foreground group-hover:text-muted-foreground/60 select-none text-xs"
+        >
+          #
+        </a>
+      ) : null}
+    </h4>
   ),
   p: ({ className, ...props }: React.ComponentPropsWithoutRef<"p">) => (
     <p
