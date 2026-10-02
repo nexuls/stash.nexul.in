@@ -4,17 +4,20 @@
  * Provides a keyboard-navigable listbox dialog for search, navigation, and command execution.
  *
  * Notable: Client Component. Implements WAI-ARIA modal dialog and option patterns
- * with keyboard shortcuts (ArrowUp, ArrowDown, Enter, Escape).
+ * with keyboard shortcuts (ArrowUp, ArrowDown, Enter, Escape). Validated with Zod.
  */
 
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
-export interface CommandItem {
-  id: string;
-  label: string;
-  category?: string;
-  onSelect: () => void;
-}
+export const commandItemSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  category: z.string().optional(),
+  onSelect: z.function(),
+});
+
+export type CommandItem = z.infer<typeof commandItemSchema>;
 
 export interface CommandMenuProps {
   items: CommandItem[];

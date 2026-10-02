@@ -4,10 +4,31 @@
  * Stores immutable site metadata including application name, title, description,
  * canonical URL, author details, and social links.
  *
- * Notable: Consumed across root layouts, OpenGraph generators, and metadata builders to prevent drift.
+ * Notable: Strictly validated via Zod (`siteConfigSchema.parse`) to prevent configuration drift.
  */
 
-export const siteConfig = {
+import { z } from "zod";
+
+export const siteConfigSchema = z.object({
+  name: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  url: z.string().url(),
+  author: z.object({
+    name: z.string().min(1),
+    url: z.string().url(),
+    email: z.string().email(),
+    github: z.string().url(),
+  }),
+  links: z.object({
+    github: z.string().url(),
+  }),
+  locale: z.string().min(2),
+});
+
+export type SiteConfig = z.infer<typeof siteConfigSchema>;
+
+export const siteConfig = siteConfigSchema.parse({
   name: "Stash",
   title: "Stash — Personal Engineering Archive",
   description:
@@ -23,6 +44,4 @@ export const siteConfig = {
     github: "https://github.com/nexul",
   },
   locale: "en_US",
-} as const;
-
-export type SiteConfig = typeof siteConfig;
+});

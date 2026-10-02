@@ -10,6 +10,7 @@
 import { describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { siteConfig, siteConfigSchema } from "../../site-config";
 import {
   getAllCategories,
   getAllEntries,
@@ -29,7 +30,13 @@ import {
   slugifyHeading,
   stripMarkdown,
 } from "../parser";
-import { isKebabCase, suggestKebabCase, validateContent } from "../validator";
+import { contentAssetSchema, contentFrontmatterSchema } from "../types";
+import {
+  isKebabCase,
+  kebabCaseSegmentSchema,
+  suggestKebabCase,
+  validateContent,
+} from "../validator";
 
 describe("Markdown & Parser Utilities", () => {
   it("slugifyHeading generates clean, url-safe heading slugs", () => {
@@ -233,6 +240,64 @@ describe("Content Discovery", () => {
     expect(slugs.some((s) => s.join("/") === "react/hooks/use-debounce")).toBe(
       true,
     );
+  });
+});
+
+describe("Zod Schemas and Validation", () => {
+  it("contentFrontmatterSchema validates correct frontmatter and rejects invalid data", () => {
+    const valid = contentFrontmatterSchema.safeParse({
+      title: "Valid Title",
+      tags: ["react", "hooks"],
+      draft: false,
+      date: "2026-10-02",
+      order: 1,
+    });
+    expect(valid.success).toBe(true);
+
+    const invalidTags = contentFrontmatterSchema.safeParse({
+      tags: "not-an-array",
+    });
+    expect(invalidTags.success).toBe(false);
+
+    const invalidDraft = contentFrontmatterSchema.safeParse({
+      draft: "not-a-bool",
+    });
+    expect(invalidDraft.success).toBe(false);
+
+    const invalidDate = contentFrontmatterSchema.safeParse({
+      date: "not-a-date",
+    });
+    expect(invalidDate.success).toBe(false);
+  });
+
+  it("kebabCaseSegmentSchema enforces lowercase kebab-case", () => {
+    expect(kebabCaseSegmentSchema.safeParse("kebab-case-1").success).toBe(true);
+    expect(kebabCaseSegmentSchema.safeParse("InvalidSegment").success).toBe(
+      false,
+    );
+    expect(kebabCaseSegmentSchema.safeParse("has spaces").success).toBe(false);
+  });
+
+  it("contentAssetSchema validates asset metadata", () => {
+    const validAsset = contentAssetSchema.safeParse({
+      filename: "test.ts",
+      relativePath: "test.ts",
+      absolutePath: "/path/to/test.ts",
+      type: "code",
+      size: 100,
+      extension: ".ts",
+    });
+    expect(validAsset.success).toBe(true);
+
+    const invalidAsset = contentAssetSchema.safeParse({
+      filename: "test.ts",
+      type: "unknown-type",
+    });
+    expect(invalidAsset.success).toBe(false);
+  });
+
+  it("siteConfig adheres to siteConfigSchema", () => {
+    expect(siteConfigSchema.safeParse(siteConfig).success).toBe(true);
   });
 });
 

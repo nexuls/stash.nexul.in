@@ -4,22 +4,37 @@
  * Enforces kebab-case directory naming, detects duplicate slugs, verifies YAML frontmatter schemas,
  * confirms physical existence of referenced assets, and validates internal Stash links and heading anchors.
  *
- * Notable: Produces file- and line-specific actionable diagnostics; fails CI/build if errors exist.
+ * Notable: Strictly driven by Zod schemas (`kebabCaseSegmentSchema`, `contentFrontmatterSchema`, `validationResultSchema`).
  */
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, normalize, relative } from "node:path";
+import { parse as parseYaml } from "yaml";
+import { z } from "zod";
 import { getContentDirectory, loadEntry } from "./discovery";
-import { parseDocument } from "./parser";
-import type { ContentEntry, ValidationIssue, ValidationResult } from "./types";
-
-const KEBAB_CASE_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+import { extractFrontmatter } from "./parser";
+import {
+  type ContentEntry,
+  contentFrontmatterSchema,
+  type ValidationIssue,
+  type ValidationResult,
+  validationResultSchema,
+} from "./types";
 
 /**
- * Checks whether a directory segment conforms to kebab-case convention.
+ * Zod schema defining kebab-case path segment format.
+ */
+export const kebabCaseSegmentSchema = z
+  .string()
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, {
+    message: "Must be lowercase alphanumeric with hyphens (kebab-case)",
+  });
+
+/**
+ * Checks whether a directory segment conforms to kebab-case convention using Zod.
  */
 export function isKebabCase(segment: string): boolean {
-  return KEBAB_CASE_REGEX.test(segment);
+  return kebabCaseSegmentSchema.safeParse(segment).success;
 }
 
 /**
@@ -69,12 +84,13 @@ function scanContentTree(
     }
   }
 
-  // Validate segment naming
+  // Validate segment naming via Zod schema
   const relDir = relative(contentDir, baseDir).replace(/\\/g, "/");
   if (relDir && relDir !== ".") {
     const segments = relDir.split("/");
     for (const segment of segments) {
-      if (!isKebabCase(segment)) {
+      const parseResult = kebabCaseSegmentSchema.safeParse(segment);
+      if (!parseResult.success) {
         const suggestion = suggestKebabCase(segment);
         issues.push({
           severity: "error",
@@ -108,79 +124,74 @@ function scanContentTree(
 }
 
 /**
- * Validates frontmatter syntax and fields.
+ * Validates frontmatter syntax and fields using Zod schema.
  */
 function validateFrontmatter(
   entry: ContentEntry,
   rawFileContent: string,
   issues: ValidationIssue[],
 ) {
-  const parsed = parseDocument(rawFileContent, entry.slug);
+  const { frontmatterText } = extractFrontmatter(rawFileContent);
+  if (!frontmatterText) {
+    return;
+  }
 
-  if (parsed.frontmatterError) {
+  // Parse YAML text safely
+  let parsedRaw: unknown;
+  try {
+    parsedRaw = parseYaml(frontmatterText);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     issues.push({
       severity: "error",
       file: entry.filePath,
-      line: parsed.frontmatterError.line || 1,
+      line: 1,
       rule: "malformed-metadata",
-      message: parsed.frontmatterError.message,
+      message: `YAML syntax error in frontmatter: ${message}`,
       suggestion:
         "Check YAML syntax, indentation, and ensure delimiters (---) surround frontmatter",
     });
     return;
   }
 
-  const { frontmatter } = parsed;
-
-  if (frontmatter.tags !== undefined) {
-    if (
-      !Array.isArray(frontmatter.tags) ||
-      frontmatter.tags.some((tag) => typeof tag !== "string")
-    ) {
-      issues.push({
-        severity: "error",
-        file: entry.filePath,
-        rule: "invalid-tags-field",
-        message: 'Frontmatter field "tags" must be an array of strings.',
-        suggestion: 'Example format: tags: ["react", "hooks"]',
-      });
-    }
-  }
-
   if (
-    frontmatter.draft !== undefined &&
-    typeof frontmatter.draft !== "boolean"
+    typeof parsedRaw !== "object" ||
+    parsedRaw === null ||
+    Array.isArray(parsedRaw)
   ) {
     issues.push({
       severity: "error",
       file: entry.filePath,
-      rule: "invalid-draft-field",
-      message: 'Frontmatter field "draft" must be a boolean (true or false).',
+      line: 1,
+      rule: "malformed-metadata",
+      message: "Frontmatter must be a YAML object/dictionary",
+      suggestion: "Format frontmatter as key-value pairs (e.g. title: Value)",
     });
+    return;
   }
 
-  if (frontmatter.date !== undefined) {
-    const dateVal = String(frontmatter.date);
-    if (Number.isNaN(Date.parse(dateVal))) {
+  // Strictly validate frontmatter fields via Zod
+  const zodResult = contentFrontmatterSchema.safeParse(parsedRaw);
+  if (!zodResult.success) {
+    for (const issue of zodResult.error.issues) {
+      const field = issue.path[0] ? String(issue.path[0]) : "metadata";
+      let suggestion: string | undefined;
+
+      if (field === "tags") {
+        suggestion = 'Example format: tags: ["react", "hooks"]';
+      } else if (field === "draft") {
+        suggestion = "Use boolean true or false";
+      } else if (field === "date" || field === "updated") {
+        suggestion = "Use ISO 8601 format: YYYY-MM-DD (e.g., 2026-10-02)";
+      }
+
       issues.push({
         severity: "error",
         file: entry.filePath,
-        rule: "invalid-date-field",
-        message: `Frontmatter field "date" ("${dateVal}") is not a valid date format.`,
-        suggestion: "Use ISO 8601 format: YYYY-MM-DD (e.g., 2026-10-02)",
-      });
-    }
-  }
-
-  if (frontmatter.updated !== undefined) {
-    const updatedVal = String(frontmatter.updated);
-    if (Number.isNaN(Date.parse(updatedVal))) {
-      issues.push({
-        severity: "error",
-        file: entry.filePath,
-        rule: "invalid-updated-field",
-        message: `Frontmatter field "updated" ("${updatedVal}") is not a valid date format.`,
-        suggestion: "Use ISO 8601 format: YYYY-MM-DD (e.g., 2026-10-02)",
+        line: 1,
+        rule: `invalid-${field}-field`,
+        message: `Frontmatter field "${issue.path.join(".")}": ${issue.message}.`,
+        suggestion,
       });
     }
   }
@@ -326,12 +337,12 @@ export async function validateContent(
       message: `Content directory does not exist at "${contentDir}".`,
       suggestion: 'Create the "content/" directory at the repository root.',
     });
-    return {
+    return validationResultSchema.parse({
       valid: false,
       issues,
       entryCount: 0,
       assetCount: 0,
-    };
+    });
   }
 
   // 1. Scan filesystem hierarchy for directory naming and orphan files
@@ -411,10 +422,11 @@ export async function validateContent(
 
   const hasErrors = issues.some((i) => i.severity === "error");
 
-  return {
+  // Strictly validate returned result object via Zod schema
+  return validationResultSchema.parse({
     valid: !hasErrors,
     issues,
     entryCount: entries.length,
     assetCount: totalAssetCount,
-  };
+  });
 }

@@ -4,14 +4,19 @@
  * Traverses the `content/` hierarchy to load entries, derive slugs, categories, permalinks,
  * and provide lookup helpers (`getAllEntries`, `getEntryBySlug`, `getAllCategories`).
  *
- * Notable: Operates strictly at build/server time without database or CMS dependencies.
+ * Notable: Strictly validated via Zod (`contentEntrySchema` and `contentCategorySchema`).
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { discoverAdjacentAssets } from "./assets";
 import { parseDocument } from "./parser";
-import type { ContentCategory, ContentEntry } from "./types";
+import {
+  type ContentCategory,
+  type ContentEntry,
+  contentCategorySchema,
+  contentEntrySchema,
+} from "./types";
 
 /**
  * Returns the default absolute path to the content directory.
@@ -116,7 +121,7 @@ export function loadEntry(
         .filter(Boolean)
     : [];
 
-  return {
+  const rawEntry = {
     slug,
     slugSegments,
     permalink,
@@ -142,6 +147,9 @@ export function loadEntry(
     draft: Boolean(parsed.frontmatter.draft),
     readingTime: parsed.readingTime,
   };
+
+  // Strictly validate entry through Zod schema
+  return contentEntrySchema.parse(rawEntry);
 }
 
 export interface EntryFilterOptions {
@@ -240,13 +248,16 @@ export async function getAllCategories(
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
-    result.push({
+    // Strictly validate category object through Zod schema
+    const category = contentCategorySchema.parse({
       name,
       slug,
       path,
       count: categoryEntries.length,
       entries: categoryEntries,
     });
+
+    result.push(category);
   }
 
   return result.sort((a, b) => a.slug.localeCompare(b.slug));

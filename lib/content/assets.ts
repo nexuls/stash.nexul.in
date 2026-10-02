@@ -4,12 +4,12 @@
  * Scans content entry directories for sibling code files, diagrams, and documents,
  * determining file sizes, relative paths, and categorized asset types.
  *
- * Notable: Ignores README.mdx, dotfiles, and child entry directories; runs at build time.
+ * Notable: Strictly validated via Zod (`contentAssetSchema.parse`); runs at build time.
  */
 
 import { readdirSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
-import type { AssetType, ContentAsset } from "./types";
+import { type AssetType, type ContentAsset, contentAssetSchema } from "./types";
 
 const CODE_EXTENSIONS = new Set([
   ".ts",
@@ -118,7 +118,8 @@ export function discoverAdjacentAssets(
     const extension = extname(item);
     const relPath = relative(entryDirectory, fullPath).replace(/\\/g, "/");
 
-    assets.push({
+    // Strictly validate discovered asset using Zod schema
+    const asset = contentAssetSchema.parse({
       filename: item,
       relativePath: relPath,
       absolutePath: fullPath,
@@ -126,6 +127,8 @@ export function discoverAdjacentAssets(
       size: stat.size,
       extension,
     });
+
+    assets.push(asset);
   }
 
   // Sort assets deterministically by relative path

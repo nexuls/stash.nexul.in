@@ -1,162 +1,194 @@
 /**
- * TypeScript type definitions for the Stash content system.
+ * TypeScript type definitions and Zod schemas for the Stash content system.
  *
- * Defines domain models for entries, frontmatter schemas, headings, links, assets,
- * categories, and validation results.
+ * Defines Zod validation schemas for entries, frontmatter, headings, links, assets,
+ * categories, and validation diagnostics, and derives canonical TypeScript types from them.
  *
- * Notable: Acts as the type contract between filesystem loader, validator, and future UI routes.
+ * Notable: Strictly uses Zod everywhere for schema definitions and runtime validation.
  */
 
-export type AssetType = "code" | "image" | "document" | "other";
+import { z } from "zod";
 
-export interface ContentAsset {
+export const assetTypeSchema = z.enum(["code", "image", "document", "other"]);
+
+export const contentAssetSchema = z.object({
   /** The filename of the asset (e.g., "use-debounce.ts") */
-  filename: string;
+  filename: z.string().min(1),
   /** Relative path from the entry directory (e.g., "use-debounce.ts" or "images/demo.png") */
-  relativePath: string;
+  relativePath: z.string().min(1),
   /** Absolute path on disk */
-  absolutePath: string;
+  absolutePath: z.string().min(1),
   /** Categorized asset type */
-  type: AssetType;
+  type: assetTypeSchema,
   /** File size in bytes */
-  size: number;
+  size: z.number().int().nonnegative(),
   /** File extension including leading dot (e.g., ".ts") */
-  extension: string;
-}
+  extension: z.string(),
+});
 
-export interface ContentHeading {
+export const contentHeadingSchema = z.object({
   /** Heading depth (1 for #, 2 for ##, etc.) */
-  depth: number;
+  depth: z.number().int().min(1).max(6),
   /** Raw text content of the heading */
-  text: string;
+  text: z.string().min(1),
   /** URL-safe anchor slug (e.g., "installation-instructions") */
-  slug: string;
-}
+  slug: z.string().min(1),
+});
 
-export type LinkType = "internal" | "external" | "asset" | "anchor";
+export const linkTypeSchema = z.enum([
+  "internal",
+  "external",
+  "asset",
+  "anchor",
+]);
 
-export interface ContentLink {
+export const contentLinkSchema = z.object({
   /** Raw link destination as written in Markdown/MDX */
-  raw: string;
+  raw: z.string().min(1),
   /** Anchor/link display text */
-  text: string;
+  text: z.string(),
   /** Categorized link type */
-  type: LinkType;
+  type: linkTypeSchema,
   /** Line number where the link appears (1-indexed) */
-  lineNumber: number;
+  lineNumber: z.number().int().positive(),
   /** Normalized target path without query or hash (if applicable) */
-  targetPath?: string;
+  targetPath: z.string().optional(),
   /** Target hash/anchor without leading '#' (if applicable) */
-  targetAnchor?: string;
-}
+  targetAnchor: z.string().optional(),
+});
 
-export interface ContentFrontmatter {
-  /** Explicit title override */
-  title?: string;
-  /** Explicit summary / description override */
-  description?: string;
-  /** Publication or creation date (ISO string or date string) */
-  date?: string;
-  /** Last updated date (ISO string or date string) */
-  updated?: string;
-  /** Associated search and classification tags */
-  tags?: string[];
-  /** Mark entry as draft (excluded from production builds by default) */
-  draft?: boolean;
-  /** Mark entry as deprecated, optionally providing reason */
-  deprecated?: boolean | string;
-  /** Optional manual category override */
-  category?: string;
-  /** Optional numeric sort order */
-  order?: number;
-  /** Additional custom metadata fields */
-  [key: string]: unknown;
-}
+export const contentFrontmatterSchema = z
+  .object({
+    /** Explicit title override */
+    title: z.string().optional(),
+    /** Explicit summary / description override */
+    description: z.string().optional(),
+    /** Publication or creation date (ISO string or valid date string) */
+    date: z
+      .union([z.string(), z.date()])
+      .refine((val) => !Number.isNaN(new Date(val).getTime()), {
+        message: "Must be a valid date format (e.g. YYYY-MM-DD)",
+      })
+      .optional(),
+    /** Last updated date (ISO string or valid date string) */
+    updated: z
+      .union([z.string(), z.date()])
+      .refine((val) => !Number.isNaN(new Date(val).getTime()), {
+        message: "Must be a valid date format (e.g. YYYY-MM-DD)",
+      })
+      .optional(),
+    /** Associated search and classification tags */
+    tags: z.array(z.string()).optional(),
+    /** Mark entry as draft (excluded from production builds by default) */
+    draft: z.boolean().optional(),
+    /** Mark entry as deprecated, optionally providing reason */
+    deprecated: z.union([z.boolean(), z.string()]).optional(),
+    /** Optional manual category override */
+    category: z.string().optional(),
+    /** Optional numeric sort order */
+    order: z.number().optional(),
+  })
+  .passthrough();
 
-export interface ContentEntry {
+export const contentReadingTimeSchema = z.object({
+  minutes: z.number().int().positive(),
+  words: z.number().int().nonnegative(),
+});
+
+export const contentEntrySchema = z.object({
   /** Unique URL-friendly slug derived from entry directory path (e.g., "react/hooks/use-debounce") */
-  slug: string;
+  slug: z.string().min(1),
   /** Slug path segments (e.g., ["react", "hooks", "use-debounce"]) */
-  slugSegments: string[];
+  slugSegments: z.array(z.string()),
   /** Full web route permalink (e.g., "/stash/react/hooks/use-debounce") */
-  permalink: string;
+  permalink: z.string().min(1),
   /** Directory path relative to content root (e.g., "react/hooks/use-debounce") */
-  directoryPath: string;
+  directoryPath: z.string(),
   /** Path to README.mdx relative to project root */
-  filePath: string;
+  filePath: z.string().min(1),
   /** Absolute filesystem path of entry directory */
-  absoluteDirectoryPath: string;
+  absoluteDirectoryPath: z.string().min(1),
   /** Absolute filesystem path of README.mdx */
-  absoluteFilePath: string;
+  absoluteFilePath: z.string().min(1),
   /** Effective title (from frontmatter, first heading, or derived from slug) */
-  title: string;
+  title: z.string().min(1),
   /** Effective description (from frontmatter or first body paragraph) */
-  description: string;
-  /** Parsed raw frontmatter object */
-  frontmatter: ContentFrontmatter;
+  description: z.string(),
+  /** Parsed raw frontmatter dictionary */
+  frontmatter: z.record(z.string(), z.unknown()),
   /** Raw MDX document body (excluding frontmatter) */
-  body: string;
+  body: z.string(),
   /** Full raw content of the README.mdx file */
-  rawContent: string;
+  rawContent: z.string(),
   /** Hierarchical category path (e.g., ["react", "hooks"]) */
-  categories: string[];
+  categories: z.array(z.string()),
   /** Primary category name (e.g., "react", or "general" if root entry) */
-  category: string;
+  category: z.string().min(1),
   /** Assigned tags */
-  tags: string[];
+  tags: z.array(z.string()),
   /** Extracted document headings */
-  headings: ContentHeading[];
+  headings: z.array(contentHeadingSchema),
   /** Extracted outbound links and asset references */
-  links: ContentLink[];
+  links: z.array(contentLinkSchema),
   /** Discovered adjacent assets in the entry directory */
-  assets: ContentAsset[];
+  assets: z.array(contentAssetSchema),
   /** Publication date string if available */
-  date?: string;
+  date: z.string().optional(),
   /** Last updated date string if available */
-  updated?: string;
+  updated: z.string().optional(),
   /** Whether entry is marked as draft */
-  draft: boolean;
+  draft: z.boolean(),
   /** Estimated reading metrics */
-  readingTime: {
-    minutes: number;
-    words: number;
-  };
-}
+  readingTime: contentReadingTimeSchema,
+});
 
-export interface ContentCategory {
+export const contentCategorySchema = z.object({
   /** Category display name */
-  name: string;
+  name: z.string().min(1),
   /** URL slug for category */
-  slug: string;
+  slug: z.string().min(1),
   /** Hierarchy path segments */
-  path: string[];
+  path: z.array(z.string()),
   /** Number of entries in this category */
-  count: number;
+  count: z.number().int().nonnegative(),
   /** Entries directly or hierarchically under this category */
-  entries: ContentEntry[];
-}
+  entries: z.array(contentEntrySchema),
+});
 
-export type ValidationSeverity = "error" | "warning";
+export const validationSeveritySchema = z.enum(["error", "warning"]);
 
-export interface ValidationIssue {
-  severity: ValidationSeverity;
+export const validationIssueSchema = z.object({
+  severity: validationSeveritySchema,
   /** Path to the problematic file or directory */
-  file: string;
+  file: z.string().min(1),
   /** Line number if applicable */
-  line?: number;
+  line: z.number().int().positive().optional(),
   /** Column number if applicable */
-  column?: number;
+  column: z.number().int().positive().optional(),
   /** Actionable error message */
-  message: string;
+  message: z.string().min(1),
   /** Name of the violated rule */
-  rule: string;
+  rule: z.string().min(1),
   /** Helpful hint or suggestion for resolution */
-  suggestion?: string;
-}
+  suggestion: z.string().optional(),
+});
 
-export interface ValidationResult {
-  valid: boolean;
-  issues: ValidationIssue[];
-  entryCount: number;
-  assetCount: number;
-}
+export const validationResultSchema = z.object({
+  valid: z.boolean(),
+  issues: z.array(validationIssueSchema),
+  entryCount: z.number().int().nonnegative(),
+  assetCount: z.number().int().nonnegative(),
+});
+
+export type AssetType = z.infer<typeof assetTypeSchema>;
+export type ContentAsset = z.infer<typeof contentAssetSchema>;
+export type ContentHeading = z.infer<typeof contentHeadingSchema>;
+export type LinkType = z.infer<typeof linkTypeSchema>;
+export type ContentLink = z.infer<typeof contentLinkSchema>;
+export type ContentFrontmatter = z.infer<typeof contentFrontmatterSchema>;
+export type ContentReadingTime = z.infer<typeof contentReadingTimeSchema>;
+export type ContentEntry = z.infer<typeof contentEntrySchema>;
+export type ContentCategory = z.infer<typeof contentCategorySchema>;
+export type ValidationSeverity = z.infer<typeof validationSeveritySchema>;
+export type ValidationIssue = z.infer<typeof validationIssueSchema>;
+export type ValidationResult = z.infer<typeof validationResultSchema>;

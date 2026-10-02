@@ -4,15 +4,18 @@
  * Parses YAML frontmatter, extracts headings with anchor slugs, scans links/assets with line numbers,
  * and derives sensible fallback titles and descriptions from document content.
  *
- * Notable: Strips code blocks when extracting headings or calculating reading time to prevent false matches.
+ * Notable: Strictly validates frontmatter against Zod schema (`contentFrontmatterSchema`).
  */
 
 import { parse as parseYaml } from "yaml";
-import type {
-  ContentFrontmatter,
-  ContentHeading,
-  ContentLink,
-  LinkType,
+import {
+  type ContentFrontmatter,
+  type ContentHeading,
+  type ContentLink,
+  contentFrontmatterSchema,
+  contentHeadingSchema,
+  contentLinkSchema,
+  type LinkType,
 } from "./types";
 
 export interface ParsedDocument {
@@ -150,11 +153,14 @@ export function extractHeadings(body: string): ContentHeading[] {
 
     const slug = count === 0 ? baseSlug : `${baseSlug}-${count}`;
 
-    headings.push({
+    // Validate with Zod heading schema
+    const heading = contentHeadingSchema.parse({
       depth,
       text: cleanText,
       slug,
     });
+
+    headings.push(heading);
   }
 
   return headings;
@@ -274,7 +280,8 @@ export function extractLinks(
       const altText = imgMatch[1].trim();
       const { type, targetPath, targetAnchor } = classifyLink(rawUrl);
 
-      links.push({
+      // Validate link with Zod schema
+      const link = contentLinkSchema.parse({
         raw: rawUrl,
         text: altText,
         type: type === "external" ? "external" : "asset",
@@ -282,6 +289,7 @@ export function extractLinks(
         targetPath,
         targetAnchor,
       });
+      links.push(link);
       imgMatch = imageRegex.exec(line);
     }
 
@@ -293,7 +301,7 @@ export function extractLinks(
       const rawUrl = mdMatch[2].trim();
       const { type, targetPath, targetAnchor } = classifyLink(rawUrl);
 
-      links.push({
+      const link = contentLinkSchema.parse({
         raw: rawUrl,
         text: linkText,
         type,
@@ -301,6 +309,7 @@ export function extractLinks(
         targetPath,
         targetAnchor,
       });
+      links.push(link);
       mdMatch = mdLinkRegex.exec(line);
     }
 
@@ -313,7 +322,7 @@ export function extractLinks(
       const text = stripMarkdown(htmlMatch[2]);
       const { type, targetPath, targetAnchor } = classifyLink(rawUrl);
 
-      links.push({
+      const link = contentLinkSchema.parse({
         raw: rawUrl,
         text,
         type,
@@ -321,6 +330,7 @@ export function extractLinks(
         targetPath,
         targetAnchor,
       });
+      links.push(link);
       htmlMatch = htmlLinkRegex.exec(line);
     }
 
@@ -331,7 +341,7 @@ export function extractLinks(
       const rawUrl = htmlImgMatch[1].trim();
       const { type, targetPath, targetAnchor } = classifyLink(rawUrl);
 
-      links.push({
+      const link = contentLinkSchema.parse({
         raw: rawUrl,
         text: "Image",
         type: type === "external" ? "external" : "asset",
@@ -339,6 +349,7 @@ export function extractLinks(
         targetPath,
         targetAnchor,
       });
+      links.push(link);
       htmlImgMatch = htmlImgRegex.exec(line);
     }
   }
@@ -446,7 +457,17 @@ export function parseDocument(
         parsed !== null &&
         !Array.isArray(parsed)
       ) {
-        frontmatter = parsed as ContentFrontmatter;
+        const zodResult = contentFrontmatterSchema.safeParse(parsed);
+        if (zodResult.success) {
+          frontmatter = zodResult.data;
+        } else {
+          frontmatter = parsed as ContentFrontmatter;
+          const firstIssue = zodResult.error.issues[0];
+          frontmatterError = {
+            message: `Frontmatter field "${firstIssue.path.join(".")}": ${firstIssue.message}`,
+            line: 1,
+          };
+        }
       } else {
         frontmatterError = {
           message: "Frontmatter must be a YAML object/dictionary",
