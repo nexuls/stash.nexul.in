@@ -1,29 +1,23 @@
-# Project state
+# Project state: stash.nexul.in
 
-Last reviewed: 2026-10-02
+This document records what has been decided, built, and verified. Update it whenever an architectural decision is approved or a milestone is reached.
 
-## Current implementation
+## Current milestone: Stage 1 (Content foundation) — Completed
 
-The repository contains Next.js 16.3.7 with React 19.2.8, TypeScript, Tailwind CSS 4, shadcn/ui, Bun 1.3.14, and Biome 2.4.2.
-
-Stage 0 (Foundation and decisions) is complete:
-- Centralized site configuration established in `lib/site-config.ts` and wired into `app/layout.tsx`.
-- Deployment provider confirmed as Vercel (`stash.nexul.in`) with minimal configuration in `vercel.json` and documented in `docs/operations/deployment.md`.
-- Theme strategy decided (both light and dark modes supported, system default with toggle) and documented in `docs/architecture/decisions/0002-theme-support.md`.
-- shadcn primitives reviewed; existing `Button` component retained and no unnecessary components added until required by selected UI stages.
-- No deviations from the filesystem, MDX, static-index, or BM25 direction.
-
-Stage 1 (Content foundation) is complete:
-- Content directory `content/` established with a filesystem-first convention (`README.mdx` plus adjacent code and assets).
-- Typed content discovery and loader implemented in `lib/content/` (`discovery.ts`, `parser.ts`, `assets.ts`, `validator.ts`, `types.ts`).
-- Sensible title and description fallbacks derived from frontmatter, document headings, and body text without requiring boilerplate metadata.
+- Filesystem content system implemented under `content/` and `lib/content/`:
+  - `lib/content/types.ts`: Strict Zod schemas (`contentEntrySchema`, `contentFrontmatterSchema`, `contentAssetSchema`, `contentHeadingSchema`, `contentLinkSchema`, `contentCategorySchema`, `validationResultSchema`, etc.) with inferred TypeScript types.
+  - `lib/content/parser.ts`: Parses YAML frontmatter, heading extraction with anchor slugification, link & asset reference extraction with line numbers, and sensible defaults (title and description fallbacks). Frontmatter is strictly validated using Zod.
+  - `lib/content/assets.ts`: Discovers adjacent code, image, and document assets in entry directories and validates them via `contentAssetSchema`.
+  - `lib/content/discovery.ts`: Recursive directory discovery, entry loader validated via `contentEntrySchema`, and category hierarchy generator validated via `contentCategorySchema`.
+  - `lib/content/validator.ts`: Build-time validator verifying kebab-case paths (via `kebabCaseSegmentSchema`), duplicate slugs, frontmatter fields (via `contentFrontmatterSchema`), missing documents, missing local assets, broken internal `/stash/...` links, and missing target heading anchors.
+- Site configuration in `lib/site-config.ts` strictly validated at load time via `siteConfigSchema`.
 - Example entries added:
   - `content/react/hooks/use-debounce/` (Markdown, adjacent code `use-debounce.ts`, adjacent asset `debounce-diagram.svg`, cross-links).
   - `content/react/components/command-menu/` (Markdown, adjacent code `command-menu.tsx`, adjacent asset `command-menu-preview.svg`, cross-links).
   - `content/typescript/patterns/result-type/` (Markdown, adjacent code `result.ts`, cross-links).
 - Build-time content validator catches invalid kebab-case directory paths, duplicate slugs, malformed YAML frontmatter, missing documents, missing local assets, broken internal Stash links, and missing target heading anchors.
-- Validation and quality scripts added to `package.json`: `bun run validate:content`, `bun run check`, and `bun test`.
-- Comprehensive unit test suite added in `lib/content/__tests__/content.test.ts` (20 tests covering discovery, parsing, assets, and validation rules).
+- Validation and quality scripts in `package.json`: `bun run validate:content`, `bun run check`, and `bun test`.
+- Comprehensive unit test suite in `lib/content/__tests__/content.test.ts` (24 tests covering Zod schemas, discovery, parsing, assets, and validation rules).
 
 `app/page.tsx` retains starter-era implementation until Stage 4.
 
@@ -33,6 +27,7 @@ Stage 1 (Content foundation) is complete:
 - The filesystem is the content source of truth; a database or CMS is out of scope unless a concrete need changes that decision.
 - Content entries use a directory with `README.mdx` and optional neighboring assets.
 - Ordinary content additions are auto-discovered and do not require route, navigation, or search registry edits.
+- Zod is strictly used across the codebase for schema definitions, type inference, and runtime validation.
 - Search will be BM25-based, generated at build time where practical, and isolated from presentation.
 - The site favors static rendering, Server Components, accessibility, and minimal client JavaScript.
 
