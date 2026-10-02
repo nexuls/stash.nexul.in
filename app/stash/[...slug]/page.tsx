@@ -20,6 +20,7 @@ import * as React from "react";
 import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
+import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
 import { DocsToc } from "@/components/navigation/docs-toc";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -151,8 +152,12 @@ export default async function DocPage({ params }: DocPageProps) {
           className="flex-1 min-w-0 px-4 py-8 sm:px-6 md:px-8 lg:px-10 max-w-[800px]"
         >
           <article className="prose dark:prose-invert max-w-none">
-            {/* In-content Breadcrumb Navigation */}
-            <nav aria-label="Breadcrumbs" className="mb-4 not-prose">
+            {/* In-content Breadcrumb Navigation & Desktop Sidebar Trigger */}
+            <nav
+              aria-label="Breadcrumbs"
+              className="mb-4 not-prose flex items-center gap-1"
+            >
+              <DocsSidebarToggle />
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>

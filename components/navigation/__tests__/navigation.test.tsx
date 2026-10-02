@@ -9,6 +9,7 @@ import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsSidebar } from "@/components/navigation/docs-sidebar";
+import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
 import { DocsToc } from "@/components/navigation/docs-toc";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -139,6 +140,28 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
     // Theme toggle buttons in sidebar footer
     expect(html).toContain("Light theme");
     expect(html).toContain("Dark theme");
+  });
+});
+
+describe("Documentation Sidebar Toggle (DocsSidebarToggle)", () => {
+  it("renders toggle button when sidebar is collapsed", () => {
+    const html = renderStatic(
+      <SidebarProvider defaultOpen={false}>
+        <DocsSidebarToggle />
+      </SidebarProvider>,
+    );
+
+    expect(html).toContain("Expand and pin sidebar");
+  });
+
+  it("does not render toggle button when sidebar is open", () => {
+    const html = renderStatic(
+      <SidebarProvider defaultOpen={true}>
+        <DocsSidebarToggle />
+      </SidebarProvider>,
+    );
+
+    expect(html).not.toContain("Expand and pin sidebar");
   });
 });
 

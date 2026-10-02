@@ -2,8 +2,8 @@
 
 /**
  * Documentation navigation sidebar supporting:
- * 1. Centered in-flow desktop sidebar (pushed close to the content)
- * 2. Floating pop-out sidebar on cursor hover when closed
+ * 1. Centered in-flow desktop sidebar with smooth width transition & left background fill
+ * 2. Graceful conversion to floating pop-out sidebar on cursor hover when closed
  * 3. Mobile sheet drawer on small screens
  */
 
@@ -44,6 +44,18 @@ export function DocsSidebar({
     };
   }, []);
 
+  // When user collapses fixed sidebar, gracefully transition into floating mode
+  const handleCollapse = () => {
+    setOpen(false);
+    setIsFloatingOpen(true);
+  };
+
+  // When user pins floating sidebar, convert back to fixed docked mode
+  const handlePin = () => {
+    setOpen(true);
+    setIsFloatingOpen(false);
+  };
+
   // Window mouse listener when sidebar is closed on desktop
   React.useEffect(() => {
     if (open || isMobile) {
@@ -59,9 +71,19 @@ export function DocsSidebar({
       }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFloatingOpen) {
+        setIsFloatingOpen(false);
+      }
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [open, isMobile]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, isMobile, isFloatingOpen]);
 
   const handleFloatingMouseEnter = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -72,34 +94,50 @@ export function DocsSidebar({
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       setIsFloatingOpen(false);
-    }, 200);
+    }, 250);
   };
 
   return (
     <>
-      {/* 1. Desktop In-flow Sidebar (Centered next to content when pinned open) */}
-      {!isMobile && open && (
+      {/* 1. Desktop In-flow Sidebar Slot */}
+      {/* Contains smooth width collapse/expand transition and left-edge background fill */}
+      {!isMobile && (
         <aside
           className={cn(
-            "hidden md:flex flex-col w-[270px] shrink-0 sticky top-0 h-screen border-r border-border/40 py-2 pl-2 pr-3 bg-background/50",
+            "relative hidden md:flex flex-col shrink-0 sticky top-0 h-screen transition-[width,opacity] duration-300 ease-in-out",
+            open
+              ? "w-[280px] opacity-100 pointer-events-auto"
+              : "w-0 opacity-0 pointer-events-none overflow-hidden",
             className,
           )}
+          aria-hidden={!open}
         >
-          <DocsSidebarContent
-            entries={entries}
-            categories={categories}
-            currentSlug={currentSlug}
-            onCollapse={() => setOpen(false)}
+          {/* Left background fill: fills from the left edge of the viewport to the sidebar's right border */}
+          <div
+            className={cn(
+              "absolute inset-y-0 right-0 w-[100vw] bg-sidebar border-r border-sidebar-border -z-10 pointer-events-none transition-opacity duration-300 ease-in-out",
+              open ? "opacity-100" : "opacity-0",
+            )}
           />
+
+          {/* Docked Sidebar Content Container (retains fixed width during slot animation) */}
+          <div className="w-[280px] h-full flex flex-col py-2 pl-2 pr-3">
+            <DocsSidebarContent
+              entries={entries}
+              categories={categories}
+              currentSlug={currentSlug}
+              onCollapse={handleCollapse}
+            />
+          </div>
         </aside>
       )}
 
-      {/* 2. Desktop Floating Hover Trigger Zone & Floating Sidebar (When closed) */}
+      {/* 2. Desktop Floating Sidebar (When closed / hovering / gracefully converting) */}
       {!isMobile && !open && (
         <>
-          {/* Subtle left hover detector strip */}
+          {/* Left edge hover detector strip */}
           <div
-            className="fixed inset-y-0 left-0 w-8 z-40 group cursor-e-resize"
+            className="fixed inset-y-0 left-0 w-8 z-40 cursor-e-resize"
             onMouseEnter={handleFloatingMouseEnter}
             aria-hidden="true"
           />
@@ -107,23 +145,21 @@ export function DocsSidebar({
           {/* Floating Sidebar Card */}
           <aside
             className={cn(
-              "fixed left-4 top-4 bottom-4 z-50 w-[275px] rounded-2xl border border-sidebar-border bg-sidebar/95 backdrop-blur-md shadow-2xl transition-all duration-200 flex flex-col overflow-hidden",
+              "fixed left-4 top-3 bottom-3 z-50 w-[280px] rounded-2xl border border-sidebar-border bg-sidebar/95 backdrop-blur-md shadow-2xl transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
               isFloatingOpen
-                ? "translate-x-0 opacity-100 pointer-events-auto"
-                : "-translate-x-full opacity-0 pointer-events-none",
+                ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
+                : "-translate-x-[calc(100%+2rem)] opacity-0 scale-95 pointer-events-none",
             )}
             onMouseEnter={handleFloatingMouseEnter}
             onMouseLeave={handleFloatingMouseLeave}
+            aria-label="Floating navigation sidebar"
           >
             <DocsSidebarContent
               entries={entries}
               categories={categories}
               currentSlug={currentSlug}
               isFloating={true}
-              onPin={() => {
-                setOpen(true);
-                setIsFloatingOpen(false);
-              }}
+              onPin={handlePin}
               onNavigate={() => {
                 setIsFloatingOpen(false);
               }}

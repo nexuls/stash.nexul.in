@@ -9,6 +9,7 @@ import { ArrowRight, Calendar, Clock, FolderOpen, Layers } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
+import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -53,8 +54,9 @@ export default async function StashIndexPage() {
         id="main-content"
         className="flex-1 w-full max-w-[840px] px-4 py-8 sm:px-6 md:px-8 mx-auto"
       >
-        {/* In-content Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumbs" className="mb-4">
+        {/* In-content Breadcrumb Navigation & Desktop Sidebar Trigger */}
+        <nav aria-label="Breadcrumbs" className="mb-4 flex items-center gap-1">
+          <DocsSidebarToggle />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>

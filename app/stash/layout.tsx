@@ -40,10 +40,10 @@ export default async function StashLayout({
       </a>
 
       {/* Centered layout wrapper: pushes sidebar near content with outer margins on wide screens */}
-      <div className="min-h-screen w-full flex justify-center bg-background text-foreground">
+      <div className="min-h-screen w-full flex justify-center bg-background text-foreground overflow-x-clip">
         <div className="flex w-full max-w-[1400px] justify-center relative min-h-screen">
           <DocsSidebar entries={entries} categories={categories} />
-          <div className="flex-1 min-w-0 flex flex-col items-center">
+          <div className="flex-1 min-w-0 flex flex-col items-center transition-all duration-300 ease-in-out">
             {children}
           </div>
         </div>
