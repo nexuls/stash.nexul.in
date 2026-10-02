@@ -132,3 +132,77 @@
     @apply font-sans;
   }
 }
+
+/* ==========================================================================
+   Code Presentation & Syntax Highlighting (rehype-pretty-code & Shiki)
+   ========================================================================== */
+
+/* Shiki dual-theme token mapping */
+html:not(.dark) [data-rehype-pretty-code-figure] span {
+  color: var(--shiki-light, inherit);
+}
+
+html.dark [data-rehype-pretty-code-figure] span {
+  color: var(--shiki-dark, inherit);
+}
+
+/* Code block figure & container */
+.stash-code-block pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Line numbers */
+[data-rehype-pretty-code-figure] code[data-line-numbers] {
+  counter-reset: line;
+}
+
+[data-rehype-pretty-code-figure] code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1.5rem;
+  margin-right: 1.25rem;
+  text-align: right;
+  color: var(--muted-foreground);
+  opacity: 0.45;
+  user-select: none;
+}
+
+/* Highlighted lines */
+[data-rehype-pretty-code-figure] [data-highlighted-line] {
+  background-color: oklch(var(--primary) / 0.12);
+  border-left: 2px solid var(--primary);
+  padding-left: calc(1rem - 2px);
+}
+
+/* Highlighted words / tokens */
+[data-rehype-pretty-code-figure] [data-highlighted-word] {
+  background-color: oklch(var(--primary) / 0.2);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+}
+
+/* Diff line styling */
+[data-rehype-pretty-code-figure]
+  pre[data-language="diff"]
+  span[data-line]:has(span[style*="#22863A"]),
+[data-rehype-pretty-code-figure]
+  pre[data-language="diff"]
+  span[data-line]:has(span[style*="#85E89D"]) {
+  background-color: oklch(0.6 0.15 145 / 0.12);
+  border-left: 2px solid oklch(0.6 0.15 145);
+  padding-left: calc(1rem - 2px);
+}
+
+[data-rehype-pretty-code-figure]
+  pre[data-language="diff"]
+  span[data-line]:has(span[style*="#B31D28"]),
+[data-rehype-pretty-code-figure]
+  pre[data-language="diff"]
+  span[data-line]:has(span[style*="#FDAEB7"]) {
+  background-color: oklch(0.6 0.2 25 / 0.12);
+  border-left: 2px solid oklch(0.6 0.2 25);
+  padding-left: calc(1rem - 2px);
+}
