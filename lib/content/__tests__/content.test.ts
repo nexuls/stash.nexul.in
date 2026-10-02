@@ -18,6 +18,8 @@ import {
   getAllTags,
   getContentDirectory,
   getEntryBySlug,
+  getPrevNextEntries,
+  getRelatedEntries,
 } from "../discovery";
 import {
   classifyLink,
@@ -240,6 +242,23 @@ describe("Content Discovery", () => {
     expect(slugs.some((s) => s.join("/") === "react/hooks/use-debounce")).toBe(
       true,
     );
+  });
+
+  it("getPrevNextEntries returns neighboring entries", async () => {
+    const { prev, next } = await getPrevNextEntries("react/hooks/use-debounce");
+    expect(prev !== null || next !== null).toBe(true);
+
+    const missing = await getPrevNextEntries("non-existent-slug");
+    expect(missing.prev).toBeNull();
+    expect(missing.next).toBeNull();
+  });
+
+  it("getRelatedEntries finds related entries by category and tags", async () => {
+    const entry = await getEntryBySlug("react/hooks/use-debounce");
+    if (!entry) throw new Error("Entry must exist");
+    const related = await getRelatedEntries(entry, 2);
+    expect(Array.isArray(related)).toBe(true);
+    expect(related.every((e) => e.slug !== entry.slug)).toBe(true);
   });
 });
 

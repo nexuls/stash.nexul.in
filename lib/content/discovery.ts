@@ -199,7 +199,10 @@ export async function getEntryBySlug(
 ): Promise<ContentEntry | null> {
   const normalizedSlug = Array.isArray(slug) ? slug.join("/") : slug;
   const contentDir = options.contentDir || getContentDirectory();
-  const targetDir = join(contentDir, ...normalizedSlug.split("/"));
+  const targetDir = join(
+    /*turbopackIgnore: true*/ contentDir,
+    ...normalizedSlug.split("/"),
+  );
 
   const entry = loadEntry(targetDir, contentDir);
   if (!entry) {
@@ -289,4 +292,62 @@ export async function getAllTags(
   }
 
   return Array.from(tagSet).sort();
+}
+
+/**
+ * Retrieves the previous and next entries relative to a specific slug.
+ */
+export async function getPrevNextEntries(
+  slug: string | string[],
+  options: EntryFilterOptions = {},
+): Promise<{ prev: ContentEntry | null; next: ContentEntry | null }> {
+  const normalizedSlug = Array.isArray(slug) ? slug.join("/") : slug;
+  const entries = await getAllEntries(options);
+
+  const currentIndex = entries.findIndex((e) => e.slug === normalizedSlug);
+  if (currentIndex === -1) {
+    return { prev: null, next: null };
+  }
+
+  const prev = currentIndex > 0 ? entries[currentIndex - 1] : null;
+  const next =
+    currentIndex < entries.length - 1 ? entries[currentIndex + 1] : null;
+
+  return { prev, next };
+}
+
+/**
+ * Finds related entries based on category and overlapping tags.
+ */
+export async function getRelatedEntries(
+  currentEntry: ContentEntry,
+  limit = 3,
+  options: EntryFilterOptions = {},
+): Promise<ContentEntry[]> {
+  const entries = await getAllEntries(options);
+  const candidates = entries.filter((e) => e.slug !== currentEntry.slug);
+
+  const scored = candidates.map((entry) => {
+    let score = 0;
+    if (entry.category === currentEntry.category) {
+      score += 2;
+    }
+    for (const cat of currentEntry.categories) {
+      if (entry.categories.includes(cat)) {
+        score += 1;
+      }
+    }
+    for (const tag of currentEntry.tags) {
+      if (entry.tags.includes(tag)) {
+        score += 2;
+      }
+    }
+    return { entry, score };
+  });
+
+  return scored
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((item) => item.entry);
 }
