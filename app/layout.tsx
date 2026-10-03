@@ -16,6 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { font_variables } from "./fonts";
+import { ViewTransition } from "react";
 
 export default function RootLayout({
   children,
@@ -35,7 +36,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>{children}</TooltipProvider>
+          <ViewTransition>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ViewTransition>
         </ThemeProvider>
         {process.env.NODE_ENV === "development" && <DevHotReload />}
       </body>

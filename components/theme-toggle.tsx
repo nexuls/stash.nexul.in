@@ -27,12 +27,17 @@ export function ThemeToggle({
   className,
   variant = "dropdown",
 }: ThemeToggleProps) {
-  const { setTheme, theme, resolvedTheme } = useTheme();
+  const { setTheme: setNextTheme, theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  function setTheme(theme: string) {
+    if (!document.startViewTransition) setNextTheme(theme);
+    document.startViewTransition(() => setNextTheme(theme));
+  }
 
   if (variant === "compact") {
     return (
