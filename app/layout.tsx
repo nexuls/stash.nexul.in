@@ -9,25 +9,39 @@
  */
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { DevHotReload } from "@/components/dev-hot-reload";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
+import { font_variables } from "./fonts";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn("h-full", "antialiased", "font-exo", ...font_variables)}
+    >
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider>{children}</TooltipProvider>
+        </ThemeProvider>
+        {process.env.NODE_ENV === "development" && <DevHotReload />}
+      </body>
+    </html>
+  );
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -57,36 +71,3 @@ export const metadata: Metadata = {
     follow: true,
   },
 };
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(
-        "h-full",
-        "antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        "font-sans",
-        inter.variable,
-      )}
-    >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider>{children}</TooltipProvider>
-        </ThemeProvider>
-        {process.env.NODE_ENV === "development" && <DevHotReload />}
-      </body>
-    </html>
-  );
-}
