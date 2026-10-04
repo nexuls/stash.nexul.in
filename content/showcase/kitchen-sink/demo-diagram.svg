@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" width="100%" height="180">
+  <defs>
+    <style>
+      .label { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+      .heading { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 600; fill: #0f172a; }
+      .box { rx: 8; stroke-width: 1.5; }
+      .box-source { fill: #eff6ff; stroke: #3b82f6; }
+      .box-pipeline { fill: #f5f3ff; stroke: #8b5cf6; }
+      .box-output { fill: #ecfdf5; stroke: #10b981; }
+      .arrow { stroke: #94a3b8; stroke-width: 2; stroke-linecap: round; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+
+  <!-- Node 1: Markdown / MDX Source -->
+  <rect x="20" y="45" width="160" height="90" class="box box-source" />
+  <text x="35" y="75" class="heading">README.mdx</text>
+  <text x="35" y="98" class="label">YAML Frontmatter</text>
+  <text x="35" y="116" class="label">GFM + JSX Primitives</text>
+
+  <!-- Arrow 1 to 2 -->
+  <line x1="180" y1="90" x2="228" y2="90" class="arrow" marker-end="url(#arrowhead)" />
+
+  <!-- Node 2: Content Pipeline -->
+  <rect x="236" y="45" width="168" height="90" class="box box-pipeline" />
+  <text x="251" y="75" class="heading">Unified Pipeline</text>
+  <text x="251" y="98" class="label">remark-gfm &amp; rehype-slug</text>
+  <text x="251" y="116" class="label">rehype-pretty-code (Shiki)</text>
+
+  <!-- Arrow 2 to 3 -->
+  <line x1="404" y1="90" x2="452" y2="90" class="arrow" marker-end="url(#arrowhead)" />
+
+  <!-- Node 3: Design System UI -->
+  <rect x="460" y="45" width="160" height="90" class="box box-output" />
+  <text x="475" y="75" class="heading">Rendered UI</text>
+  <text x="475" y="98" class="label">Interactive Callouts</text>
+  <text x="475" y="116" class="label">Accessible Tabs &amp; Code</text>
+</svg>
