@@ -6,7 +6,7 @@
  * generated figures and standalone <CodeBlock /> usage.
  */
 
-import { FileCode, Terminal } from "lucide-react";
+import { FileCode2, SquareTerminal } from "lucide-react";
 import * as React from "react";
 import { CopyButton } from "@/components/mdx/copy-button";
 import { type CodeBlockProps, codeBlockPropsSchema } from "@/lib/mdx/types";
@@ -88,6 +88,19 @@ function extractTitleFromChildren(children: React.ReactNode): {
 }
 
 /**
+ * Decorative macOS-style traffic light dots for code block headers.
+ */
+function TrafficLights() {
+  return (
+    <div className="flex items-center gap-1.5" aria-hidden="true">
+      <span className="size-2.5 rounded-full bg-red-400/80" />
+      <span className="size-2.5 rounded-full bg-yellow-400/80" />
+      <span className="size-2.5 rounded-full bg-green-400/80" />
+    </div>
+  );
+}
+
+/**
  * Enhanced Figure component intercepting rehype-pretty-code figures.
  */
 export function CodeFigure({
@@ -129,18 +142,19 @@ export function CodeFigure({
     <figure
       data-rehype-pretty-code-figure=""
       className={cn(
-        "stash-code-block group relative my-6 overflow-hidden rounded-lg border border-border bg-card shadow-xs transition-colors",
+        "stash-code-block group relative my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
         className,
       )}
       {...props}
     >
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-border/80 bg-muted/60 px-4 py-2 text-xs">
-        <div className="flex items-center gap-2 font-mono text-muted-foreground">
+        <div className="flex items-center gap-3 font-mono text-muted-foreground">
+          <TrafficLights />
           {isTerminal ? (
-            <Terminal className="size-3.5 text-primary" />
+            <SquareTerminal className="size-3.5 text-primary" />
           ) : (
-            <FileCode className="size-3.5 text-muted-foreground" />
+            <FileCode2 className="size-3.5 text-muted-foreground" />
           )}
           <span className="font-medium text-foreground">
             {title ?? (isTerminal ? "Terminal" : formatLanguageLabel(language))}
@@ -149,7 +163,7 @@ export function CodeFigure({
 
         <div className="flex items-center gap-2">
           {title && (
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground uppercase">
+            <span className="rounded-full bg-muted-foreground/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               {formatLanguageLabel(language)}
             </span>
           )}
@@ -158,7 +172,7 @@ export function CodeFigure({
       </div>
 
       {/* Code body */}
-      <div className="relative overflow-x-auto">{remainingChildren}</div>
+      <div className="relative overflow-x-auto font-mono">{remainingChildren}</div>
     </figure>
   );
 }
@@ -209,11 +223,12 @@ export function CodeBlock({
   const isTerminal = ["bash", "sh", "shell", "zsh"].includes(
     language.toLowerCase(),
   );
+  const gutterWidth = String(lines.length).length;
 
   return (
     <div
       className={cn(
-        "stash-code-block relative my-6 overflow-hidden rounded-lg border border-border bg-card shadow-xs",
+        "stash-code-block relative my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
         className,
       )}
       {...props}
@@ -226,11 +241,12 @@ export function CodeBlock({
 
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-border/80 bg-muted/60 px-4 py-2 text-xs">
-        <div className="flex items-center gap-2 font-mono text-muted-foreground">
+        <div className="flex items-center gap-3 font-mono text-muted-foreground">
+          <TrafficLights />
           {isTerminal ? (
-            <Terminal className="size-3.5 text-primary" />
+            <SquareTerminal className="size-3.5 text-primary" />
           ) : (
-            <FileCode className="size-3.5 text-muted-foreground" />
+            <FileCode2 className="size-3.5 text-muted-foreground" />
           )}
           <span className="font-medium text-foreground">
             {filename ??
@@ -240,7 +256,7 @@ export function CodeBlock({
 
         <div className="flex items-center gap-2">
           {filename && (
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground uppercase">
+            <span className="rounded-full bg-muted-foreground/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               {formatLanguageLabel(language)}
             </span>
           )}
@@ -267,12 +283,29 @@ export function CodeBlock({
                 data-line=""
                 data-highlighted-line={isHighlighted ? "" : undefined}
                 className={cn(
-                  "px-2 py-0.5",
+                  showLineNumbers
+                    ? "grid grid-cols-[auto_1fr] gap-4"
+                    : "px-2 py-0.5",
                   isHighlighted &&
+                    !showLineNumbers &&
                     "-ml-2 border-l-2 border-primary bg-primary/10 pl-[calc(0.5rem-2px)]",
+                  isHighlighted &&
+                    showLineNumbers &&
+                    "border-l-2 border-primary bg-primary/10",
                 )}
               >
-                {line || " "}
+                {showLineNumbers && (
+                  <span
+                    className="select-none border-r border-border/60 bg-muted/40 py-0.5 pr-3 text-right text-muted-foreground/50"
+                    style={{ minWidth: `${gutterWidth + 1}ch` }}
+                    aria-hidden="true"
+                  >
+                    {lineNum}
+                  </span>
+                )}
+                <span className={cn(showLineNumbers && "py-0.5 pl-4")}>
+                  {line || " "}
+                </span>
               </span>
             );
           })}

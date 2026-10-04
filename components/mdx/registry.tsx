@@ -16,6 +16,7 @@ import { Details } from "@/components/mdx/details";
 import { Tab, Tabs } from "@/components/mdx/tabs";
 import { UnregisteredComponentFallback } from "@/components/mdx/unregistered-fallback";
 import { cn } from "@/lib/utils";
+import { LinkIcon } from "lucide-react";
 
 /**
  * Standard anchor link handler for MDX.
@@ -123,7 +124,7 @@ export const baseMdxComponents = {
           aria-label="Direct link to section"
           className="ml-2 inline-block font-normal text-muted-foreground/0 transition-colors hover:!text-foreground group-hover:text-muted-foreground/60 select-none text-base"
         >
-          #
+          <LinkIcon size={20} />
         </a>
       ) : null}
     </h2>

@@ -7,11 +7,11 @@
  */
 
 import {
-  AlertOctagon,
   AlertTriangle,
-  Flame,
   Info,
   Lightbulb,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import type * as React from "react";
 import {
@@ -28,7 +28,9 @@ const calloutConfig: Record<
     icon: React.ComponentType<{ className?: string }>;
     defaultTitle: string;
     containerClass: string;
+    borderLeftClass: string;
     iconClass: string;
+    iconBadgeClass: string;
     badgeClass: string;
   }
 > = {
@@ -36,7 +38,9 @@ const calloutConfig: Record<
     icon: Info,
     defaultTitle: "Note",
     containerClass: "border-primary/30 bg-primary/5 dark:bg-primary/10",
+    borderLeftClass: "border-l-primary",
     iconClass: "text-primary",
+    iconBadgeClass: "bg-primary/15",
     badgeClass: "bg-primary/10 text-primary border-primary/20",
   },
   tip: {
@@ -44,7 +48,9 @@ const calloutConfig: Record<
     defaultTitle: "Tip",
     containerClass:
       "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/10",
+    borderLeftClass: "border-l-emerald-500",
     iconClass: "text-emerald-600 dark:text-emerald-400",
+    iconBadgeClass: "bg-emerald-500/15",
     badgeClass:
       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
   },
@@ -52,24 +58,30 @@ const calloutConfig: Record<
     icon: AlertTriangle,
     defaultTitle: "Warning",
     containerClass: "border-amber-500/40 bg-amber-500/5 dark:bg-amber-500/10",
+    borderLeftClass: "border-l-amber-500",
     iconClass: "text-amber-600 dark:text-amber-400",
+    iconBadgeClass: "bg-amber-500/15",
     badgeClass:
       "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
   },
   danger: {
-    icon: AlertOctagon,
+    icon: ShieldAlert,
     defaultTitle: "Danger",
     containerClass:
       "border-destructive/40 bg-destructive/5 dark:bg-destructive/10",
+    borderLeftClass: "border-l-destructive",
     iconClass: "text-destructive",
+    iconBadgeClass: "bg-destructive/15",
     badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
   },
   important: {
-    icon: Flame,
+    icon: Sparkles,
     defaultTitle: "Important",
     containerClass:
       "border-purple-500/40 bg-purple-500/5 dark:bg-purple-500/10",
+    borderLeftClass: "border-l-purple-500",
     iconClass: "text-purple-600 dark:text-purple-400",
+    iconBadgeClass: "bg-purple-500/15",
     badgeClass:
       "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20",
   },
@@ -97,8 +109,9 @@ export function Callout({
       aria-live={isAlert ? "assertive" : "polite"}
       data-callout-type={normalized}
       className={cn(
-        "my-6 flex flex-col gap-2 rounded-lg border p-4 text-sm leading-relaxed text-foreground transition-colors",
+        "my-6 flex flex-col gap-2 rounded-lg border border-l-[3px] p-4 text-sm leading-relaxed text-foreground shadow-sm transition-colors",
         config.containerClass,
+        config.borderLeftClass,
         className,
       )}
       {...rest}
@@ -108,11 +121,20 @@ export function Callout({
           ⚠️ Malformed Callout prop: {validation.error.issues[0]?.message}
         </div>
       )}
-      <div className="flex items-center gap-2 font-medium">
-        <Icon className={cn("size-4 shrink-0", config.iconClass)} />
-        <span>{title ?? config.defaultTitle}</span>
+      <div className="flex items-center gap-2.5 font-medium">
+        <span
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-full p-1.5",
+            config.iconBadgeClass,
+          )}
+        >
+          <Icon className={cn("size-5 shrink-0", config.iconClass)} />
+        </span>
+        <span className="text-lg tracking-tight">
+          {title ?? config.defaultTitle}
+        </span>
       </div>
-      <div className="pl-6 text-muted-foreground [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 [&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-4">
+      <div className="pl-[38px] text-muted-foreground leading-relaxed [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 [&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-4">
         {children}
       </div>
     </aside>

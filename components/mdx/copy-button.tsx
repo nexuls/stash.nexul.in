@@ -8,9 +8,10 @@
  * Provides accessible feedback and visual state transition.
  */
 
-import { Check, Copy } from "lucide-react";
+import { Clipboard, ClipboardCheck } from "lucide-react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 
 export interface CopyButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -67,25 +68,31 @@ export function CopyButton({ code, className, ...props }: CopyButtonProps) {
   );
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={handleCopy}
       aria-label={
         hasCopied ? "Code copied to clipboard" : "Copy code to clipboard"
       }
       title={hasCopied ? "Copied!" : "Copy code"}
       className={cn(
-        "inline-flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/80 p-1 text-muted-foreground transition-all hover:border-border hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 disabled:pointer-events-none disabled:opacity-50",
-        hasCopied && "border-primary/50 text-primary hover:text-primary",
+        "group/copy inline-flex h-7 items-center justify-center gap-1.5 rounded-md px-2 opacity-75 transition-all duration-200 hover:bg-muted/80 hover:opacity-100",
+        hasCopied && "text-emerald-500 hover:text-emerald-500",
         className,
       )}
       {...props}
     >
       {hasCopied ? (
-        <Check className="size-3.5 animate-in fade-in zoom-in-75 duration-150" />
+        <>
+          <ClipboardCheck className="size-4 animate-in fade-in zoom-in-75 duration-150 transition-all duration-200" />
+          <span className="text-xs font-medium animate-in fade-in slide-in-from-left-1 duration-200">
+            Copied!
+          </span>
+        </>
       ) : (
-        <Copy className="size-3.5" />
+        <Clipboard className="size-3.5 transition-all duration-200" />
       )}
-    </button>
+    </Button>
   );
 }

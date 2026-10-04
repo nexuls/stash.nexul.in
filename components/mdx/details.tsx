@@ -6,7 +6,7 @@
  * Validates props using detailsPropsSchema.
  */
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronsUpDown } from "lucide-react";
 import { type DetailsProps, detailsPropsSchema } from "@/lib/mdx/types";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function Details({
     <details
       open={defaultOpen}
       className={cn(
-        "group my-4 rounded-lg border border-border bg-card/50 text-card-foreground transition-all [&[open]]:bg-card",
+        "group my-4 rounded-lg border border-border bg-card/50 text-card-foreground transition-all [&[open]]:bg-card [&[open]]:border-l-[3px] [&[open]]:border-l-primary/40 [&[open]]:shadow-sm",
         className,
       )}
       {...props}
@@ -37,11 +37,12 @@ export function Details({
           ⚠️ Malformed Details: {validation.error.issues[0]?.message}
         </div>
       )}
-      <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-90" />
-        <span>{summary}</span>
+      <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-in-out group-open:rotate-90" />
+        <span className="flex-1">{summary}</span>
+        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground/60" />
       </summary>
-      <div className="border-t border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+      <div className="border-t border-border px-5 pb-4 pt-3 text-sm leading-relaxed text-muted-foreground">
         {children}
       </div>
     </details>
