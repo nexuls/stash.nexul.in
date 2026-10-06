@@ -10,13 +10,14 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
+import { ViewTransition } from "react";
 import { DevHotReload } from "@/components/dev-hot-reload";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { font_variables } from "./fonts";
-import { ViewTransition } from "react";
 
 export default function RootLayout({
   children,
@@ -41,6 +42,7 @@ export default function RootLayout({
           </ViewTransition>
         </ThemeProvider>
         {process.env.NODE_ENV === "development" && <DevHotReload />}
+        <Toaster />
       </body>
     </html>
   );
