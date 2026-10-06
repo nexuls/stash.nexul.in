@@ -29,27 +29,25 @@ export default function NavBar({
           <BreadcrumbItem>
             <BreadcrumbLink render={<Link href="/" />}>Home</BreadcrumbLink>
           </BreadcrumbItem>
-          <BreadcrumbItem>
-            {items.map((crumb, idx) => {
-              const isLast = idx === items.length - 1;
-              return (
-                <React.Fragment key={`${crumb.title}-${idx}`}>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    {isLast || !crumb.href ? (
-                      <BreadcrumbPage className="max-w-55 truncate text-muted-foreground font-medium">
-                        {crumb.title}
-                      </BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink render={<Link href={crumb.href} />}>
-                        {crumb.title}
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              );
-            })}
-          </BreadcrumbItem>
+          {items.map((crumb, idx) => {
+            const isLast = idx === items.length - 1;
+            return (
+              <React.Fragment key={`${crumb.title}-${idx}`}>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  {isLast || !crumb.href ? (
+                    <BreadcrumbPage className="max-w-55 truncate text-muted-foreground font-medium">
+                      {crumb.title}
+                    </BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink render={<Link href={crumb.href} />}>
+                      {crumb.title}
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </React.Fragment>
+            );
+          })}
         </BreadcrumbList>
       </Breadcrumb>
     </nav>
