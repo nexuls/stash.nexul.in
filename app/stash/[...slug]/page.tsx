@@ -14,23 +14,13 @@ import {
   ImageIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import * as React from "react";
 import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
+import NavBar from "@/components/navigation/docs-navbar";
 import { DocsPager } from "@/components/navigation/docs-pager";
-import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
 import { DocsToc } from "@/components/navigation/docs-toc";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import {
   getAllSlugs,
@@ -149,44 +139,11 @@ export default async function DocPage({ params }: DocPageProps) {
         {/* Main Document Content Column (Centered) */}
         <main
           id="main-content"
-          className="flex-1 min-w-0 px-4 py-8 sm:px-6 md:px-8 lg:px-10 max-w-[800px]"
+          className="flex-1 min-w-0 px-4 py-8 sm:px-6 md:px-8 lg:px-10 max-w-200"
         >
           <article className="prose dark:prose-invert max-w-none">
             {/* In-content Breadcrumb Navigation & Desktop Sidebar Trigger */}
-            <nav
-              aria-label="Breadcrumbs"
-              className="mb-4 not-prose flex items-center gap-1"
-            >
-              <DocsSidebarToggle />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink render={<Link href="/stash" />}>
-                      Stash
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  {breadcrumbs.map((crumb, idx) => {
-                    const isLast = idx === breadcrumbs.length - 1;
-                    return (
-                      <React.Fragment key={`${crumb.title}-${idx}`}>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                          {isLast || !crumb.href ? (
-                            <BreadcrumbPage className="max-w-[220px] truncate text-muted-foreground font-medium">
-                              {crumb.title}
-                            </BreadcrumbPage>
-                          ) : (
-                            <BreadcrumbLink render={<Link href={crumb.href} />}>
-                              {crumb.title}
-                            </BreadcrumbLink>
-                          )}
-                        </BreadcrumbItem>
-                      </React.Fragment>
-                    );
-                  })}
-                </BreadcrumbList>
-              </Breadcrumb>
-            </nav>
+            <NavBar items={breadcrumbs} />
 
             {/* Article Header & Metadata */}
             <header className="mb-8 space-y-4 not-prose">
@@ -325,7 +282,7 @@ export default async function DocPage({ params }: DocPageProps) {
         {/* Right Rail: Desktop Scroll-Aware Table of Contents */}
         <aside
           aria-label="Table of contents navigation"
-          className="hidden xl:block w-[240px] shrink-0 px-4 py-8 border-l border-border/40"
+          className="hidden xl:block w-60 shrink-0 px-4 py-8 border-l border-border/40"
         >
           <div className="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
             <DocsToc headings={entry.headings} />

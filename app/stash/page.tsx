@@ -9,17 +9,9 @@ import { ArrowRight, Calendar, Clock, FolderOpen, Layers } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
-import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
+import NavBar from "@/components/navigation/docs-navbar";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -52,25 +44,10 @@ export default async function StashIndexPage() {
 
       <main
         id="main-content"
-        className="flex-1 w-full max-w-[840px] px-4 py-8 sm:px-6 md:px-8 mx-auto"
+        className="flex-1 w-full max-w-210 px-4 py-8 sm:px-6 md:px-8 mx-auto"
       >
         {/* In-content Breadcrumb Navigation & Desktop Sidebar Trigger */}
-        <nav aria-label="Breadcrumbs" className="mb-4 flex items-center gap-1">
-          <DocsSidebarToggle />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href="/" />}>Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-muted-foreground font-medium">
-                  Stash Archive
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </nav>
+        <NavBar items={[{ title: "Stash Archive" }]} />
 
         {/* Hero Section */}
         <section className="mb-10 space-y-4">
@@ -93,7 +70,10 @@ export default async function StashIndexPage() {
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             {firstEntry && (
-              <Button render={<Link href={firstEntry.permalink} />}>
+              <Button
+                nativeButton={false}
+                render={<Link href={firstEntry.permalink} />}
+              >
                 <span>Start Reading</span>
                 <ArrowRight className="size-4 ml-1.5" />
               </Button>
