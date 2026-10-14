@@ -84,7 +84,7 @@ export function DocsSidebar({
   }, [entries]);
 
   return (
-    <Sidebar>
+    <Sidebar className="border-none">
       {/* Sidebar Header: Logo, Title */}
       <SidebarHeader>
         <SidebarMenu>

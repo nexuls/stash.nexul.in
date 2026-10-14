@@ -7,6 +7,7 @@
 
 import type { Metadata } from "next";
 import { DocsSidebar } from "@/components/navigation/docs-sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getAllCategories, getAllEntries } from "@/lib/content/discovery";
 
@@ -41,7 +42,11 @@ export default async function StashLayout({
 
       <DocsSidebar entries={entries} categories={categories} />
 
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="bg-sidebar h-svh p-2 peer-data-[state=expanded]:pl-0 transition-[padding] duration-200">
+        <ScrollArea className="bg-background h-full p-2 overflow-clip rounded-2xl border">
+          {children}
+        </ScrollArea>
+      </SidebarInset>
     </SidebarProvider>
   );
 }
