@@ -1,13 +1,13 @@
 /**
  * Documentation root layout for Stash.
  *
- * Configures the shadcn SidebarProvider, server-side content taxonomy discovery,
- * accessible skip-links, and the centered Fumadocs-style layout container.
+ * Configures the shadcn SidebarProvider with the standard Sidebar + SidebarInset
+ * layout, server-side content taxonomy discovery, and accessible skip-links.
  */
 
 import type { Metadata } from "next";
 import { DocsSidebar } from "@/components/navigation/docs-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getAllCategories, getAllEntries } from "@/lib/content/discovery";
 
 export const metadata: Metadata = {
@@ -39,15 +39,9 @@ export default async function StashLayout({
         Skip to main content
       </a>
 
-      {/* Centered layout wrapper: pushes sidebar near content with outer margins on wide screens */}
-      <div className="min-h-screen w-full flex justify-center bg-background text-foreground overflow-x-clip">
-        <div className="flex w-full max-w-[1400px] justify-center relative min-h-screen">
-          <DocsSidebar entries={entries} categories={categories} />
-          <div className="flex-1 min-w-0 flex flex-col items-center transition-all duration-300 ease-in-out">
-            {children}
-          </div>
-        </div>
-      </div>
+      <DocsSidebar entries={entries} categories={categories} />
+
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
 }

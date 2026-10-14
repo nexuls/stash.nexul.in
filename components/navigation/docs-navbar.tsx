@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 
 export default function NavBar({
   items,
@@ -21,9 +22,10 @@ export default function NavBar({
   return (
     <nav
       aria-label="Breadcrumbs"
-      className="mb-4 not-prose flex items-center gap-1"
+      className="mb-4 not-prose flex items-center gap-2"
     >
       <DocsSidebarToggle />
+      <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

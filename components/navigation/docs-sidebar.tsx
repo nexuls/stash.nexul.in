@@ -1,193 +1,260 @@
 "use client";
 
 /**
- * Documentation navigation sidebar supporting:
- * 1. Centered in-flow desktop sidebar with smooth width transition & left background fill
- * 2. Graceful conversion to floating pop-out sidebar on cursor hover when closed
- * 3. Mobile sheet drawer on small screens
+ * Documentation navigation sidebar using standard shadcn Sidebar primitives.
+ *
+ * Renders the sidebar with header, search, category navigation tree, and footer.
+ * Uses shadcn's built-in mobile sheet drawer and desktop sidebar behaviors.
  */
 
-import * as React from "react";
-import { DocsSidebarContent } from "@/components/navigation/docs-sidebar-content";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { useSidebar } from "@/components/ui/sidebar";
+  Archive,
+  BookOpen,
+  ChevronRight,
+  FileText,
+  FolderOpen,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import * as React from "react";
+import { SearchTrigger } from "@/components/search/search-trigger";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
 import type { ContentCategory, ContentEntry } from "@/lib/content/types";
-import { cn } from "@/lib/utils";
+import { siteConfig } from "@/lib/site-config";
 
 interface DocsSidebarProps {
   entries: ContentEntry[];
   categories: ContentCategory[];
   currentSlug?: string;
-  className?: string;
 }
 
 export function DocsSidebar({
   entries,
-  categories,
+  categories: _categories,
   currentSlug,
-  className,
 }: DocsSidebarProps) {
-  const { open, setOpen, openMobile, setOpenMobile, isMobile } = useSidebar();
-  const [isFloatingOpen, setIsFloatingOpen] = React.useState(false);
-  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const pathname = usePathname();
 
-  // Clear hover timeout on unmount
-  React.useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    };
-  }, []);
+  // Group entries by top-level category → subCategory → entries
+  const categorizedEntries = React.useMemo(() => {
+    const map = new Map<string, Map<string, ContentEntry[]>>();
 
-  // When user collapses fixed sidebar, gracefully transition into floating mode
-  const handleCollapse = () => {
-    setOpen(false);
-    setIsFloatingOpen(true);
-  };
+    for (const entry of entries) {
+      const topCategory = entry.categories[0] || entry.category || "general";
+      const subCategory =
+        entry.categories.length > 1 ? entry.categories[1] : "default";
 
-  // When user pins floating sidebar, convert back to fixed docked mode
-  const handlePin = () => {
-    setOpen(true);
-    setIsFloatingOpen(false);
-  };
+      let subMap = map.get(topCategory);
+      if (!subMap) {
+        subMap = new Map();
+        map.set(topCategory, subMap);
+      }
 
-  // Window mouse listener when sidebar is closed on desktop
-  React.useEffect(() => {
-    if (open || isMobile) {
-      setIsFloatingOpen(false);
-      return;
+      let subList = subMap.get(subCategory);
+      if (!subList) {
+        subList = [];
+        subMap.set(subCategory, subList);
+      }
+      subList.push(entry);
     }
 
-    const handleMouseMove = (e: MouseEvent) => {
-      // Trigger floating sidebar when cursor is within 40px of left screen edge
-      if (e.clientX <= 40) {
-        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-        setIsFloatingOpen(true);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isFloatingOpen) {
-        setIsFloatingOpen(false);
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, isMobile, isFloatingOpen]);
-
-  const handleFloatingMouseEnter = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    setIsFloatingOpen(true);
-  };
-
-  const handleFloatingMouseLeave = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    hoverTimeoutRef.current = setTimeout(() => {
-      setIsFloatingOpen(false);
-    }, 250);
-  };
+    return map;
+  }, [entries]);
 
   return (
-    <>
-      {/* 1. Desktop In-flow Sidebar Slot */}
-      {/* Contains smooth width collapse/expand transition and left-edge background fill */}
-      {!isMobile && (
-        <aside
-          className={cn(
-            "hidden md:flex flex-col shrink-0 sticky top-0 h-screen transition-[width,opacity] duration-300 ease-in-out",
-            open
-              ? "w-70 opacity-100 pointer-events-auto"
-              : "w-0 opacity-0 pointer-events-none overflow-hidden",
-            className,
-          )}
-          aria-hidden={!open}
-        >
-          {/* Left background fill: fills from the left edge of the viewport to the sidebar's right border */}
-          <div
-            className={cn(
-              "absolute inset-y-0 right-0 w-screen bg-sidebar/50 border-r border-sidebar-border -z-10 pointer-events-none transition-opacity duration-300 ease-in-out",
-              open ? "opacity-100" : "opacity-0",
-            )}
-          />
+    <Sidebar>
+      {/* Sidebar Header: Logo, Title */}
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" render={<Link href="/stash" />}>
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+                <Archive className="size-4" />
+              </div>
+              <div className="flex flex-col gap-0.5 leading-none">
+                <span className="font-semibold">{siteConfig.name}</span>
+                <Badge
+                  variant="secondary"
+                  className="w-fit text-[10px] px-1.5 py-0 font-mono"
+                >
+                  v0.1
+                </Badge>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
 
-          {/* Docked Sidebar Content Container (retains fixed width during slot animation) */}
-          <div className="w-70 h-full flex flex-col">
-            <DocsSidebarContent
-              entries={entries}
-              categories={categories}
-              currentSlug={currentSlug}
-              onCollapse={handleCollapse}
-            />
-          </div>
-        </aside>
-      )}
+        {/* Search Trigger */}
+        <SearchTrigger variant="sidebar" />
+      </SidebarHeader>
 
-      {/* 2. Desktop Floating Sidebar (When closed / hovering / gracefully converting) */}
-      {!isMobile && !open && (
-        <>
-          {/* Left edge hover detector strip */}
-          <div
-            className="fixed inset-y-0 left-0 w-8 z-40 cursor-e-resize"
-            onMouseEnter={handleFloatingMouseEnter}
-            aria-hidden="true"
-          />
+      <SidebarSeparator />
 
-          {/* Floating Sidebar Card */}
-          <aside
-            className={cn(
-              "fixed left-2 top-2 bottom-2 z-50 w-70 rounded-2xl border border-sidebar-border bg-sidebar/50 backdrop-blur-md shadow-2xl transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
-              isFloatingOpen
-                ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
-                : "-translate-x-[calc(100%+2rem)] opacity-0 scale-95 pointer-events-none",
-            )}
-            onMouseEnter={handleFloatingMouseEnter}
-            onMouseLeave={handleFloatingMouseLeave}
-            aria-label="Floating navigation sidebar"
+      {/* Scrollable Navigation Tree */}
+      <SidebarContent>
+        {/* Archive Index */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href="/stash" />}
+                  isActive={pathname === "/stash"}
+                >
+                  <BookOpen className="size-4" />
+                  <span>Archive Index</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Dynamic Category Sections */}
+        {Array.from(categorizedEntries.entries()).map(
+          ([categoryKey, subMap]) => {
+            const formattedCategoryName = categoryKey
+              .split("-")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" ");
+
+            return (
+              <SidebarGroup key={categoryKey}>
+                <SidebarGroupLabel>
+                  <FolderOpen className="size-3" />
+                  <span>{formattedCategoryName}</span>
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {Array.from(subMap.entries()).map(
+                      ([subKey, subEntries]) => {
+                        const hasSubcategory = subKey !== "default";
+
+                        if (hasSubcategory) {
+                          const formattedSubName = subKey
+                            .split("-")
+                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                            .join(" ");
+
+                          return (
+                            <Collapsible
+                              key={subKey}
+                              defaultOpen
+                              className="group/collapsible"
+                            >
+                              <SidebarMenuItem>
+                                <CollapsibleTrigger
+                                  render={
+                                    <SidebarMenuButton>
+                                      <FolderOpen className="size-4" />
+                                      <span>{formattedSubName}</span>
+                                      <ChevronRight className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                                    </SidebarMenuButton>
+                                  }
+                                />
+                                <CollapsibleContent>
+                                  <SidebarMenuSub>
+                                    {subEntries.map((entry) => {
+                                      const isActive =
+                                        currentSlug === entry.slug ||
+                                        pathname === entry.permalink;
+                                      return (
+                                        <SidebarMenuSubItem key={entry.slug}>
+                                          <SidebarMenuSubButton
+                                            render={
+                                              <Link href={entry.permalink} />
+                                            }
+                                            isActive={isActive}
+                                          >
+                                            <span>{entry.title}</span>
+                                          </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                      );
+                                    })}
+                                  </SidebarMenuSub>
+                                </CollapsibleContent>
+                              </SidebarMenuItem>
+                            </Collapsible>
+                          );
+                        }
+
+                        // Root entries in category (no subcategory)
+                        return subEntries.map((entry) => {
+                          const isActive =
+                            currentSlug === entry.slug ||
+                            pathname === entry.permalink;
+
+                          return (
+                            <SidebarMenuItem key={entry.slug}>
+                              <SidebarMenuButton
+                                render={<Link href={entry.permalink} />}
+                                isActive={isActive}
+                              >
+                                <FileText className="size-4" />
+                                <span>{entry.title}</span>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        });
+                      },
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          },
+        )}
+      </SidebarContent>
+
+      {/* Sidebar Footer: GitHub Link and Theme Toggle */}
+      <SidebarFooter>
+        <div className="flex items-center justify-between">
+          <a
+            href={siteConfig.links.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            aria-label="View source repository on GitHub"
+            title="GitHub Repository"
           >
-            <DocsSidebarContent
-              entries={entries}
-              categories={categories}
-              currentSlug={currentSlug}
-              isFloating={true}
-              onPin={handlePin}
-              onNavigate={() => {
-                setIsFloatingOpen(false);
-              }}
-            />
-          </aside>
-        </>
-      )}
+            <span className="sr-only">GitHub</span>
+            <svg
+              className="size-4 fill-current"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+              />
+            </svg>
+          </a>
 
-      {/* 3. Mobile Sheet Drawer */}
-      {isMobile && (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-          <SheetContent
-            side="left"
-            className="w-70 p-0 bg-sidebar/50 border-sidebar-border text-sidebar-foreground"
-          >
-            <SheetHeader className="sr-only">
-              <SheetTitle>Navigation Menu</SheetTitle>
-              <SheetDescription>Browse documentation topics</SheetDescription>
-            </SheetHeader>
-            <DocsSidebarContent
-              entries={entries}
-              categories={categories}
-              currentSlug={currentSlug}
-              onNavigate={() => setOpenMobile(false)}
-            />
-          </SheetContent>
-        </Sheet>
-      )}
-    </>
+          <ThemeToggle variant="compact" />
+        </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 }

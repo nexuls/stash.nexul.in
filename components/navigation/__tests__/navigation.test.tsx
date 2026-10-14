@@ -144,24 +144,24 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
 });
 
 describe("Documentation Sidebar Toggle (DocsSidebarToggle)", () => {
-  it("renders toggle button when sidebar is collapsed", () => {
+  it("renders toggle button within sidebar provider", () => {
     const html = renderStatic(
       <SidebarProvider defaultOpen={false}>
         <DocsSidebarToggle />
       </SidebarProvider>,
     );
 
-    expect(html).toContain("Expand and pin sidebar");
+    expect(html).toContain("Toggle Sidebar");
   });
 
-  it("does not render toggle button when sidebar is open", () => {
+  it("renders toggle button when sidebar is open", () => {
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
         <DocsSidebarToggle />
       </SidebarProvider>,
     );
 
-    expect(html).not.toContain("Expand and pin sidebar");
+    expect(html).toContain("Toggle Sidebar");
   });
 });
 
