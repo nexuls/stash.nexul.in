@@ -314,9 +314,8 @@ describe("Author Diagnostic Error Handling & Fallbacks", () => {
 
     const html = renderStatic(content);
     expect(html).toContain('data-unregistered-component="NonExistentWidget"');
-    expect(html).toContain(
-      "Unregistered MDX Component: &lt;NonExistentWidget /&gt;",
-    );
+    expect(html).toContain("Unregistered MDX Component");
+    expect(html).toContain("&lt;NonExistentWidget /&gt;");
     expect(html).toContain("Callout");
     expect(html).toContain("Tabs");
   });

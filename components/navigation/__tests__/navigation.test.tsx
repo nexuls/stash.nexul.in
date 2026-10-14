@@ -134,7 +134,8 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
     );
 
     expect(html).toContain("Stash");
-    expect(html).toContain("Archive Index");
+    expect(html).toContain("Archive Home");
+    expect(html).toContain("Domain");
     expect(html).toContain("GitHub");
     // Theme toggle buttons in sidebar footer
     expect(html).toContain("Light theme");

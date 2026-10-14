@@ -3,27 +3,23 @@
 /**
  * Documentation navigation sidebar using standard shadcn Sidebar primitives.
  *
- * Renders the sidebar with header, search, category navigation tree, and footer.
- * Uses shadcn's built-in mobile sheet drawer and desktop sidebar behaviors.
+ * Scoped to the currently active knowledge domain, with a top domain switcher
+ * dropdown, collapsible subcategory groups, and search integration.
  */
 
-import {
-  Archive,
-  BookOpen,
-  ChevronRight,
-  FileText,
-  FolderOpen,
-} from "lucide-react";
+import { Archive, Home } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
+import { GitHubIcon } from "@/components/icons/github-icon";
+import {
+  type DomainItem,
+  DomainSwitcher,
+} from "@/components/navigation/domain-switcher";
+import { SidebarCollapsibleGroup } from "@/components/navigation/sidebar-collapsible-group";
+import { SidebarEntryItem } from "@/components/navigation/sidebar-entry-item";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { ThemeToggle } from "@/components/theme-toggle";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -35,9 +31,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -57,44 +50,113 @@ export function DocsSidebar({
 }: DocsSidebarProps) {
   const pathname = usePathname();
 
-  // Group entries by top-level category → subCategory → entries
-  const categorizedEntries = React.useMemo(() => {
-    const map = new Map<string, Map<string, ContentEntry[]>>();
+  // Extract all available domains from entries
+  const domains: DomainItem[] = React.useMemo(() => {
+    const domainMap = new Map<
+      string,
+      { count: number; firstEntry?: ContentEntry }
+    >();
 
     for (const entry of entries) {
-      const topCategory = entry.categories[0] || entry.category || "general";
+      const domainKey = entry.categories[0] || entry.category || "general";
+      const existing = domainMap.get(domainKey) || { count: 0 };
+      existing.count += 1;
+      if (!existing.firstEntry) {
+        existing.firstEntry = entry;
+      }
+      domainMap.set(domainKey, existing);
+    }
+
+    return Array.from(domainMap.entries()).map(([slug, data]) => {
+      const formattedName = slug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      return {
+        slug,
+        name: formattedName,
+        count: data.count,
+        firstEntryPermalink: data.firstEntry?.permalink || `/stash/${slug}`,
+      };
+    });
+  }, [entries]);
+
+  // Derive initial active domain from pathname or currentSlug
+  const getDomainFromPath = React.useCallback(
+    (path: string | undefined): string => {
+      if (!path) return domains[0]?.slug || "react";
+
+      // If currentSlug is provided e.g. "react/hooks/use-debounce"
+      if (currentSlug) {
+        const parts = currentSlug.split("/");
+        if (parts[0]) return parts[0];
+      }
+
+      // If matching from pathname e.g. "/stash/react/hooks/use-debounce"
+      const cleanPath = path.replace(/^\/stash\/?/, "").replace(/^\//, "");
+      const segments = cleanPath.split("/");
+      if (segments[0] && domains.some((d) => d.slug === segments[0])) {
+        return segments[0];
+      }
+
+      return domains[0]?.slug || "react";
+    },
+    [domains, currentSlug],
+  );
+
+  const [activeDomainSlug, setActiveDomainSlug] = React.useState<string>(() =>
+    getDomainFromPath(pathname),
+  );
+
+  // Sync active domain when route changes
+  React.useEffect(() => {
+    const matched = getDomainFromPath(pathname);
+    if (matched && matched !== activeDomainSlug) {
+      setActiveDomainSlug(matched);
+    }
+  }, [pathname, getDomainFromPath, activeDomainSlug]);
+
+  // Group entries for ONLY the active domain: subCategory -> entries
+  const activeDomainSubMap = React.useMemo(() => {
+    const subMap = new Map<string, ContentEntry[]>();
+
+    for (const entry of entries) {
+      const domainKey = entry.categories[0] || entry.category || "general";
+      if (domainKey !== activeDomainSlug) {
+        continue;
+      }
+
       const subCategory =
         entry.categories.length > 1 ? entry.categories[1] : "default";
 
-      let subMap = map.get(topCategory);
-      if (!subMap) {
-        subMap = new Map();
-        map.set(topCategory, subMap);
-      }
-
-      let subList = subMap.get(subCategory);
-      if (!subList) {
-        subList = [];
-        subMap.set(subCategory, subList);
-      }
+      const subList = subMap.get(subCategory) || [];
       subList.push(entry);
+      subMap.set(subCategory, subList);
     }
 
-    return map;
-  }, [entries]);
+    return subMap;
+  }, [entries, activeDomainSlug]);
+
+  const activeDomainInfo = domains.find((d) => d.slug === activeDomainSlug);
 
   return (
     <Sidebar className="border-none overflow-clip py-2 bg-sidebar">
-      {/* Sidebar Header: Logo, Title */}
-      <SidebarHeader>
+      {/* Sidebar Header: Logo, Toggle, Domain Switcher, and Search */}
+      <SidebarHeader className="space-y-2">
         <SidebarMenu className="flex flex-row items-center justify-between">
-          <SidebarMenuItem className="flex items-center gap-2 p-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-              <Archive className="size-4" />
-            </div>
-            <div className="leading-none">
-              <span className="font-semibold">{siteConfig.name}</span>
-            </div>
+          <SidebarMenuItem>
+            <Link
+              href="/"
+              className="flex items-center gap-2 p-1.5 font-semibold text-foreground transition-opacity hover:opacity-85"
+            >
+              <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+                <Archive className="size-4" />
+              </div>
+              <span className="text-sm font-semibold tracking-tight">
+                {siteConfig.name}
+              </span>
+            </Link>
           </SidebarMenuItem>
 
           <SidebarMenuItem>
@@ -102,150 +164,92 @@ export function DocsSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
 
+        {/* Domain Switcher Dropdown on top of sidebar */}
+        <DomainSwitcher
+          domains={domains}
+          activeDomainSlug={activeDomainSlug}
+          onSelectDomain={setActiveDomainSlug}
+        />
+
         {/* Search Trigger */}
         <SearchTrigger variant="sidebar" />
       </SidebarHeader>
 
-      <SidebarSeparator />
+      <SidebarSeparator className="mx-0 my-1" />
 
-      {/* Scrollable Navigation Tree */}
+      {/* Scrollable Navigation Tree for Active Domain */}
       <SidebarContent>
-        {/* Archive Index */}
         <SidebarGroup>
+          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {activeDomainInfo?.name || "Navigation"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link href="/stash" />}
-                  isActive={pathname === "/stash"}
-                >
-                  <BookOpen className="size-4" />
-                  <span>Archive Index</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {Array.from(activeDomainSubMap.entries()).map(
+                ([subKey, subEntries]) => {
+                  const hasSubcategory = subKey !== "default";
+
+                  if (hasSubcategory) {
+                    const formattedSubName = subKey
+                      .split("-")
+                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+
+                    return (
+                      <SidebarCollapsibleGroup
+                        key={subKey}
+                        title={formattedSubName}
+                        entries={subEntries}
+                        currentSlug={currentSlug}
+                        pathname={pathname}
+                        defaultOpen={true}
+                      />
+                    );
+                  }
+
+                  // Root entries in active domain
+                  return subEntries.map((entry) => (
+                    <SidebarEntryItem
+                      key={entry.slug}
+                      entry={entry}
+                      currentSlug={currentSlug}
+                      pathname={pathname}
+                    />
+                  ));
+                },
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Dynamic Category Sections */}
-        {Array.from(categorizedEntries.entries()).map(
-          ([categoryKey, subMap]) => {
-            const formattedCategoryName = categoryKey
-              .split("-")
-              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(" ");
-
-            return (
-              <SidebarGroup key={categoryKey}>
-                <SidebarGroupLabel>
-                  <FolderOpen className="size-3" />
-                  <span>{formattedCategoryName}</span>
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {Array.from(subMap.entries()).map(
-                      ([subKey, subEntries]) => {
-                        const hasSubcategory = subKey !== "default";
-
-                        if (hasSubcategory) {
-                          const formattedSubName = subKey
-                            .split("-")
-                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                            .join(" ");
-
-                          return (
-                            <Collapsible
-                              key={subKey}
-                              defaultOpen
-                              className="group/collapsible"
-                            >
-                              <SidebarMenuItem>
-                                <CollapsibleTrigger
-                                  render={
-                                    <SidebarMenuButton>
-                                      <FolderOpen className="size-4" />
-                                      <span>{formattedSubName}</span>
-                                      <ChevronRight className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                    </SidebarMenuButton>
-                                  }
-                                />
-                                <CollapsibleContent>
-                                  <SidebarMenuSub>
-                                    {subEntries.map((entry) => {
-                                      const isActive =
-                                        currentSlug === entry.slug ||
-                                        pathname === entry.permalink;
-                                      return (
-                                        <SidebarMenuSubItem key={entry.slug}>
-                                          <SidebarMenuSubButton
-                                            render={
-                                              <Link href={entry.permalink} />
-                                            }
-                                            isActive={isActive}
-                                          >
-                                            <span>{entry.title}</span>
-                                          </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                      );
-                                    })}
-                                  </SidebarMenuSub>
-                                </CollapsibleContent>
-                              </SidebarMenuItem>
-                            </Collapsible>
-                          );
-                        }
-
-                        // Root entries in category (no subcategory)
-                        return subEntries.map((entry) => {
-                          const isActive =
-                            currentSlug === entry.slug ||
-                            pathname === entry.permalink;
-
-                          return (
-                            <SidebarMenuItem key={entry.slug}>
-                              <SidebarMenuButton
-                                render={<Link href={entry.permalink} />}
-                                isActive={isActive}
-                              >
-                                <FileText className="size-4" />
-                                <span>{entry.title}</span>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          );
-                        });
-                      },
-                    )}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            );
-          },
-        )}
       </SidebarContent>
 
-      {/* Sidebar Footer: GitHub Link and Theme Toggle */}
+      <SidebarSeparator className="mx-0 my-1" />
+
+      {/* Sidebar Footer: Home link, GitHub repo, and Theme Toggle */}
       <SidebarFooter>
-        <div className="flex items-center justify-between">
+        <SidebarMenu className="mb-1">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link href="/" />}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Home className="size-4" />
+              <span>Archive Home</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
+        <div className="flex items-center justify-between pt-1">
           <a
             href={siteConfig.links.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             aria-label="View source repository on GitHub"
             title="GitHub Repository"
           >
             <span className="sr-only">GitHub</span>
-            <svg
-              className="size-4 fill-current"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-              />
-            </svg>
+            <GitHubIcon className="size-4" />
           </a>
 
           <ThemeToggle variant="compact" />
