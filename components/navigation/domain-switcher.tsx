@@ -90,11 +90,11 @@ export function DomainSwitcher({
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Knowledge Domains
-            </DropdownMenuLabel>
-
             <DropdownMenuGroup className="space-y-0.5">
+              <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Knowledge Domains
+              </DropdownMenuLabel>
+
               {domains.map((domain) => {
                 const isSelected = domain.slug === activeDomain.slug;
                 const Icon = getDomainIcon(domain.name);
