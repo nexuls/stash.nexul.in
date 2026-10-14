@@ -19,7 +19,6 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
@@ -40,6 +39,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarSeparator,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import type { ContentCategory, ContentEntry } from "@/lib/content/types";
 import { siteConfig } from "@/lib/site-config";
@@ -84,25 +84,21 @@ export function DocsSidebar({
   }, [entries]);
 
   return (
-    <Sidebar className="border-none">
+    <Sidebar className="border-none overflow-clip py-2 bg-sidebar">
       {/* Sidebar Header: Logo, Title */}
       <SidebarHeader>
-        <SidebarMenu>
+        <SidebarMenu className="flex flex-row items-center justify-between">
+          <SidebarMenuItem className="flex items-center gap-2 p-2">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+              <Archive className="size-4" />
+            </div>
+            <div className="leading-none">
+              <span className="font-semibold">{siteConfig.name}</span>
+            </div>
+          </SidebarMenuItem>
+
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/stash" />}>
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                <Archive className="size-4" />
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">{siteConfig.name}</span>
-                <Badge
-                  variant="secondary"
-                  className="w-fit text-[10px] px-1.5 py-0 font-mono"
-                >
-                  v0.1
-                </Badge>
-              </div>
-            </SidebarMenuButton>
+            <SidebarTrigger size="icon-lg" />
           </SidebarMenuItem>
         </SidebarMenu>
 

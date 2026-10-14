@@ -9,11 +9,10 @@ import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsSidebar } from "@/components/navigation/docs-sidebar";
-import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
 import { DocsToc } from "@/components/navigation/docs-toc";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   getAllCategories,
   getAllEntries,
@@ -143,11 +142,11 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
   });
 });
 
-describe("Documentation Sidebar Toggle (DocsSidebarToggle)", () => {
+describe("Sidebar Trigger (SidebarTrigger)", () => {
   it("renders toggle button within sidebar provider", () => {
     const html = renderStatic(
       <SidebarProvider defaultOpen={false}>
-        <DocsSidebarToggle />
+        <SidebarTrigger />
       </SidebarProvider>,
     );
 
@@ -157,7 +156,7 @@ describe("Documentation Sidebar Toggle (DocsSidebarToggle)", () => {
   it("renders toggle button when sidebar is open", () => {
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebarToggle />
+        <SidebarTrigger />
       </SidebarProvider>,
     );
 

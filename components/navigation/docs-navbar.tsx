@@ -1,6 +1,5 @@
 import Link from "next/link";
 import React from "react";
-import { DocsSidebarToggle } from "@/components/navigation/docs-sidebar-toggle";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,7 +23,6 @@ export default function NavBar({
       aria-label="Breadcrumbs"
       className="mb-4 not-prose flex items-center gap-2"
     >
-      <DocsSidebarToggle />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumb>
         <BreadcrumbList>
