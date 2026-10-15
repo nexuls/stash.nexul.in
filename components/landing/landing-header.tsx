@@ -55,7 +55,7 @@ export function LandingHeader() {
             <GitHubIcon className="size-4" />
           </a>
 
-          <ThemeToggle variant="compact" />
+          <ThemeToggle variant="compact" showSystem />
         </div>
       </div>
     </header>
