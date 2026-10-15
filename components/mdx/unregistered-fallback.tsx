@@ -1,12 +1,13 @@
 /**
- * Author-facing fallback for unregistered MDX components.
+ * Author-facing fallback for a component tag MDX cannot resolve.
  *
- * Renders a descriptive diagnostic banner when an author uses a component tag
- * in MDX that has not been registered in the component registry, preventing
- * silent failures or obscure React runtime crashes.
+ * Renders in place of the tag instead of throwing, and reports the props that
+ * were passed and the tags that do exist, which is usually enough to spot a
+ * misspelling without leaving the page.
  */
 
-import { Puzzle, Package, BookOpen } from "lucide-react";
+import { Puzzle } from "lucide-react";
+import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface UnregisteredComponentFallbackProps {
@@ -16,108 +17,71 @@ export interface UnregisteredComponentFallbackProps {
   className?: string;
 }
 
+/** Formats a prop for display without failing on values JSON cannot encode. */
+function formatPropValue(value: unknown): string {
+  if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "function") return "fn";
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
 export function UnregisteredComponentFallback({
   componentName,
-  availableComponents = ["Callout", "Tabs", "Tab", "Details", "CodeBlock"],
+  availableComponents = [],
   props,
   className,
 }: UnregisteredComponentFallbackProps) {
-  // Filter out internal React props for display
-  const passedPropKeys = props
-    ? Object.keys(props).filter(
-        (key) => key !== "children" && !key.startsWith("__"),
-      )
-    : [];
+  const passedProps = Object.entries(props ?? {}).filter(
+    ([key]) => key !== "children" && !key.startsWith("__"),
+  );
 
   return (
     <div
-      role="alert"
       data-unregistered-component={componentName}
+      style={{ "--callout": "var(--warn)" } as React.CSSProperties}
       className={cn(
-        "my-4 rounded-lg border border-amber-500/50 border-l-[3px] border-l-amber-500 bg-amber-500/10 p-5 text-foreground",
+        "stash-callout my-6 rounded-lg border border-l-[3px] px-4 py-3.5 text-[0.9375rem]",
         className,
       )}
     >
-      <div className="flex items-center gap-3">
-        <Puzzle className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div>
-          <p className="font-sans text-sm font-semibold text-amber-700 dark:text-amber-400">
-            Unregistered MDX Component
-          </p>
-          <p className="font-mono text-xs text-muted-foreground">
-            &lt;{componentName} /&gt;
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-3 flex items-center gap-1.5 font-sans text-xs text-muted-foreground">
-        <BookOpen className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-        This component was authored in the MDX file but has not been registered
-        in{" "}
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
-          components/mdx/registry.tsx
-        </code>
+      <p className="flex items-center gap-2 font-medium text-foreground">
+        <Puzzle className="stash-callout-mark size-4 shrink-0" aria-hidden />
+        <span className="tracking-tight">Unregistered MDX Component</span>
       </p>
 
-      {passedPropKeys.length > 0 && (
-        <div className="mt-4 space-y-2 border-t border-amber-500/20 pt-3">
-          <p className="text-xs font-semibold text-foreground">
-            Props passed:
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {passedPropKeys.map((k) => (
-              <span
-                key={k}
-                className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/5 px-2 py-1 font-mono text-[11px] text-muted-foreground"
-              >
-                <span className="font-semibold text-foreground">{k}</span>
-                <span className="text-amber-600 dark:text-amber-400">=</span>
-                {JSON.stringify(props?.[k])}
-              </span>
-            ))}
-          </div>
-        </div>
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        <code className="font-mono text-foreground">
+          &lt;{componentName} /&gt;
+        </code>{" "}
+        is used in this entry but is not registered in{" "}
+        <code className="font-mono text-foreground">
+          components/mdx/registry.tsx
+        </code>
+        .
+      </p>
+
+      {passedProps.length > 0 && (
+        <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs">
+          {passedProps.map(([key, value]) => (
+            <div key={key} className="flex gap-1">
+              <dt className="text-foreground">{key}</dt>
+              <dd className="text-muted-foreground">
+                {formatPropValue(value)}
+              </dd>
+            </div>
+          ))}
+        </dl>
       )}
 
-      <div className="mt-4 space-y-2 border-t border-amber-500/20 pt-3">
-        <p className="text-xs font-semibold text-foreground">
-          Resolution Guide
+      {availableComponents.length > 0 && (
+        <p className="mt-3 font-mono text-xs text-muted-foreground">
+          <span className="text-foreground">Registered: </span>
+          {availableComponents.join(", ")}
         </p>
-        <ol className="ml-5 list-decimal space-y-1 text-xs text-muted-foreground">
-          <li>
-            Create the{" "}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
-              {componentName}
-            </code>{" "}
-            component in your components directory
-          </li>
-          <li>
-            Register it in{" "}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
-              components/mdx/registry.tsx
-            </code>{" "}
-            by adding it to the components map
-          </li>
-        </ol>
-      </div>
-
-      <div className="mt-4 border-t border-amber-500/20 pt-3">
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-          <Package className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
-          Available Components
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {availableComponents.map((name) => (
-            <span
-              key={name}
-              className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/5 px-2.5 py-0.5 font-mono text-[11px] text-foreground"
-            >
-              <Package className="size-2.5 shrink-0 text-amber-600 dark:text-amber-400" />
-              {name}
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

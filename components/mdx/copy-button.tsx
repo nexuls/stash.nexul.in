@@ -1,17 +1,22 @@
 "use client";
 
 /**
- * Interactive copy-to-clipboard button for code blocks.
+ * Copy-to-clipboard control for code panels.
  *
- * Copies either an explicitly provided code string or reads textContent
- * from the neighboring `<pre><code>` element within the enclosing code figure.
- * Provides accessible feedback and visual state transition.
+ * Prefers an explicit `code` string; otherwise reads the neighbouring
+ * `<pre><code>` text. Line numbers are generated content, so they are never
+ * part of what gets copied either way.
+ *
+ * The button keeps a fixed footprint and swaps only the icon, so confirming a
+ * copy does not nudge the rest of the header.
  */
 
-import { Clipboard, ClipboardCheck } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
+
+/** How long the confirmed state stays visible. */
+const COPIED_FEEDBACK_MS = 2000;
 
 export interface CopyButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,25 +25,24 @@ export interface CopyButtonProps
 
 export function CopyButton({ code, className, ...props }: CopyButtonProps) {
   const [hasCopied, setHasCopied] = React.useState(false);
+  const timeout = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  React.useEffect(() => () => clearTimeout(timeout.current), []);
 
   const handleCopy = React.useCallback(
     async (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault();
-      event.stopPropagation();
 
       let textToCopy = code;
 
-      // If no explicit code string is provided, traverse DOM to find neighboring code block
       if (!textToCopy) {
-        const button = event.currentTarget;
         const container =
-          button.closest("[data-rehype-pretty-code-figure]") ||
-          button.closest(".stash-code-block");
-        const pre = container?.querySelector("pre");
-        const codeElement = pre?.querySelector("code") || pre;
-        if (codeElement) {
-          textToCopy = codeElement.textContent || "";
-        }
+          event.currentTarget.closest(".stash-code") ??
+          event.currentTarget.closest("[data-rehype-pretty-code-figure]");
+        const codeElement =
+          container?.querySelector("pre code") ??
+          container?.querySelector("pre");
+        textToCopy = codeElement?.textContent ?? "";
       }
 
       if (!textToCopy) return;
@@ -47,9 +51,10 @@ export function CopyButton({ code, className, ...props }: CopyButtonProps) {
         if (navigator?.clipboard?.writeText) {
           await navigator.clipboard.writeText(textToCopy);
         } else {
-          // Fallback for older browsers or non-secure contexts
+          // Clipboard API is unavailable outside secure contexts.
           const textarea = document.createElement("textarea");
           textarea.value = textToCopy;
+          textarea.setAttribute("readonly", "");
           textarea.style.position = "fixed";
           textarea.style.opacity = "0";
           document.body.appendChild(textarea);
@@ -59,40 +64,41 @@ export function CopyButton({ code, className, ...props }: CopyButtonProps) {
         }
 
         setHasCopied(true);
-        setTimeout(() => setHasCopied(false), 2000);
-      } catch (err) {
-        console.error("Failed to copy code to clipboard:", err);
+        clearTimeout(timeout.current);
+        timeout.current = setTimeout(
+          () => setHasCopied(false),
+          COPIED_FEEDBACK_MS,
+        );
+      } catch {
+        // Copying can be denied by permissions policy; the code stays selectable.
       }
     },
     [code],
   );
 
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
       onClick={handleCopy}
-      aria-label={
-        hasCopied ? "Code copied to clipboard" : "Copy code to clipboard"
-      }
-      title={hasCopied ? "Copied!" : "Copy code"}
+      aria-label={hasCopied ? "Copied" : "Copy code"}
+      title={hasCopied ? "Copied" : "Copy code"}
       className={cn(
-        "group/copy inline-flex h-7 items-center justify-center gap-1.5 rounded-md px-2 opacity-75 transition-all duration-200 hover:bg-muted/80 hover:opacity-100",
-        hasCopied && "text-emerald-500 hover:text-emerald-500",
+        "inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors",
+        "hover:bg-foreground/8 hover:text-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--code-header)]",
+        hasCopied && "text-tip hover:text-tip",
         className,
       )}
       {...props}
     >
       {hasCopied ? (
-        <>
-          <ClipboardCheck className="size-4 animate-in fade-in zoom-in-75 duration-150 transition-all duration-200" />
-          <span className="text-xs font-medium animate-in fade-in slide-in-from-left-1 duration-200">
-            Copied!
-          </span>
-        </>
+        <Check className="size-3.5 animate-in fade-in zoom-in-50 duration-150" />
       ) : (
-        <Clipboard className="size-3.5 transition-all duration-200" />
+        <Copy className="size-3.5" />
       )}
-    </Button>
+      <span aria-live="polite" className="sr-only">
+        {hasCopied ? "Code copied to clipboard" : ""}
+      </span>
+    </button>
   );
 }

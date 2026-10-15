@@ -167,6 +167,19 @@ export function extractHeadings(body: string): ContentHeading[] {
 }
 
 /**
+ * Splits a Markdown link destination from its optional title.
+ *
+ * `![alt](./diagram.svg "Caption")` carries the caption inside the parentheses;
+ * without this the title would be treated as part of the path and reported as
+ * a missing asset.
+ */
+export function splitLinkDestination(destination: string): string {
+  const trimmed = destination.trim();
+  const titled = trimmed.match(/^(\S+)\s+(?:"[^"]*"|'[^']*'|\([^)]*\))$/);
+  return titled ? titled[1] : trimmed;
+}
+
+/**
  * Classifies destination URL into internal, external, asset, or anchor.
  */
 export function classifyLink(href: string): {
@@ -276,7 +289,7 @@ export function extractLinks(
     const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     let imgMatch = imageRegex.exec(line);
     while (imgMatch !== null) {
-      const rawUrl = imgMatch[2].trim();
+      const rawUrl = splitLinkDestination(imgMatch[2]);
       const altText = imgMatch[1].trim();
       const { type, targetPath, targetAnchor } = classifyLink(rawUrl);
 
@@ -298,7 +311,7 @@ export function extractLinks(
     let mdMatch = mdLinkRegex.exec(line);
     while (mdMatch !== null) {
       const linkText = mdMatch[1].trim();
-      const rawUrl = mdMatch[2].trim();
+      const rawUrl = splitLinkDestination(mdMatch[2]);
       const { type, targetPath, targetAnchor } = classifyLink(rawUrl);
 
       const link = contentLinkSchema.parse({

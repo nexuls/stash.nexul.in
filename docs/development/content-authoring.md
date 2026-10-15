@@ -15,6 +15,10 @@ content/react/hooks/use-debounce/
 └── use-debounce.ts
 ```
 
+### The opening heading
+
+An entry's title comes from frontmatter, or from the document's first `# Heading`. The route renders that title above the body, so a `# Heading` that opens the document is removed before rendering rather than printed twice. Keep it in the file: it is what makes the entry readable on disk and on GitHub. A `#` further down the document is left alone.
+
 ### Hierarchy and slugs
 
 - **Directory path**: Defines the route slug after `/stash/`.
@@ -122,7 +126,7 @@ bun add next-mdx-remote-client
 
 ### Diff blocks
 
-Use the `diff` language identifier. Lines starting with `+` are highlighted in green, lines starting with `-` are highlighted in red:
+Use the `diff` language identifier. Lines are marked as additions or deletions while the document is compiled, and the panel header reports the shape of the change:
 
 ````markdown
 ```diff
@@ -130,6 +134,10 @@ Use the `diff` language identifier. Lines starting with `+` are highlighted in g
 + const timeout = 300;
 ```
 ````
+
+### What the panel header shows
+
+Every code block is rendered in a panel whose header reports the language, the file path when one is given, and the line count, or `+n -n` for a diff. The header also carries a soft-wrap toggle and a copy button. Blocks longer than 28 lines open collapsed, with a control to show the rest; line numbers are generated content and are never copied.
 
 ## Interactive MDX components
 
@@ -163,6 +171,14 @@ Renders an accessible callout box with semantic visual styling, icons, and ARIA 
 
 Supported types: `note` (default), `tip`, `warning`, `danger`, `important` (aliases `info` and `caution` are automatically normalized).
 
+Add `compact` for a one-sentence aside that does not need a heading:
+
+```mdx
+<Callout type="tip" compact>
+  Press <kbd>/</kbd> to jump to the sidebar filter.
+</Callout>
+```
+
 ### Tabs and Tab
 
 Tabbed containers for multi-language snippets or multi-tool workflows:
@@ -189,6 +205,12 @@ Tabbed containers for multi-language snippets or multi-tool workflows:
 
 Supports keyboard navigation (`ArrowLeft`, `ArrowRight`, `Home`, `End`) and accessible `tablist`/`tabpanel` semantics.
 
+Add a `group` to keep every Tabs block in the document on the same choice, so a reader who picks Bun once sees Bun throughout:
+
+```mdx
+<Tabs items={["Bun", "pnpm", "npm"]} group="package-manager">
+```
+
 ### Details
 
 Collapsible disclosure using native `<details>` and `<summary>` elements with an animated chevron:
@@ -213,6 +235,77 @@ Programmatically render code blocks with custom properties:
 />
 ```
 
+When the props are literals, the tag is lowered to a fenced code block before highlighting, so it renders exactly like a fence. A `code` prop computed at runtime cannot be lowered and renders without syntax highlighting; prefer a fence or a literal.
+
+### Steps and Step
+
+A numbered procedure. Use it when the order is part of the content; a plain ordered list is better when it is not.
+
+```mdx
+<Steps>
+  <Step title="Create the entry directory">
+    Directory names become the route.
+
+    ```bash
+    mkdir -p content/react/hooks/use-interval
+    ```
+  </Step>
+  <Step title="Write the document">
+    Frontmatter is optional.
+  </Step>
+</Steps>
+```
+
+### FileTree, Folder and File
+
+A directory listing with selectable names, rather than ASCII art in a code fence. `Folder` takes `defaultOpen`; both nodes take `highlight` to mark the subject of the surrounding prose, and `comment` for a short trailing note.
+
+```mdx
+<FileTree>
+  <Folder name="use-debounce" highlight>
+    <File name="README.mdx" highlight comment="the entry document" />
+    <File name="use-debounce.ts" />
+  </Folder>
+</FileTree>
+```
+
+### PropsTable
+
+The props of a component or the options of a function. Row text is plain text, not Markdown.
+
+```mdx
+<PropsTable
+  of="<Callout />"
+  rows={[
+    { name: "type", type: "string", default: "note", description: "Which notice to show." },
+    { name: "title", type: "string", description: "Replaces the default heading." },
+  ]}
+/>
+```
+
+### CardGrid and LinkCard
+
+A cross-reference that deserves a larger target than an inline link.
+
+```mdx
+<CardGrid>
+  <LinkCard
+    href="/stash/react/hooks/use-debounce"
+    eyebrow="react/hooks"
+    title="useDebounce"
+    description="Debouncing rapidly updating values."
+  />
+</CardGrid>
+```
+
+### Kbd
+
+A keyboard key. A `<kbd>` typed directly in the document renders identically, so either form is fine.
+
+```mdx
+Press <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> to open the command menu.
+```
+
 ## Error handling & author diagnostics
 
 - **Unregistered components**: If an unregistered component (e.g. `<UnknownWidget />`) is used, Stash renders an informative diagnostic banner displaying the missing component name, passed props, and available components rather than crashing the page.
@@ -224,7 +317,10 @@ Place code examples, schemas, and diagrams directly in the entry directory besid
 
 - **Code files**: `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.py`, `.sh`, `.css`, etc.
 - **Image assets**: `.svg`, `.png`, `.jpg`, `.webp`, `.avif`, etc.
-- **Reference syntax**: Use relative paths from `README.mdx` (e.g., `![Diagram](./debounce-diagram.svg)` or `[use-debounce.ts](./use-debounce.ts)`).
+- **Reference syntax**: Use relative paths from `README.mdx` (e.g., `![Diagram](./debounce-diagram.svg)` or `[use-debounce.ts](./use-debounce.ts)`). These are rewritten at compile time to resolve against the entry directory rather than the route.
+- **Serving**: Assets are served from `content/` by `app/content-assets/[...path]/route.ts`, prerendered at build time. Anything in an entry directory is public once discovered.
+- **Captions**: An image alone on its line becomes a figure and can carry a caption through the Markdown title: `![alt](./diagram.svg "How it fits together")`. An image inside a sentence stays inline.
+- **Figure background**: A figure sits on a light plate in both themes, so diagrams drawn with dark strokes stay readable in dark mode. Author diagrams for a light surface.
 - **Asset discovery**: Discovered automatically by `lib/content/assets.ts` and typed in entry metadata.
 
 ## Links and cross-references

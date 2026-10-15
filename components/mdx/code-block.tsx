@@ -1,16 +1,38 @@
 /**
  * Code presentation components for MDX.
  *
- * Implements code block containers, headers with filenames and language labels,
- * copy buttons, and mobile-safe overflow. Compatible with both rehype-pretty-code
- * generated figures and standalone <CodeBlock /> usage.
+ * `CodeFigure` intercepts the `<figure>` that rehype-pretty-code emits. All of
+ * the metadata it needs — language, title, line count, diff shape — has already
+ * been lifted onto the element by `rehypeCodeMeta`, so this is a pure function
+ * of its props rather than an inspection of its children.
+ *
+ * `CodeBlock` is the programmatic form, for authors who hold code in a prop
+ * instead of a fence. It emits the same line markup so the stylesheet treats
+ * both identically; it is not syntax highlighted, since highlighting happens in
+ * the compile pipeline.
  */
 
-import { FileCode2, SquareTerminal } from "lucide-react";
-import * as React from "react";
-import { CopyButton } from "@/components/mdx/copy-button";
+import type * as React from "react";
+import { CodePanel } from "@/components/mdx/code-panel";
 import { type CodeBlockProps, codeBlockPropsSchema } from "@/lib/mdx/types";
 import { cn } from "@/lib/utils";
+
+/** Languages presented as a terminal session rather than a source file. */
+const TERMINAL_LANGUAGES = new Set([
+  "bash",
+  "sh",
+  "shell",
+  "zsh",
+  "fish",
+  "powershell",
+  "ps1",
+  "console",
+  "terminal",
+]);
+
+export function isTerminalLanguage(language?: string): boolean {
+  return TERMINAL_LANGUAGES.has((language ?? "").toLowerCase().trim());
+}
 
 /**
  * Format language identifier into a clean presentation label.
@@ -58,63 +80,28 @@ export function formatLanguageLabel(lang?: string): string {
       return "SQL";
     case "html":
       return "HTML";
+    case "plaintext":
+    case "text":
+      return "Text";
     default:
       return clean.toUpperCase();
   }
 }
 
-/**
- * Inspect children to detect if a figcaption title exists.
- */
-function extractTitleFromChildren(children: React.ReactNode): {
-  title?: string;
-  remainingChildren: React.ReactNode;
-} {
-  let title: string | undefined;
-  const remaining: React.ReactNode[] = [];
-
-  React.Children.forEach(children, (child) => {
-    if (React.isValidElement(child) && child.type === "figcaption") {
-      const childProps = child.props as { children?: React.ReactNode };
-      if (typeof childProps.children === "string") {
-        title = childProps.children;
-      }
-    } else {
-      remaining.push(child);
-    }
-  });
-
-  return { title, remainingChildren: remaining };
+/** Reads a numeric data attribute that the rehype pass wrote as a string. */
+function numericProp(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-/**
- * Decorative macOS-style traffic light dots for code block headers.
- */
-function TrafficLights() {
-  return (
-    <div className="flex items-center gap-1.5" aria-hidden="true">
-      <span className="size-2.5 rounded-full bg-red-400/80" />
-      <span className="size-2.5 rounded-full bg-yellow-400/80" />
-      <span className="size-2.5 rounded-full bg-green-400/80" />
-    </div>
-  );
-}
+type FigureProps = React.ComponentPropsWithoutRef<"figure"> &
+  Record<string, unknown>;
 
 /**
- * Enhanced Figure component intercepting rehype-pretty-code figures.
+ * Figure wrapper for compiled code blocks, and a plain figure for anything else.
  */
-export function CodeFigure({
-  children,
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"figure">) {
-  // If not a rehype-pretty-code figure, pass through as normal figure
-  const isPrettyCode =
-    "data-rehype-pretty-code-figure" in props ||
-    (props as Record<string, unknown>)["data-rehype-pretty-code-figure"] !==
-      undefined;
-
-  if (!isPrettyCode) {
+export function CodeFigure({ children, className, ...props }: FigureProps) {
+  if (props["data-rehype-pretty-code-figure"] === undefined) {
     return (
       <figure className={cn("my-6", className)} {...props}>
         {children}
@@ -122,63 +109,31 @@ export function CodeFigure({
     );
   }
 
-  // Inspect pre element inside children to get language attribute
-  let language = "text";
-  React.Children.forEach(children, (child) => {
-    if (React.isValidElement(child)) {
-      const childProps = child.props as { "data-language"?: string };
-      if (childProps["data-language"]) {
-        language = childProps["data-language"];
-      }
-    }
-  });
-
-  const { title, remainingChildren } = extractTitleFromChildren(children);
-  const isTerminal = ["bash", "sh", "shell", "zsh"].includes(
-    language.toLowerCase(),
-  );
+  const language = String(props["data-language"] ?? "plaintext");
+  const rawTitle = props["data-title"];
 
   return (
-    <figure
-      data-rehype-pretty-code-figure=""
-      className={cn(
-        "stash-code-block group relative my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
-        className,
-      )}
-      {...props}
+    <CodePanel
+      language={language}
+      title={typeof rawTitle === "string" ? rawTitle : undefined}
+      terminal={
+        props["data-terminal"] !== undefined || isTerminalLanguage(language)
+      }
+      lineCount={numericProp(props["data-line-count"])}
+      additions={numericProp(props["data-diff-additions"])}
+      deletions={numericProp(props["data-diff-deletions"])}
+      className={className}
     >
-      {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-border/80 bg-muted/60 px-4 py-2 text-xs">
-        <div className="flex items-center gap-3 font-mono text-muted-foreground">
-          <TrafficLights />
-          {isTerminal ? (
-            <SquareTerminal className="size-3.5 text-primary" />
-          ) : (
-            <FileCode2 className="size-3.5 text-muted-foreground" />
-          )}
-          <span className="font-medium text-foreground">
-            {title ?? (isTerminal ? "Terminal" : formatLanguageLabel(language))}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {title && (
-            <span className="rounded-full bg-muted-foreground/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              {formatLanguageLabel(language)}
-            </span>
-          )}
-          <CopyButton />
-        </div>
-      </div>
-
-      {/* Code body */}
-      <div className="relative overflow-x-auto font-mono">{remainingChildren}</div>
-    </figure>
+      {children}
+    </CodePanel>
   );
 }
 
 /**
- * Enhanced Pre component for styled code block presentation and overflow control.
+ * The `<pre>` inside a code panel.
+ *
+ * Horizontal padding is deliberately absent: it belongs to the individual
+ * lines so that a highlighted line can span the full width of the panel.
  */
 export function Pre({
   children,
@@ -188,7 +143,8 @@ export function Pre({
   return (
     <pre
       className={cn(
-        "overflow-x-auto p-4 font-mono text-xs leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+        "overflow-x-auto font-mono text-[0.8125rem] leading-[1.7]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         className,
       )}
       {...props}
@@ -208,7 +164,6 @@ export function CodeBlock({
   showLineNumbers = false,
   highlightLines,
   className,
-  ...props
 }: CodeBlockProps) {
   const validation = codeBlockPropsSchema.safeParse({
     code,
@@ -219,98 +174,48 @@ export function CodeBlock({
     className,
   });
 
-  const lines = code.trim().split("\n");
-  const isTerminal = ["bash", "sh", "shell", "zsh"].includes(
-    language.toLowerCase(),
-  );
-  const gutterWidth = String(lines.length).length;
+  const lines = code.replace(/\n+$/, "").split("\n");
+  const digits = String(lines.length).length;
 
   return (
-    <div
-      className={cn(
-        "stash-code-block relative my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
-        className,
-      )}
-      {...props}
+    <CodePanel
+      language={language}
+      title={filename}
+      terminal={isTerminalLanguage(language)}
+      lineCount={lines.length}
+      code={code}
+      className={className}
     >
       {!validation.success && (
-        <div className="m-2 rounded border border-destructive/40 bg-destructive/10 p-2 font-mono text-xs text-destructive">
-          ⚠️ Malformed CodeBlock: {validation.error.issues[0]?.message}
-        </div>
+        <p className="border-b border-code-rule bg-destructive/10 px-4 py-2 font-mono text-xs text-destructive">
+          Malformed CodeBlock: {validation.error.issues[0]?.message}
+        </p>
       )}
-
-      {/* Header Bar */}
-      <div className="flex items-center justify-between border-b border-border/80 bg-muted/60 px-4 py-2 text-xs">
-        <div className="flex items-center gap-3 font-mono text-muted-foreground">
-          <TrafficLights />
-          {isTerminal ? (
-            <SquareTerminal className="size-3.5 text-primary" />
-          ) : (
-            <FileCode2 className="size-3.5 text-muted-foreground" />
-          )}
-          <span className="font-medium text-foreground">
-            {filename ??
-              (isTerminal ? "Terminal" : formatLanguageLabel(language))}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {filename && (
-            <span className="rounded-full bg-muted-foreground/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              {formatLanguageLabel(language)}
-            </span>
-          )}
-          <CopyButton code={code} />
-        </div>
-      </div>
-
-      {/* Pre Code Body */}
-      <pre
-        data-language={language}
-        className="overflow-x-auto p-4 font-mono text-xs leading-relaxed"
-      >
+      <Pre data-language={language}>
         <code
           data-language={language}
           data-line-numbers={showLineNumbers ? "" : undefined}
-          style={{ display: "grid" }}
+          style={
+            {
+              display: "grid",
+              "--stash-line-digits": digits,
+            } as React.CSSProperties
+          }
         >
-          {lines.map((line, index) => {
-            const lineNum = index + 1;
-            const isHighlighted = highlightLines?.includes(lineNum);
-            return (
-              <span
-                key={lineNum}
-                data-line=""
-                data-highlighted-line={isHighlighted ? "" : undefined}
-                className={cn(
-                  showLineNumbers
-                    ? "grid grid-cols-[auto_1fr] gap-4"
-                    : "px-2 py-0.5",
-                  isHighlighted &&
-                    !showLineNumbers &&
-                    "-ml-2 border-l-2 border-primary bg-primary/10 pl-[calc(0.5rem-2px)]",
-                  isHighlighted &&
-                    showLineNumbers &&
-                    "border-l-2 border-primary bg-primary/10",
-                )}
-              >
-                {showLineNumbers && (
-                  <span
-                    className="select-none border-r border-border/60 bg-muted/40 py-0.5 pr-3 text-right text-muted-foreground/50"
-                    style={{ minWidth: `${gutterWidth + 1}ch` }}
-                    aria-hidden="true"
-                  >
-                    {lineNum}
-                  </span>
-                )}
-                <span className={cn(showLineNumbers && "py-0.5 pl-4")}>
-                  {line || " "}
-                </span>
-              </span>
-            );
-          })}
+          {lines.map((line, index) => (
+            <span
+              // Line position is the identity here; the text may repeat.
+              key={`${index + 1}`}
+              data-line=""
+              data-highlighted-line={
+                highlightLines?.includes(index + 1) ? "" : undefined
+              }
+            >
+              {line || " "}
+            </span>
+          ))}
         </code>
-      </pre>
-    </div>
+      </Pre>
+    </CodePanel>
   );
 }

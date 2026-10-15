@@ -1,11 +1,14 @@
 /**
- * Author-facing MDX syntax and compilation error presentation.
+ * Author-facing MDX compilation failure.
  *
- * Renders actionable diagnostics when an MDX document cannot be evaluated,
- * showing the failure reason and resolution steps.
+ * A broken entry renders this in place of its body rather than failing the
+ * page, so the rest of the document and the navigation stay usable while the
+ * author fixes the source. It states the file, the compiler's own message, and
+ * what usually causes it.
  */
 
-import { CircleX, FileWarning, Wrench } from "lucide-react";
+import { OctagonAlert } from "lucide-react";
+import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface MdxErrorProps {
@@ -14,53 +17,48 @@ export interface MdxErrorProps {
   className?: string;
 }
 
+const COMMON_CAUSES = [
+  "An unclosed or mismatched JSX tag",
+  "An expression in braces that is not valid JavaScript",
+  "A component used with a lowercase name, which MDX treats as HTML",
+  "Indentation inside a component that Markdown reads as a code block",
+];
+
 export function MdxError({ error, sourcePath, className }: MdxErrorProps) {
-  const errorMessage = typeof error === "string" ? error : error.message;
+  const message = typeof error === "string" ? error : error.message;
 
   return (
     <div
-      role="alert"
+      style={{ "--callout": "var(--danger)" } as React.CSSProperties}
       className={cn(
-        "my-6 rounded-lg border border-destructive/50 border-l-[3px] border-l-destructive bg-destructive/10 p-5 text-destructive",
+        "stash-callout my-6 rounded-lg border border-l-[3px] px-4 py-3.5 text-[0.9375rem]",
         className,
       )}
     >
-      <div className="flex items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-destructive">
-          <CircleX className="size-3.5 shrink-0" />
-          MDX Error
-        </span>
-      </div>
-
-      <div className="mt-3 flex items-center gap-2 font-semibold">
-        <CircleX className="size-5 shrink-0" />
-        <span>Failed to render MDX document</span>
-      </div>
+      <p className="flex items-center gap-2 font-medium text-foreground">
+        <OctagonAlert
+          className="stash-callout-mark size-4 shrink-0"
+          aria-hidden
+        />
+        <span className="tracking-tight">This entry could not be compiled</span>
+      </p>
 
       {sourcePath && (
-        <p className="mt-3 flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-          <FileWarning className="size-3.5 shrink-0 text-destructive/70" />
-          Source: <span className="text-foreground">{sourcePath}</span>
+        <p className="mt-1 font-mono text-xs text-muted-foreground">
+          {sourcePath}
         </p>
       )}
 
-      <pre className="mt-4 max-h-60 overflow-x-auto rounded-md border border-destructive/20 bg-destructive/5 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-foreground dark:bg-destructive/10">
-        {errorMessage}
+      <pre className="mt-3 max-h-60 overflow-auto rounded-md border border-border bg-code px-3 py-2.5 font-mono text-xs leading-relaxed whitespace-pre-wrap text-foreground">
+        {message}
       </pre>
 
-      <div className="mt-4 space-y-2 border-t border-destructive/20 pt-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Wrench className="size-3.5 shrink-0 text-destructive/70" />
-          <span>Resolution Suggestions</span>
-        </div>
-        <ul className="ml-6 list-disc space-y-1 text-xs text-muted-foreground">
-          <li>Check for unclosed or malformed JSX tags</li>
-          <li>Verify all embedded expressions use valid JavaScript syntax</li>
-          <li>Ensure imported components are correctly registered</li>
-          <li>Look for unsupported or conflicting markdown syntax</li>
-          <li>Validate that frontmatter YAML is properly formatted</li>
-        </ul>
-      </div>
+      <p className="mt-3 text-sm text-muted-foreground">Usually caused by:</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-muted-foreground">
+        {COMMON_CAUSES.map((cause) => (
+          <li key={cause}>{cause}</li>
+        ))}
+      </ul>
     </div>
   );
 }

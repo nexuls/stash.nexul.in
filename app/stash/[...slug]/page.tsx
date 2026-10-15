@@ -1,17 +1,18 @@
 /**
  * Dynamic documentation route for Stash entries (/stash/[...slug]).
  *
- * Renders MDX content with server-side evaluation, responsive sidebar integration,
- * scroll-aware table of contents, in-content breadcrumbs, and metadata.
+ * Renders an entry as a single reading column: masthead, optional table of
+ * contents for narrow viewports, the evaluated MDX body, the entry's adjacent
+ * files, and linear navigation. The measure and vertical rhythm of the body
+ * come from `.stash-doc` in globals.css; this route only composes the parts.
  */
 
 import {
-  Calendar,
   Clock,
-  Code,
-  FileCode,
-  FolderOpen,
-  ImageIcon,
+  FileCode2,
+  FolderTree,
+  History,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -19,8 +20,7 @@ import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsToc } from "@/components/navigation/docs-toc";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { entryAssetBaseUrl, entryAssetUrl } from "@/lib/content/asset-url";
 import {
   getAllSlugs,
   getEntryBySlug,
@@ -62,11 +62,10 @@ export async function generateMetadata({
     };
   }
 
-  const pageTitle = entry.title;
   const canonicalUrl = `${siteConfig.url}${entry.permalink}`;
 
   return {
-    title: pageTitle,
+    title: entry.title,
     description: entry.description,
     keywords: entry.tags,
     authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
@@ -74,7 +73,7 @@ export async function generateMetadata({
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: pageTitle,
+      title: entry.title,
       description: entry.description,
       type: "article",
       url: canonicalUrl,
@@ -85,10 +84,17 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: pageTitle,
+      title: entry.title,
       description: entry.description,
     },
   };
+}
+
+/** Formats a size in bytes for the companion files list. */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default async function DocPage({ params }: DocPageProps) {
@@ -104,173 +110,142 @@ export default async function DocPage({ params }: DocPageProps) {
     getRelatedEntries(entry, 3),
   ]);
 
-  // Construct in-content breadcrumbs
-  const breadcrumbs: { title: string; href?: string }[] = [];
-  let accumulatedSlug = "";
-
-  for (const segment of entry.categories) {
-    accumulatedSlug = accumulatedSlug
-      ? `${accumulatedSlug}/${segment}`
-      : segment;
-    const formattedTitle = segment
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-
-    breadcrumbs.push({
-      title: formattedTitle,
-      href: `/stash/${accumulatedSlug}`,
-    });
-  }
-
-  breadcrumbs.push({
-    title: entry.title,
-  });
-
   const formattedDate = entry.updated || entry.date;
 
   return (
-    <div className="flex p-2 min-h-screen w-full flex-col">
-      {/* Mobile-only header for small viewports */}
+    <div className="flex min-h-screen w-full flex-col p-2">
       <DocsMobileHeader />
 
-      <div className="flex flex-1 w-full justify-center gap-6">
-        {/* Main Document Content Column (Centered) */}
+      <div className="flex w-full flex-1 justify-center gap-10">
         <main
           id="main-content"
-          className="flex-1 min-w-0 px-4 py-8 pt-18 max-w-200"
+          className="stash-doc min-w-0 flex-1 px-4 py-8 pt-18 font-sans"
+          style={{ maxWidth: "var(--stash-measure)" }}
         >
-          <article className="prose dark:prose-invert max-w-none">
-            {/* Article Header & Metadata */}
-            <header className="mb-8 space-y-4 not-prose">
-              <h1 className="text-xl font-semibold tracking-tight text-foreground lg:text-3xl">
-                {entry.title}
-              </h1>
+          <header className="mb-10">
+            <h1 className="font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground lg:text-[2.125rem]">
+              {entry.title}
+            </h1>
 
-              {entry.description && (
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  {entry.description}
-                </p>
+            {entry.description && (
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
+                {entry.description}
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4 font-mono tracking-wide text-sm capitalize text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <FolderTree className="size-4" aria-hidden />
+                {entry.categories.length > 0
+                  ? entry.categories.join("/")
+                  : entry.category}
+              </span>
+
+              <span className="flex items-center gap-1.5">
+                <Clock className="size-4" aria-hidden />
+                {entry.readingTime.minutes} min read
+              </span>
+
+              {formattedDate && (
+                <span className="flex items-center gap-1.5">
+                  <History className="size-4" aria-hidden />
+                  <time dateTime={formattedDate}>{formattedDate}</time>
+                </span>
               )}
 
-              {/* Tags */}
-              {entry.tags.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  {entry.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="h-5 text-[11px] font-mono font-normal text-muted-foreground"
-                    >
-                      #{tag}
-                    </Badge>
-                  ))}
-                </div>
+              {entry.draft && (
+                <span className="rounded bg-warn/15 px-1.5 py-0.5 text-warn">
+                  draft
+                </span>
               )}
 
-              {/* Action Buttons & Metadata Badges */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className="capitalize font-medium px-3"
-                  >
-                    <FolderOpen className="size-3.5 text-muted-foreground" />
-                    <span>{entry.category}</span>
-                  </Badge>
-
-                  {formattedDate && (
-                    <Badge variant="secondary" className="font-normal px-3">
-                      <Calendar className="size-3 text-muted-foreground" />
-                      <span>{formattedDate}</span>
-                    </Badge>
-                  )}
-
-                  <Badge variant="secondary" className="font-normal pr-3">
-                    <Clock className="size-3 text-muted-foreground" />
-                    <span>{entry.readingTime.minutes} min read</span>
-                  </Badge>
-
-                  {entry.draft && <Badge variant="destructive">Draft</Badge>}
-                </div>
-
-                {/* Copy Markdown Source Button */}
+              <span className="ml-auto">
                 <CopyMarkdownButton content={entry.rawContent} />
-              </div>
-
-              <Separator />
-            </header>
-
-            {/* Mobile / Tablet Table of Contents */}
-            {entry.headings.length > 1 && (
-              <div className="mb-8 rounded-xl border border-border/80 bg-muted/30 p-4 xl:hidden not-prose">
-                <DocsToc headings={entry.headings} />
-              </div>
-            )}
-
-            {/* Evaluated MDX Body */}
-            <div className="space-y-4 text-foreground/90 leading-7">
-              <MDXRenderer source={entry.body} sourcePath={entry.filePath} />
+              </span>
             </div>
 
-            {/* Adjacent Companion Files / Assets */}
-            {entry.assets.length > 0 && (
-              <section
-                aria-labelledby="companion-assets-heading"
-                className="mt-12 rounded-xl border border-border/80 bg-card p-5 not-prose"
+            {entry.tags.length > 0 && (
+              <ul className="mt-3 flex list-none flex-wrap gap-x-3 gap-y-1 pl-0 font-mono tracking-wide text-xs text-muted-foreground/80">
+                {entry.tags.map((tag) => (
+                  <li key={tag}>#{tag}</li>
+                ))}
+              </ul>
+            )}
+          </header>
+
+          {entry.headings.length > 1 && (
+            <div className="mb-10 rounded-lg border border-border bg-card/40 p-4 xl:hidden">
+              <DocsToc headings={entry.headings} />
+            </div>
+          )}
+
+          <div className="stash-doc-body">
+            <MDXRenderer
+              source={entry.body}
+              sourcePath={entry.filePath}
+              assetBaseUrl={entryAssetBaseUrl(entry.slug)}
+            />
+          </div>
+
+          {entry.assets.length > 0 && (
+            <section
+              aria-labelledby="companion-files-heading"
+              className="mt-14 border-t border-border pt-6"
+            >
+              <h2
+                id="companion-files-heading"
+                className="font-display text-sm font-semibold text-foreground"
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <FileCode className="size-4 text-primary" />
-                  <h3
-                    id="companion-assets-heading"
-                    className="text-sm font-semibold tracking-tight uppercase text-muted-foreground"
-                  >
-                    Companion Files & Assets
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {entry.assets.map((asset) => (
-                    <div
-                      key={asset.filename}
-                      className="flex items-center justify-between rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {asset.type === "image" ? (
-                          <ImageIcon className="size-3.5 text-muted-foreground shrink-0" />
-                        ) : (
-                          <Code className="size-3.5 text-muted-foreground shrink-0" />
-                        )}
-                        <span className="font-mono truncate">
-                          {asset.filename}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground uppercase shrink-0">
-                        {asset.extension}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                Files in this entry
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Saved beside the document, and served as-is.
+              </p>
 
-            {/* Pagination Navigation & Related Entries */}
-            <div className="not-prose">
-              <DocsPager
-                currentEntry={entry}
-                prev={prev}
-                next={next}
-                related={related}
-              />
-            </div>
-          </article>
+              <ul className="mt-4 list-none divide-y divide-border rounded-lg border border-border pl-0">
+                {entry.assets.map((asset) => (
+                  <li key={asset.relativePath}>
+                    <a
+                      href={entryAssetUrl(entry.slug, asset.relativePath)}
+                      className="flex items-center gap-2.5 px-3.5 py-2.5 font-mono text-[0.8125rem] no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    >
+                      {asset.type === "image" ? (
+                        <ImageIcon
+                          className="size-3.5 shrink-0 text-muted-foreground/70"
+                          aria-hidden
+                        />
+                      ) : (
+                        <FileCode2
+                          className="size-3.5 shrink-0 text-muted-foreground/70"
+                          aria-hidden
+                        />
+                      )}
+                      <span className="truncate text-foreground/90">
+                        {asset.relativePath}
+                      </span>
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+                        {formatFileSize(asset.size)}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <DocsPager
+            currentEntry={entry}
+            prev={prev}
+            next={next}
+            related={related}
+          />
         </main>
 
-        {/* Right Rail: Desktop Scroll-Aware Table of Contents */}
         <aside
-          aria-label="Table of contents navigation"
-          className="hidden xl:block w-60 shrink-0 px-4 py-8 pt-18"
+          aria-label="Table of contents"
+          className="hidden w-60 shrink-0 px-4 py-8 pt-18 xl:block"
         >
-          <div className="sticky top-18 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
+          <div className="sticky top-18 h-[calc(100vh-10rem)] overflow-y-auto pr-1">
             <DocsToc headings={entry.headings} />
           </div>
         </aside>

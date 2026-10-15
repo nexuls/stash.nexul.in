@@ -52,6 +52,8 @@ export function normalizeCalloutType(type?: string): NormalizedCalloutType {
 export const calloutPropsSchema = z.object({
   type: calloutTypeSchema.optional().default("note"),
   title: z.string().optional(),
+  /** Renders on a single line, for a one-sentence aside. */
+  compact: z.boolean().optional().default(false),
   className: z.string().optional(),
 });
 
@@ -78,6 +80,11 @@ export type TabProps = z.infer<typeof tabPropsSchema> & {
 export const tabsPropsSchema = z.object({
   items: z.array(z.string()).optional(),
   defaultValue: z.string().optional(),
+  /**
+   * Keeps every Tabs group sharing this key on the same selection, so choosing
+   * a package manager once applies to the rest of the document.
+   */
+  group: z.string().optional(),
   className: z.string().optional(),
 });
 
@@ -109,6 +116,90 @@ export const codeBlockPropsSchema = z.object({
   highlightLines: z.array(z.number()).optional(),
   className: z.string().optional(),
 });
+
+/**
+ * Props for the Steps container and each Step.
+ */
+export const stepsPropsSchema = z.object({
+  /** Number the first step from something other than 1. */
+  start: z.number().int().positive().optional().default(1),
+  className: z.string().optional(),
+});
+
+export type StepsProps = z.infer<typeof stepsPropsSchema> & {
+  children?: React.ReactNode;
+};
+
+export const stepPropsSchema = z.object({
+  title: z.string().optional(),
+  className: z.string().optional(),
+});
+
+export type StepProps = z.infer<typeof stepPropsSchema> & {
+  children?: React.ReactNode;
+};
+
+/**
+ * Props for FileTree nodes.
+ */
+export const fileTreeNodePropsSchema = z.object({
+  name: z.string().min(1, "FileTree nodes need a name"),
+  /** Marks the node as the subject of the surrounding prose. */
+  highlight: z.boolean().optional().default(false),
+  /** Short trailing note, e.g. "entry document". */
+  comment: z.string().optional(),
+  className: z.string().optional(),
+});
+
+export type FileTreeNodeProps = z.infer<typeof fileTreeNodePropsSchema> & {
+  children?: React.ReactNode;
+};
+
+export const folderPropsSchema = fileTreeNodePropsSchema.extend({
+  defaultOpen: z.boolean().optional().default(true),
+});
+
+export type FolderProps = z.infer<typeof folderPropsSchema> & {
+  children?: React.ReactNode;
+};
+
+/**
+ * One row of a PropsTable.
+ */
+export const propRowSchema = z.object({
+  name: z.string().min(1),
+  type: z.string().optional(),
+  default: z.string().optional(),
+  required: z.boolean().optional().default(false),
+  description: z.string().optional(),
+});
+
+export type PropRow = z.infer<typeof propRowSchema>;
+
+export const propsTablePropsSchema = z.object({
+  rows: z.array(propRowSchema).min(1, "PropsTable needs at least one row"),
+  /** Caption describing what the props belong to. */
+  of: z.string().optional(),
+  className: z.string().optional(),
+});
+
+export type PropsTableProps = z.infer<typeof propsTablePropsSchema>;
+
+/**
+ * Props for the LinkCard component.
+ */
+export const linkCardPropsSchema = z.object({
+  href: z.string().min(1, "LinkCard needs an href"),
+  title: z.string().min(1, "LinkCard needs a title"),
+  description: z.string().optional(),
+  /** Short label shown above the title, e.g. the entry's domain. */
+  eyebrow: z.string().optional(),
+  className: z.string().optional(),
+});
+
+export type LinkCardProps = z.infer<typeof linkCardPropsSchema> & {
+  children?: React.ReactNode;
+};
 
 export type CodeBlockProps = z.infer<typeof codeBlockPropsSchema> & {
   children?: React.ReactNode;

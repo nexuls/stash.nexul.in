@@ -7,6 +7,10 @@ import {
   createMdxComponents,
 } from "@/components/mdx/registry";
 import { getAllEntries } from "@/lib/content";
+import {
+  isEntryRelative,
+  resolveEntryUrl,
+} from "@/lib/mdx/plugins/remark-entry-assets";
 import { renderMdx } from "@/lib/mdx/renderer";
 import {
   calloutPropsSchema,
@@ -115,24 +119,44 @@ describe("Language Label Formatter", () => {
 describe("Server-Side MDX Rendering & Shiki Code Presentation", () => {
   it("evaluates basic markdown elements", async () => {
     const source = `
-# Title
-
 This is a **bold** paragraph.
 
 - Item 1
 - Item 2
+
+## A section
+
+Another paragraph.
 `;
     const { content, error } = await renderMdx({ source });
     expect(error).toBeUndefined();
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain("<h1");
-    expect(html).toContain("Title</h1>");
-    expect(html).toContain("<strong>bold</strong>");
+    expect(html).toContain("bold</strong>");
     expect(html).toContain("<ul");
     expect(html).toContain("Item 1");
     expect(html).toContain("Item 2");
+    expect(html).toContain("<h2");
+  });
+
+  it("drops a leading title heading, which the route renders as the masthead", async () => {
+    const { content } = await renderMdx({
+      source: "# useDebounce Hook\n\nDebouncing delays invoking a function.",
+    });
+
+    const html = renderStatic(content);
+    expect(html).not.toContain("useDebounce Hook");
+    expect(html).toContain("Debouncing delays invoking a function.");
+  });
+
+  it("keeps a top-level heading that is not the first block", async () => {
+    const { content } = await renderMdx({
+      source: "Some opening prose.\n\n# Later section\n",
+    });
+
+    const html = renderStatic(content);
+    expect(html).toContain("Later section");
   });
 
   it("processes fenced code blocks with syntax highlighting and Shiki themes", async () => {
@@ -146,11 +170,10 @@ const greeting: string = "hello world";
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain("data-rehype-pretty-code-figure");
     expect(html).toContain('data-language="typescript"');
     expect(html).toContain("--shiki-light");
     expect(html).toContain("--shiki-dark");
-    expect(html).toContain("stash-code-block");
+    expect(html).toContain("stash-code");
   });
 
   it("extracts filename and displays title header in code blocks", async () => {
@@ -164,8 +187,11 @@ export function debounce() {}
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain("lib/debounce.ts");
-    expect(html).toContain("TypeScript");
+    // The title is split so the directory can be de-emphasised.
+    expect(html).toContain("lib/");
+    expect(html).toContain("debounce.ts");
+    // Metadata is lifted onto the figure at compile time.
+    expect(html).toContain('data-language="ts"');
   });
 
   it("supports line numbers and line highlighting", async () => {
@@ -196,7 +222,7 @@ bun add next-mdx-remote-client
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain("Terminal");
+    expect(html).toContain("lucide-terminal");
     expect(html).toContain("next-mdx-remote-client");
   });
 
@@ -213,6 +239,11 @@ bun add next-mdx-remote-client
 
     const html = renderStatic(content);
     expect(html).toContain('data-language="diff"');
+    // Diff lines are marked structurally rather than matched on token colour.
+    expect(html).toContain('data-diff="add"');
+    expect(html).toContain('data-diff="del"');
+    expect(html).toContain("+1");
+    expect(html).toContain("1");
   });
 });
 
@@ -236,12 +267,13 @@ describe("Registered MDX Custom Components", () => {
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain('data-callout-type="note"');
+    expect(html).toContain('data-callout="note"');
     expect(html).toContain("Author Note");
-    expect(html).toContain('data-callout-type="tip"');
+    expect(html).toContain('data-callout="tip"');
     expect(html).toContain("Tip");
-    expect(html).toContain('data-callout-type="warning"');
-    expect(html).toContain('role="alert"');
+    expect(html).toContain('data-callout="warning"');
+    // Each variant carries its hue as a single custom property.
+    expect(html).toContain("--callout:var(--warn)");
   });
 
   it("renders Tabs and Tab components", async () => {
@@ -295,9 +327,26 @@ describe("Registered MDX Custom Components", () => {
 
     const html = renderStatic(content);
     expect(html).toContain("demo.ts");
-    expect(html).toContain("const x: number = 42;");
     expect(html).toContain("data-line-numbers");
     expect(html).toContain("data-highlighted-line");
+    // The JSX form is lowered to a fence, so it is highlighted like any other
+    // code block rather than rendered as flat text.
+    expect(html).toContain("--shiki-light");
+    expect(html).toContain("--stash-line-digits:1");
+  });
+
+  it("leaves a CodeBlock with a computed `code` prop to the component", async () => {
+    const source = `
+export const snippet = "const a = 1;";
+
+<CodeBlock code={snippet} language="typescript" />
+`;
+    const { content, error } = await renderMdx({ source });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain("const a = 1;");
+    expect(html).not.toContain("--shiki-light");
   });
 });
 
@@ -335,7 +384,7 @@ describe("Author Diagnostic Error Handling & Fallbacks", () => {
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain("Failed to render MDX document");
+    expect(html).toContain("This entry could not be compiled");
     expect(html).toContain("content/broken/README.mdx");
   });
 
@@ -371,5 +420,208 @@ describe("Real Content Filesystem Rendering", () => {
       const html = renderStatic(content);
       expect(html.length).toBeGreaterThan(50);
     }
+  });
+});
+
+describe("Entry-relative asset resolution", () => {
+  it("resolves relative references against the entry directory", () => {
+    const base = "/content-assets/react/hooks/use-debounce";
+
+    expect(resolveEntryUrl(base, "./diagram.svg")).toBe(`${base}/diagram.svg`);
+    expect(resolveEntryUrl(base, "diagram.svg")).toBe(`${base}/diagram.svg`);
+    expect(resolveEntryUrl(base, "./nested/shot.png")).toBe(
+      `${base}/nested/shot.png`,
+    );
+    expect(resolveEntryUrl(base, "../use-previous/notes.ts")).toBe(
+      "/content-assets/react/hooks/use-previous/notes.ts",
+    );
+    expect(resolveEntryUrl(base, "./source.ts#L10")).toBe(
+      `${base}/source.ts#L10`,
+    );
+  });
+
+  it("leaves absolute, rooted and anchor references alone", () => {
+    expect(isEntryRelative("/stash/react/hooks/use-debounce")).toBe(false);
+    expect(isEntryRelative("#installation")).toBe(false);
+    expect(isEntryRelative("https://example.com/a.png")).toBe(false);
+    expect(isEntryRelative("mailto:someone@example.com")).toBe(false);
+    expect(isEntryRelative("./diagram.svg")).toBe(true);
+  });
+
+  it("rewrites image and link URLs during compilation", async () => {
+    const source = `
+![Pipeline](./demo-diagram.svg "How it fits together")
+
+See [the source](./use-debounce.ts) and [another entry](/stash/react/hooks/use-previous).
+`;
+    const { content, error } = await renderMdx({
+      source,
+      assetBaseUrl: "/content-assets/react/hooks/use-debounce",
+    });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain(
+      "/content-assets/react/hooks/use-debounce/demo-diagram.svg",
+    );
+    expect(html).toContain(
+      "/content-assets/react/hooks/use-debounce/use-debounce.ts",
+    );
+    // Rooted internal links are untouched.
+    expect(html).toContain('href="/stash/react/hooks/use-previous"');
+  });
+
+  it("promotes a standalone image to a captioned figure", async () => {
+    const source = `![Pipeline](./demo.svg "How it fits together")`;
+    const { content } = await renderMdx({
+      source,
+      assetBaseUrl: "/content-assets/demo",
+    });
+
+    const html = renderStatic(content);
+    expect(html).toContain("<figure");
+    expect(html).toContain("<figcaption");
+    expect(html).toContain("How it fits together");
+  });
+
+  it("keeps an image inside a sentence inline", async () => {
+    const source = `Logo ![mark](./mark.svg) in a sentence.`;
+    const { content } = await renderMdx({
+      source,
+      assetBaseUrl: "/content-assets/demo",
+    });
+
+    const html = renderStatic(content);
+    expect(html).not.toContain("<figure");
+    expect(html).toContain("align-text-bottom");
+  });
+});
+
+describe("Compiled code metadata", () => {
+  it("reports line count and collapses a long block", async () => {
+    const lines = Array.from({ length: 40 }, (_, i) => `const v${i} = ${i};`);
+    const source = ["```ts", ...lines, "```"].join("\n");
+
+    const { content, error } = await renderMdx({ source });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain("40 lines");
+    expect(html).toContain('data-collapsed="true"');
+    expect(html).toContain("Show all 40 lines");
+  });
+
+  it("leaves a short block expanded and offers no collapse control", async () => {
+    const source = "```ts\nconst a = 1;\n```";
+    const { content } = await renderMdx({ source });
+
+    const html = renderStatic(content);
+    expect(html).toContain('data-collapsed="false"');
+    expect(html).not.toContain("Show all");
+  });
+
+  it("sizes the line-number gutter from the widest number", async () => {
+    const lines = Array.from({ length: 12 }, (_, i) => `const v${i} = ${i};`);
+    const source = ["```ts showLineNumbers", ...lines, "```"].join("\n");
+
+    const { content } = await renderMdx({ source });
+    const html = renderStatic(content);
+    expect(html).toContain("--stash-line-digits:2");
+  });
+});
+
+describe("Document components", () => {
+  it("renders Steps as a numbered sequence", async () => {
+    const source = `
+<Steps>
+  <Step title="Install">Add the dependency.</Step>
+  <Step title="Configure">Register the plugin.</Step>
+</Steps>
+`;
+    const { content, error } = await renderMdx({ source });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain("<ol");
+    expect(html).toContain("Install");
+    expect(html).toContain("Configure");
+    expect(html).toContain(">1<");
+    expect(html).toContain(">2<");
+  });
+
+  it("renders a FileTree of folders and files", async () => {
+    const source = `
+<FileTree>
+  <Folder name="content">
+    <File name="README.mdx" highlight comment="entry document" />
+  </Folder>
+</FileTree>
+`;
+    const { content, error } = await renderMdx({ source });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain("content");
+    expect(html).toContain("README.mdx");
+    expect(html).toContain("entry document");
+  });
+
+  it("renders a PropsTable and reports a malformed one", async () => {
+    const good = `
+<PropsTable
+  of="Callout"
+  rows={[{ name: "type", type: "string", default: "note", description: "Which notice to show." }]}
+/>
+`;
+    const { content } = await renderMdx({ source: good });
+    const html = renderStatic(content);
+    expect(html).toContain("type");
+    expect(html).toContain("default note");
+    expect(html).toContain("Which notice to show.");
+
+    const bad = `<PropsTable rows={[]} />`;
+    const broken = renderStatic((await renderMdx({ source: bad })).content);
+    expect(broken).toContain("Malformed PropsTable");
+  });
+
+  it("renders LinkCard with internal and external destinations", async () => {
+    const source = `
+<CardGrid>
+  <LinkCard href="/stash/react/hooks/use-debounce" title="useDebounce" eyebrow="react/hooks" />
+  <LinkCard href="https://mdxjs.com" title="MDX" description="The format itself." />
+</CardGrid>
+`;
+    const { content, error } = await renderMdx({ source });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain('href="/stash/react/hooks/use-debounce"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain("react/hooks");
+  });
+
+  it("styles GFM task lists and keeps the checked state readable", async () => {
+    const source = `
+- [x] Done
+- [ ] Pending
+`;
+    const { content } = await renderMdx({ source });
+    const html = renderStatic(content);
+    expect(html).toContain("stash-task-checkbox");
+    expect(html).toContain("checked");
+    expect(html).toContain("contains-task-list");
+  });
+
+  it("gives every heading an anchor", async () => {
+    const source = `
+## Section one
+
+### Nested heading
+`;
+    const { content } = await renderMdx({ source });
+    const html = renderStatic(content);
+    expect(html).toContain('href="#section-one"');
+    expect(html).toContain('href="#nested-heading"');
+    expect(html).toContain("Link to this section");
   });
 });

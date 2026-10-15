@@ -48,7 +48,7 @@ export function DocsPager({
             <BookOpen className="size-4 text-muted-foreground" />
             <h3
               id="see-also-heading"
-              className="text-sm font-semibold tracking-tight uppercase text-muted-foreground"
+              className="text-sm font-semibold tracking-tight text-foreground"
             >
               See Also & Related Notes
             </h3>

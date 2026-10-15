@@ -1,12 +1,11 @@
 /**
- * Accessible disclosure / collapsible component for MDX.
+ * Details: a disclosure for material that would otherwise interrupt the read.
  *
- * Uses native `<details>` and `<summary>` for native browser keyboard and screen
- * reader accessibility, styled with animated chevron and clean borders.
- * Validates props using detailsPropsSchema.
+ * Built on native `<details>`/`<summary>` so keyboard, screen-reader and
+ * in-page find behaviour come from the browser rather than from JavaScript.
  */
 
-import { ChevronRight, ChevronsUpDown } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { type DetailsProps, detailsPropsSchema } from "@/lib/mdx/types";
 import { cn } from "@/lib/utils";
 
@@ -27,22 +26,32 @@ export function Details({
     <details
       open={defaultOpen}
       className={cn(
-        "group my-4 rounded-lg border border-border bg-card/50 text-card-foreground transition-all [&[open]]:bg-card [&[open]]:border-l-[3px] [&[open]]:border-l-primary/40 [&[open]]:shadow-sm",
+        "group my-6 overflow-hidden rounded-lg border border-border bg-card/40",
         className,
       )}
       {...props}
     >
-      {!validation.success && (
-        <div className="m-3 rounded border border-destructive/40 bg-destructive/10 p-2 text-xs font-mono text-destructive">
-          ⚠️ Malformed Details: {validation.error.issues[0]?.message}
-        </div>
-      )}
-      <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-in-out group-open:rotate-90" />
+      <summary
+        className={cn(
+          "flex cursor-pointer list-none items-center gap-2 px-3.5 py-2.5 text-sm font-medium",
+          "transition-colors hover:bg-muted/50 group-open:border-b group-open:border-border",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+          "[&::-webkit-details-marker]:hidden",
+        )}
+      >
+        <ChevronRight
+          className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
+          aria-hidden
+        />
         <span className="flex-1">{summary}</span>
-        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground/60" />
       </summary>
-      <div className="border-t border-border px-5 pb-4 pt-3 text-sm leading-relaxed text-muted-foreground">
+
+      <div className="px-3.5 py-3 text-[0.9375rem] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+        {!validation.success && (
+          <p className="font-mono text-xs text-destructive">
+            Malformed Details: {validation.error.issues[0]?.message}
+          </p>
+        )}
         {children}
       </div>
     </details>

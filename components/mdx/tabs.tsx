@@ -1,10 +1,15 @@
 "use client";
 
 /**
- * Accessible Tabs and Tab components for MDX code and multi-language snippets.
+ * Tabs for alternative forms of the same instruction — package managers,
+ * languages, runtimes.
  *
- * Implements WAI-ARIA tab pattern with keyboard navigation (ArrowLeft, ArrowRight,
- * Home, End), automatic tab panel association, and mobile-safe overflow.
+ * Implements the WAI-ARIA tab pattern with arrow, Home and End navigation.
+ * Panels are not boxed: the strip itself carries the structure, which keeps a
+ * code panel inside a tab from sitting inside a second border.
+ *
+ * Tabs sharing a `group` stay in sync, so a reader who picks Bun once sees Bun
+ * for the rest of the document.
  */
 
 import * as React from "react";
@@ -18,11 +23,64 @@ import { cn } from "@/lib/utils";
 
 interface TabsContextValue {
   activeTab: string;
-  setActiveTab: (val: string) => void;
   baseId: string;
 }
 
 const TabsContext = React.createContext<TabsContextValue | null>(null);
+
+/**
+ * Selections shared by `group`, with subscribers so every group member
+ * re-renders together.
+ */
+const groupSelections = new Map<string, string>();
+const groupListeners = new Map<string, Set<() => void>>();
+
+function subscribeToGroup(group: string, listener: () => void) {
+  const listeners = groupListeners.get(group) ?? new Set();
+  listeners.add(listener);
+  groupListeners.set(group, listeners);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function selectInGroup(group: string, value: string) {
+  groupSelections.set(group, value);
+  for (const listener of groupListeners.get(group) ?? []) {
+    listener();
+  }
+}
+
+/**
+ * Reads the shared selection for a group, falling back to local state when the
+ * Tabs instance is ungrouped.
+ */
+function useGroupedSelection(group: string | undefined, initial: string) {
+  const [local, setLocal] = React.useState(initial);
+
+  const shared = React.useSyncExternalStore(
+    React.useCallback(
+      (listener: () => void) =>
+        group ? subscribeToGroup(group, listener) : () => {},
+      [group],
+    ),
+    () => (group ? groupSelections.get(group) : undefined),
+    () => undefined,
+  );
+
+  const select = React.useCallback(
+    (value: string) => {
+      if (group) {
+        selectInGroup(group, value);
+        return;
+      }
+      setLocal(value);
+    },
+    [group],
+  );
+
+  return [shared ?? local, select] as const;
+}
 
 export function Tab({ value, label, className, children, ...props }: TabProps) {
   const context = React.useContext(TabsContext);
@@ -30,9 +88,9 @@ export function Tab({ value, label, className, children, ...props }: TabProps) {
 
   if (!context) {
     return (
-      <div className="rounded border border-destructive/40 bg-destructive/10 p-2 font-mono text-xs text-destructive">
-        ⚠️ &lt;Tab /&gt; must be used inside a &lt;Tabs&gt; container.
-      </div>
+      <p className="my-4 font-mono text-xs text-destructive">
+        &lt;Tab /&gt; must be used inside a &lt;Tabs&gt; container.
+      </p>
     );
   }
 
@@ -46,17 +104,21 @@ export function Tab({ value, label, className, children, ...props }: TabProps) {
       id={`${baseId}-panel-${tabValue}`}
       aria-labelledby={`${baseId}-tab-${tabValue}`}
       hidden={!isSelected}
+      // The ARIA tab pattern puts the panel in the tab sequence, so Tab from
+      // the strip moves into the content rather than past it.
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: required by the tab pattern
+      tabIndex={0}
       className={cn(
-        "rounded-b-lg border border-t-0 border-border bg-card p-4 text-card-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        !isSelected && "hidden",
+        "pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className,
       )}
       {...props}
     >
       {!validation.success && (
-        <div className="mb-2 rounded border border-destructive/40 bg-destructive/10 p-2 font-mono text-xs text-destructive">
-          ⚠️ Malformed Tab: {validation.error.issues[0]?.message}
-        </div>
+        <p className="font-mono text-xs text-destructive">
+          Malformed Tab: {validation.error.issues[0]?.message}
+        </p>
       )}
       {children}
     </div>
@@ -66,6 +128,7 @@ export function Tab({ value, label, className, children, ...props }: TabProps) {
 export function Tabs({
   items,
   defaultValue,
+  group,
   className,
   children,
   ...props
@@ -74,10 +137,12 @@ export function Tabs({
   const validation = tabsPropsSchema.safeParse({
     items,
     defaultValue,
+    group,
     className,
   });
 
-  // Extract tab items from either explicit `items` prop or inspect React children
+  // Tab labels come from the `items` prop when given, otherwise from the
+  // children, so authors can write either form.
   const tabItems = React.useMemo(() => {
     if (items && items.length > 0) {
       return items.map((item) => ({ value: item, label: item }));
@@ -85,87 +150,88 @@ export function Tabs({
 
     const discovered: Array<{ value: string; label: string }> = [];
     React.Children.forEach(children, (child) => {
-      if (React.isValidElement(child)) {
-        const childProps = child.props as TabProps;
-        const val =
-          childProps?.value ||
-          childProps?.label ||
-          `tab-${discovered.length + 1}`;
-        const lbl =
-          childProps?.label ||
-          childProps?.value ||
-          `Tab ${discovered.length + 1}`;
-        discovered.push({ value: val, label: lbl });
-      }
+      if (!React.isValidElement(child)) return;
+      const childProps = child.props as TabProps;
+      const position = discovered.length + 1;
+      discovered.push({
+        value: childProps?.value || childProps?.label || `tab-${position}`,
+        label: childProps?.label || childProps?.value || `Tab ${position}`,
+      });
     });
 
     return discovered;
   }, [items, children]);
 
-  const [activeTab, setActiveTab] = React.useState<string>(() => {
-    if (defaultValue && tabItems.some((t) => t.value === defaultValue)) {
-      return defaultValue;
-    }
-    return tabItems[0]?.value || "";
-  });
+  const initial =
+    defaultValue && tabItems.some((tab) => tab.value === defaultValue)
+      ? defaultValue
+      : (tabItems[0]?.value ?? "");
+
+  const [selected, select] = useGroupedSelection(group, initial);
+
+  // A shared group may hold a value this instance does not offer, for example
+  // when one Tabs lists an extra package manager.
+  const activeTab = tabItems.some((tab) => tab.value === selected)
+    ? selected
+    : initial;
 
   const tabListRef = React.useRef<HTMLDivElement>(null);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    const currentIndex = tabItems.findIndex((t) => t.value === activeTab);
+    const currentIndex = tabItems.findIndex((tab) => tab.value === activeTab);
     if (currentIndex === -1) return;
 
-    let targetIndex = currentIndex;
+    const lastIndex = tabItems.length - 1;
+    let targetIndex: number;
 
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      targetIndex = (currentIndex + 1) % tabItems.length;
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      targetIndex = (currentIndex - 1 + tabItems.length) % tabItems.length;
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      targetIndex = 0;
-    } else if (event.key === "End") {
-      event.preventDefault();
-      targetIndex = tabItems.length - 1;
-    } else {
-      return;
+    switch (event.key) {
+      case "ArrowRight":
+        targetIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;
+        break;
+      case "ArrowLeft":
+        targetIndex = currentIndex === 0 ? lastIndex : currentIndex - 1;
+        break;
+      case "Home":
+        targetIndex = 0;
+        break;
+      case "End":
+        targetIndex = lastIndex;
+        break;
+      default:
+        return;
     }
 
+    event.preventDefault();
     const nextTab = tabItems[targetIndex];
-    if (nextTab) {
-      setActiveTab(nextTab.value);
-      const buttons =
-        tabListRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
-      buttons?.[targetIndex]?.focus();
-    }
+    if (!nextTab) return;
+    select(nextTab.value);
+    tabListRef.current
+      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      ?.[targetIndex]?.focus();
   };
 
   const contextValue = React.useMemo(
-    () => ({
-      activeTab,
-      setActiveTab,
-      baseId,
-    }),
+    () => ({ activeTab, baseId }),
     [activeTab, baseId],
   );
 
   return (
     <TabsContext.Provider value={contextValue}>
-      <div className={cn("my-6 w-full", className)} {...props}>
+      <div
+        className={cn("my-6 w-full [&_.stash-code]:my-0", className)}
+        {...props}
+      >
         {!validation.success && (
-          <div className="mb-2 rounded border border-destructive/40 bg-destructive/10 p-2 font-mono text-xs text-destructive">
-            ⚠️ Malformed Tabs: {validation.error.issues[0]?.message}
-          </div>
+          <p className="mb-2 font-mono text-xs text-destructive">
+            Malformed Tabs: {validation.error.issues[0]?.message}
+          </p>
         )}
 
-        {/* Tab Header Bar */}
         <div
           ref={tabListRef}
           role="tablist"
           aria-orientation="horizontal"
-          className="flex w-full items-center gap-1 overflow-x-auto rounded-t-lg border border-border bg-muted/50 p-1 text-muted-foreground"
+          className="flex items-stretch gap-4 overflow-x-auto border-b border-border"
         >
           {tabItems.map((tab) => {
             const isSelected = activeTab === tab.value;
@@ -178,13 +244,14 @@ export function Tabs({
                 aria-controls={`${baseId}-panel-${tab.value}`}
                 aria-selected={isSelected}
                 tabIndex={isSelected ? 0 : -1}
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => select(tab.value)}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                  "inline-flex h-8 items-center justify-center rounded-md px-3 font-medium text-xs whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]",
+                  "-mb-px shrink-0 border-b-2 pb-2 text-sm whitespace-nowrap transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   isSelected
-                    ? "bg-background font-semibold text-foreground shadow-xs"
-                    : "hover:bg-background/50 hover:text-foreground",
+                    ? "border-primary font-medium text-foreground"
+                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
                 {tab.label}
@@ -193,7 +260,6 @@ export function Tabs({
           })}
         </div>
 
-        {/* Tab Panels */}
         {children}
       </div>
     </TabsContext.Provider>

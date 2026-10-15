@@ -1,9 +1,11 @@
 /**
  * MDX compilation and plugin options.
  *
- * Configures remark and rehype plugins for Next.js App Router MDX evaluation,
- * including GitHub Flavored Markdown (remark-gfm), heading slug anchors (rehype-slug),
- * and syntax highlighting with Shiki (rehype-pretty-code).
+ * The pipeline is: GitHub Flavored Markdown, `<CodeBlock>` lowering,
+ * entry-relative asset resolution, standalone-image promotion, removal of a
+ * duplicated title heading, heading slugs, Shiki highlighting, then a pass that
+ * lifts code metadata onto the figure element so the React renderer never
+ * inspects its own children.
  */
 
 import rehypePrettyCode, {
@@ -11,15 +13,19 @@ import rehypePrettyCode, {
 } from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
+import { rehypeCodeMeta } from "./plugins/rehype-code-meta";
+import { remarkCodeBlockJsx } from "./plugins/remark-code-block-jsx";
+import { remarkEntryAssets } from "./plugins/remark-entry-assets";
+import { remarkImageFigures } from "./plugins/remark-image-figures";
+import { remarkStripTitleHeading } from "./plugins/remark-strip-title-heading";
 
 /**
- * Standard configuration for rehype-pretty-code using Shiki.
+ * Shiki configuration for rehype-pretty-code.
  *
- * Provides dual theme support (github-light & github-dark) and enables:
- * - Line numbers via `showLineNumbers` meta flag
- * - Line highlighting via `{1,3-4}` meta syntax
- * - Filenames and titles via `title="filename.ext"` meta syntax
- * - Clean design-system integration by disabling hardcoded backgrounds (`keepBackground: false`)
+ * Dual themes emit both light and dark token colors as CSS variables on every
+ * token, so theme switching needs no re-highlighting and no flash. Backgrounds
+ * come from the Stash palette instead of the Shiki theme, and `grid` makes each
+ * line a full-width row so line highlighting can bleed to both edges.
  */
 export const defaultRehypePrettyCodeOptions: RehypePrettyCodeOptions = {
   theme: {
@@ -28,28 +34,48 @@ export const defaultRehypePrettyCodeOptions: RehypePrettyCodeOptions = {
   },
   keepBackground: false,
   grid: true,
-  defaultLang: "plaintext",
+  defaultLang: {
+    block: "plaintext",
+    inline: "plaintext",
+  },
 };
+
+export interface MdxOptionsConfig {
+  /**
+   * URL prefix mapping to the entry directory, used to resolve `./asset` style
+   * references. Omit it to leave relative references untouched.
+   */
+  assetBaseUrl?: string;
+  rehypePrettyCodeOptions?: Partial<RehypePrettyCodeOptions>;
+}
 
 /**
  * MDX evaluation options passed into next-mdx-remote-client.
  */
-export function getMdxOptions(
-  customRehypePrettyCodeOptions?: Partial<RehypePrettyCodeOptions>,
-) {
+export function getMdxOptions(config: MdxOptionsConfig = {}) {
   const prettyCodeOptions: RehypePrettyCodeOptions = {
     ...defaultRehypePrettyCodeOptions,
-    ...customRehypePrettyCodeOptions,
+    ...config.rehypePrettyCodeOptions,
   };
 
   return {
-    remarkPlugins: [remarkGfm],
+    remarkPlugins: [
+      remarkGfm,
+      remarkCodeBlockJsx,
+      [remarkEntryAssets, { assetBaseUrl: config.assetBaseUrl }] as [
+        typeof remarkEntryAssets,
+        { assetBaseUrl?: string },
+      ],
+      remarkImageFigures,
+      remarkStripTitleHeading,
+    ],
     rehypePlugins: [
       rehypeSlug,
       [rehypePrettyCode, prettyCodeOptions] as [
         typeof rehypePrettyCode,
         RehypePrettyCodeOptions,
       ],
+      rehypeCodeMeta,
     ],
   };
 }

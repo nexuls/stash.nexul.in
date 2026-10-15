@@ -2,7 +2,7 @@
 
 This document records what has been decided, built, and verified. Update it whenever an architectural decision is approved or a milestone is reached.
 
-## Current milestone: Stage 3 (Documentation routes and navigations) — Completed
+## Current milestone: Stage 3.5 (Document surface) — Completed
 
 ### 1. Stage 1: Content foundation (Completed)
 - Filesystem content system implemented under `content/` and `lib/content/` (`types.ts`, `parser.ts`, `assets.ts`, `discovery.ts`, `validator.ts`) with strict Zod validation.
@@ -67,6 +67,28 @@ This document records what has been decided, built, and verified. Update it when
   - 65 tests passing across 4 test suites (`bun test`), including navigation tree derivation, filtering, and domain resolution.
   - Strict Biome check, TypeScript check (`tsc --noEmit`), and content validation check (`bun run check`) pass with 0 errors.
   - Production build `bun run build` verifies clean static generation (SSG) of all routes.
+
+### 4. Stage 3.5: Document surface and MDX pipeline (Completed)
+
+Recorded in [ADR-0004](architecture/decisions/0004-document-surface-and-mdx-pipeline.md).
+
+- Compile-time plugins (`lib/mdx/plugins/`), so the renderer never re-derives what the compiler knew:
+  - `remarkCodeBlockJsx` lowers `<CodeBlock code="..." />` with statically known props to a real fenced code node, so the JSX form is syntax highlighted by the same Shiki pass as a fence.
+  - `remarkEntryAssets` rewrites entry-relative references (`./diagram.svg`) against the entry directory.
+  - `remarkImageFigures` promotes an image that is alone in its paragraph to a captioned figure.
+  - `rehypeCodeMeta` lifts language, title, line count, line-number width and diff shape onto the code figure, and marks diff lines structurally.
+- Entry assets are served by `app/content-assets/[...path]/route.ts`, fully prerendered via `generateStaticParams` with `dynamicParams = false`. Adjacent images and file links resolve for the first time.
+- Fixed rendering defects: `oklch(var(--primary) / …)` was invalid so line and word highlighting never rendered; the word-highlight selector did not match what Shiki emits; `prose`/`not-prose` were applied without `@tailwindcss/typography` installed; `font-exo` was applied with no matching theme entry.
+- Document surface: `.stash-doc` owns measure (~74 characters), body size and rhythm; `components/mdx/typography.tsx` declares every element an author can reach. Exo 2 is registered as `--font-display` for headings, Inter for running text, JetBrains Mono for code.
+- Semantic tokens for callouts, diffs and code surfaces (`--note`, `--tip`, `--warn`, `--danger`, `--highlight`, `--code-bg`, `--diff-add`, `--diff-del`), tuned around the teal primary.
+- Code panel: language, file path, line count or `+n -n`, soft-wrap toggle, copy, and collapse for blocks over 28 lines. The macOS traffic lights were removed.
+- New components: `Steps`/`Step`, `FileTree`/`Folder`/`File`, `PropsTable`, `CardGrid`/`LinkCard`, `Kbd`. `Tabs` gained a `group` prop that keeps every group member in sync; `Callout` gained `compact`.
+- `lib/content/parser.ts` now splits a Markdown link title from its destination, so `![alt](./x.svg "Caption")` validates.
+- Verification: 79 of 80 tests pass (`bun test`); `bun x tsc --noEmit` and `bun run validate:content` are clean; `bun run build` prerenders every entry and asset. Light and dark renderings were reviewed at desktop and phone widths, with no horizontal page overflow at 390px.
+
+### Known failing test
+
+`components/navigation/__tests__/navigation.test.tsx` → "scopes the tree to the active domain and counts its notes" asserts a note count that commit `bba74cb` removed from the sidebar. Pre-existing and unrelated to the document surface.
 
 ## Confirmed architecture
 

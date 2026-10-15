@@ -2,7 +2,7 @@
 title: MDX Component Gallery and Kitchen Sink
 description: A comprehensive showcase demonstrating all supported Markdown elements, typography, code features, and interactive MDX components.
 date: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-15
 tags:
   - demo
   - mdx
@@ -263,13 +263,19 @@ The built-in `<Callout>` component renders styled semantic notices with Lucide i
   Always sanitize dynamic user content before passing raw strings into MDX compiler pipelines.
 </Callout>
 
+A callout can also be set `compact` for a single remark that does not need a heading of its own:
+
+<Callout type="tip" compact>
+  Press <kbd>/</kbd> to jump straight to the sidebar filter.
+</Callout>
+
 ---
 
 ## Interactive Tabbed Containers
 
 The `<Tabs>` and `<Tab>` components provide accessible tabbed interfaces with keyboard navigation (<kbd>←</kbd> / <kbd>→</kbd> / <kbd>Home</kbd> / <kbd>End</kbd>).
 
-<Tabs items={["Bun", "pnpm", "npm", "yarn"]}>
+<Tabs items={["Bun", "pnpm", "npm", "yarn"]} group="package-manager">
   <Tab value="Bun">
     ```bash
     bun add lucide-react clsx tailwind-merge
@@ -354,6 +360,104 @@ In addition to standard Markdown code fences, the standalone `<CodeBlock />` com
 
 ---
 
+## Procedures
+
+The `<Steps>` component numbers a sequence. The rail connects each marker, so a step that contains a code block still reads as part of the procedure.
+
+<Steps>
+  <Step title="Create the entry directory">
+    Directory names become the route, so they are lowercase and hyphenated.
+
+    ```bash
+    mkdir -p content/react/hooks/use-interval
+    ```
+  </Step>
+  <Step title="Write the document">
+    Frontmatter is optional. Anything left out is derived from the path, the first heading, and the body.
+  </Step>
+  <Step title="Check it before committing">
+    ```bash
+    bun run validate:content
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Directory Structures
+
+Content hierarchy comes from directory paths, so entries often need to describe a layout. `<FileTree>` renders one as a real tree, which keeps the names selectable and the nesting available to screen readers.
+
+<FileTree>
+  <Folder name="content">
+    <Folder name="react">
+      <Folder name="hooks">
+        <Folder name="use-debounce" highlight>
+          <File name="README.mdx" highlight comment="the entry document" />
+          <File name="use-debounce.ts" comment="served as-is" />
+          <File name="debounce-diagram.svg" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+  <Folder name="lib" defaultOpen={false}>
+    <File name="content" comment="discovery, parsing, validation" />
+    <File name="mdx" comment="compile pipeline" />
+  </Folder>
+</FileTree>
+
+---
+
+## Prop References
+
+`<PropsTable>` documents the props of a component. It is a definition list rather than a four-column grid, because a props reference is read one entry at a time and a wide table collapses badly on a phone. Row text is plain text, not Markdown.
+
+<PropsTable
+  of="<Callout />"
+  rows={[
+    {
+      name: "type",
+      type: "note | tip | warning | danger | important",
+      default: "note",
+      description: "Which notice to show. info and caution are accepted as aliases.",
+    },
+    {
+      name: "title",
+      type: "string",
+      description: "Replaces the default heading for the chosen type.",
+    },
+    {
+      name: "compact",
+      type: "boolean",
+      default: "false",
+      description: "Renders on a single line, for a one-sentence aside.",
+    },
+  ]}
+/>
+
+---
+
+## Cross References
+
+When the next thing to read deserves more than an inline link, `<CardGrid>` and `<LinkCard>` give it a target.
+
+<CardGrid>
+  <LinkCard
+    href="/stash/react/hooks/use-debounce"
+    eyebrow="react/hooks"
+    title="useDebounce"
+    description="Debouncing rapidly updating values."
+  />
+  <LinkCard
+    href="/stash/typescript/patterns/result-type"
+    eyebrow="typescript/patterns"
+    title="Result type"
+    description="Error handling without exceptions."
+  />
+</CardGrid>
+
+---
+
 ## Adjacent Assets and Media
 
 Stash seamlessly tracks adjacent media and source files located in the same directory as the `README.mdx`.
@@ -362,7 +466,7 @@ Stash seamlessly tracks adjacent media and source files located in the same dire
 
 Below is an adjacent SVG file rendered via standard Markdown image syntax (`![Architecture Diagram](./demo-diagram.svg)`):
 
-![Content Processing Pipeline Architecture](./demo-diagram.svg)
+![Content Processing Pipeline Architecture](./demo-diagram.svg "How an entry becomes a page")
 
 ### Adjacent Code Asset Reference
 

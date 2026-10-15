@@ -295,7 +295,7 @@ describe("Copy Markdown Button", () => {
       <CopyMarkdownButton content="# Test Markdown Content" />,
     );
 
-    expect(html).toContain("Copy Markdown");
+    expect(html).toContain("copy markdown");
   });
 });
 

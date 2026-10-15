@@ -1,15 +1,18 @@
 "use client";
 
 /**
- * Copy Markdown button component.
+ * Copies an entry's raw Markdown source.
  *
- * Copies the raw markdown source of the current documentation entry to clipboard.
+ * Sits in the entry's metadata row, so it is styled as a quiet inline control
+ * rather than a button competing with the title.
  */
 
 import { Check, Copy } from "lucide-react";
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+/** How long the confirmed state stays visible. */
+const COPIED_FEEDBACK_MS = 2000;
 
 interface CopyMarkdownButtonProps {
   content: string;
@@ -21,35 +24,39 @@ export function CopyMarkdownButton({
   className,
 }: CopyMarkdownButtonProps) {
   const [copied, setCopied] = React.useState(false);
+  const timeout = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  React.useEffect(() => () => clearTimeout(timeout.current), []);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(content);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(timeout.current);
+      timeout.current = setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
     } catch {
-      // Fallback
+      // Copying can be denied by permissions policy; the source stays on disk.
     }
   };
 
   return (
-    <Button
-      variant="outline"
-      size="lg"
+    <button
+      type="button"
       onClick={handleCopy}
-      className={cn("h-9 px-2.5 text-sm text-muted-foreground", className)}
+      className={cn(
+        "inline-flex items-center gap-1.5 border rounded px-2 py-1.5 font-mono tracking-wide text-sm transition-colors",
+        "hover:bg-muted hover:text-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        copied ? "text-tip" : "text-muted-foreground",
+        className,
+      )}
     >
       {copied ? (
-        <>
-          <Check className="size-4 mr-1.5 text-green-500" />
-          <span>Copied Markdown</span>
-        </>
+        <Check className="size-3.5" aria-hidden />
       ) : (
-        <>
-          <Copy className="size-4 mr-1.5" />
-          <span>Copy Markdown</span>
-        </>
+        <Copy className="size-3.5" aria-hidden />
       )}
-    </Button>
+      <span>{copied ? "Copied" : "Copy Markdown"}</span>
+    </button>
   );
 }

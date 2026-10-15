@@ -14,6 +14,7 @@ import { AlignLeft, ArrowUp } from "lucide-react";
 import * as React from "react";
 import type { ContentHeading } from "@/lib/content/types";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "../ui/scroll-area";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -206,7 +207,9 @@ function useTrackGeometry(
 
     for (let i = 0; i < positions.length; i++) {
       const [top, bottom] = positions[i];
-      let start = i > 0 ? lengths[i - 1][1] + (top - positions[i - 1][1]) : top;
+      // The path is drawn from the first item's top, so lengths are measured from
+      // there — not from the top of the (padded) container.
+      let start = i > 0 ? lengths[i - 1][1] + (top - positions[i - 1][1]) : 0;
       while (start < total && probe.getPointAtLength(start).y < top) start++;
       lengths.push([start, start + bottom - top]);
     }
@@ -226,6 +229,60 @@ function useTrackGeometry(
   }, [containerRef, measure]);
 
   return geometry;
+}
+
+/** Breathing room kept between the active range and the edge of the TOC viewport. */
+const FOLLOW_MARGIN = 24;
+
+/**
+ * Scrolls the TOC's own viewport so the active range stays visible while the reader
+ * scrolls the document. The nearest edge is brought into view, so short hops do not
+ * move the rail at all and the headings never jump away from the reader's position.
+ */
+function useFollowActiveRange(
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  geometry: TrackGeometry | null,
+  startIndex: number,
+  endIndex: number,
+) {
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !geometry) return;
+    if (startIndex < 0 || endIndex < 0) return;
+
+    const viewport = container.closest<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]',
+    );
+    if (!viewport) return;
+
+    const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+    if (maxScroll <= 0) return;
+
+    // Track coordinates are relative to the container; shift them into the viewport's
+    // scroll space.
+    const containerTop =
+      container.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top +
+      viewport.scrollTop;
+
+    const [top] = geometry.positions[startIndex];
+    const [, bottom] = geometry.positions[endIndex];
+    const rangeTop = containerTop + top - FOLLOW_MARGIN;
+    const rangeBottom = containerTop + bottom + FOLLOW_MARGIN;
+
+    const current = viewport.scrollTop;
+    let next = current;
+    if (rangeTop < current || rangeBottom - rangeTop > viewport.clientHeight) {
+      next = rangeTop;
+    } else if (rangeBottom > current + viewport.clientHeight) {
+      next = rangeBottom - viewport.clientHeight;
+    }
+
+    next = Math.min(Math.max(next, 0), maxScroll);
+    if (Math.abs(next - current) < 1) return;
+
+    viewport.scrollTo({ top: next, behavior: "smooth" });
+  }, [containerRef, geometry, startIndex, endIndex]);
 }
 
 /** Primary-coloured overlay clipped to the active range, plus the travelling dot. */
@@ -344,14 +401,16 @@ export function DocsToc({ headings, className }: DocsTocProps) {
   const geometry = useTrackGeometry(containerRef, tocHeadings);
   const activeSlugs = useActiveSlugs(tocHeadings);
 
-  if (tocHeadings.length === 0) {
-    return null;
-  }
-
   const startIndex = tocHeadings.findIndex((h) => activeSlugs.includes(h.slug));
   const endIndex = tocHeadings.findLastIndex((h) =>
     activeSlugs.includes(h.slug),
   );
+
+  useFollowActiveRange(containerRef, geometry, startIndex, endIndex);
+
+  if (tocHeadings.length === 0) {
+    return null;
+  }
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -385,56 +444,58 @@ export function DocsToc({ headings, className }: DocsTocProps) {
   return (
     <nav
       aria-label="Table of contents"
-      className={cn("flex flex-col gap-2 text-sm", className)}
+      className={cn("h-full flex flex-col gap-2 text-sm", className)}
     >
-      <div className="mb-1 flex items-center gap-2 font-medium text-muted-foreground text-sm uppercase tracking-wider">
+      <div className="mb-1 flex items-center gap-2 font-medium text-muted-foreground text-sm">
         <AlignLeft className="size-4" />
         <span>On this page</span>
       </div>
 
-      <div className="relative flex flex-col" ref={containerRef}>
-        {geometry && startIndex >= 0 && endIndex >= 0 && (
-          <TocThumb
-            endIndex={endIndex}
-            geometry={geometry}
-            startIndex={startIndex}
-          />
-        )}
+      <ScrollArea className="h-[calc(100%-77px)]">
+        <div className="relative flex flex-col py-2 pr-2" ref={containerRef}>
+          {geometry && startIndex >= 0 && endIndex >= 0 && (
+            <TocThumb
+              endIndex={endIndex}
+              geometry={geometry}
+              startIndex={startIndex}
+            />
+          )}
 
-        {tocHeadings.map((heading, index) => {
-          const isActive = activeSlugs.includes(heading.slug);
-          const isFirst = index === 0;
-          const isLast = index === tocHeadings.length - 1;
+          {tocHeadings.map((heading, index) => {
+            const isActive = activeSlugs.includes(heading.slug);
+            const isFirst = index === 0;
+            const isLast = index === tocHeadings.length - 1;
 
-          return (
-            <a
-              className={cn(
-                "relative py-1.5 text-sm transition-colors duration-150",
-                isFirst && "pt-0",
-                isLast && "pb-0",
-                isActive
-                  ? "font-medium text-primary-foreground/70"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              href={`#${heading.slug}`}
-              key={heading.slug}
-              onClick={(e) => handleLinkClick(e, heading.slug)}
-              style={{ paddingInlineStart: getItemOffset(heading.depth) }}
-            >
-              <TocItemTrack
-                depth={heading.depth}
-                nextDepth={
-                  isLast ? heading.depth : tocHeadings[index + 1].depth
-                }
-                previousDepth={
-                  isFirst ? heading.depth : tocHeadings[index - 1].depth
-                }
-              />
-              {heading.text}
-            </a>
-          );
-        })}
-      </div>
+            return (
+              <a
+                className={cn(
+                  "relative py-1.5 text-sm transition-colors duration-150",
+                  isFirst && "pt-0",
+                  isLast && "pb-0",
+                  isActive
+                    ? "font-medium text-primary-foreground/70"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                href={`#${heading.slug}`}
+                key={heading.slug}
+                onClick={(e) => handleLinkClick(e, heading.slug)}
+                style={{ paddingInlineStart: getItemOffset(heading.depth) }}
+              >
+                <TocItemTrack
+                  depth={heading.depth}
+                  nextDepth={
+                    isLast ? heading.depth : tocHeadings[index + 1].depth
+                  }
+                  previousDepth={
+                    isFirst ? heading.depth : tocHeadings[index - 1].depth
+                  }
+                />
+                {heading.text}
+              </a>
+            );
+          })}
+        </div>
+      </ScrollArea>
 
       <div className="mt-1 border-border/40 border-t pt-3">
         <button

@@ -28,7 +28,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("h-full", "antialiased", "font-exo", ...font_variables)}
+      className={cn("h-full", "antialiased", ...font_variables)}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider
