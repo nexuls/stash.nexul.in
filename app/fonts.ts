@@ -1,8 +1,9 @@
-import { Exo_2, Inter } from "next/font/google";
+import { Exo_2, Geist, Inter } from "next/font/google";
 import localFont from "next/font/local";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const exo2 = Exo_2({ subsets: ["latin"], variable: "--font-exo" });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
 const jetBrainsMono = localFont({
   src: [
@@ -93,5 +94,6 @@ const jetBrainsMono = localFont({
 export const font_variables = [
   inter.variable,
   exo2.variable,
+  geist.variable,
   jetBrainsMono.variable,
 ];
