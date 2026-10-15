@@ -13,6 +13,7 @@
 import { AlignLeft, ArrowUp } from "lucide-react";
 import * as React from "react";
 import type { ContentHeading } from "@/lib/content/types";
+import { getScrollParent } from "@/lib/dom/scroll-parent";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -21,22 +22,6 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 interface DocsTocProps {
   headings: ContentHeading[];
   className?: string;
-}
-
-/** Nearest scrollable ancestor, since the page scrolls inside a container. */
-function getScrollParent(element: HTMLElement | null): HTMLElement | null {
-  let current = element?.parentElement ?? null;
-  while (current) {
-    const { overflowY } = getComputedStyle(current);
-    if (
-      (overflowY === "auto" || overflowY === "scroll") &&
-      current.scrollHeight > current.clientHeight
-    ) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
 }
 
 /** Horizontal position of the guide line for a heading depth. */
