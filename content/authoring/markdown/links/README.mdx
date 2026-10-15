@@ -1,0 +1,52 @@
+---
+title: Links
+description: Internal routes, heading anchors, adjacent files and external destinations, and which of them the build checks.
+date: 2026-10-16
+tags:
+  - authoring
+  - markdown
+  - links
+---
+
+# Links
+
+An archive is worth keeping only if its cross-references stay true, so every
+link an entry writes is resolved at build time. A link to a route, an anchor or
+an adjacent file that does not exist fails the build with the file and the line
+rather than rotting quietly.
+
+## The four kinds
+
+- **Internal route** — a canonical path under `/stash/`, routed client-side:
+  [useDebounce](/stash/react/hooks/use-debounce).
+- **Heading anchor** — a section of another entry, checked against that
+  document's heading slugs:
+  [Command menu keyboard navigation](/stash/react/components/command-menu#keyboard-navigation).
+- **In-document anchor** — a section of this page: [the four kinds](#the-four-kinds).
+- **External** — anything off the site, which opens in a new tab with the usual
+  `rel` guards: [MDN](https://developer.mozilla.org).
+
+## Relative paths
+
+A relative Markdown path is resolved against the entry's own directory, so
+sibling notes can be reached without repeating the domain:
+[../tables](../tables). It is rewritten to the canonical route when the document
+is compiled, and validated like any other internal link.
+
+## Adjacent files
+
+A path beginning `./` points at a file in the entry's own directory, which is
+served as-is rather than rendered — a link whose target is `./use-debounce.ts`
+resolves to the file beside the document. Such a link only works from that one
+document, so a file worth referring to from elsewhere is quoted rather than
+linked. See [Adjacent files](/stash/authoring/assets/adjacent-files).
+
+## Writing them
+
+Prefer a link whose text says where it goes, because the text is what a screen
+reader announces out of context and what a reader scans for. "See
+[how code panels are headed](/stash/authoring/code/code-panels)" carries its
+destination; "see [here](/stash/authoring/code/code-panels)" does not.
+
+When the next thing to read matters more than a sentence allows, give it a
+[link card](/stash/authoring/components/link-cards) instead of an inline link.

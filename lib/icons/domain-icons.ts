@@ -13,8 +13,8 @@ import {
   FileCode2,
   FolderOpen,
   type LucideIcon,
+  PenLine,
   Server,
-  Sparkles,
   Terminal,
 } from "lucide-react";
 
@@ -23,8 +23,8 @@ export function getDomainIcon(name: string): LucideIcon {
   if (normalized.includes("react")) return Code2;
   if (normalized.includes("typescript") || normalized.includes("type"))
     return FileCode2;
-  if (normalized.includes("showcase") || normalized.includes("demo"))
-    return Sparkles;
+  if (normalized.includes("authoring") || normalized.includes("writing"))
+    return PenLine;
   if (normalized.includes("linux") || normalized.includes("bash"))
     return Terminal;
   if (normalized.includes("backend") || normalized.includes("api"))

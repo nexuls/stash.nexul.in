@@ -106,7 +106,7 @@ Recorded in [ADR-0006](architecture/decisions/0006-landing-page-as-archive-index
 - Category entry points: a `home` directory inside a category is that category's page, authored like any entry and served at the category's path (`content/react/home/README.mdx` → `/stash/react`). `/stash/react/home` returns 404, so no page is served under two URLs.
   - `lib/content/discovery.ts` sets `isCategoryIndex` on the entry, rewrites its `permalink` to the category route while the `slug` keeps naming the directory on disk (which assets are served under), excludes these entries from `getAllEntries` by default, resolves a category path to its index in `getEntryBySlug`, adds `getCategoryIndexes()`, and makes `getAllSlugs` emit route segments.
   - `app/stash/[...slug]/page.tsx` renders `components/archive/category-view.tsx` for them: the authored document, then every note in the category grouped by directory. Entries now 404 at any path other than their own `permalink`.
-  - Authored `home` entries exist for `react`, `typescript` and `showcase`; their titles and descriptions name those categories everywhere they are listed.
+  - Authored `home` entries exist for `react`, `typescript` and `authoring`; their titles and descriptions name those categories everywhere they are listed.
 - The landing page leads with the categories rather than every note. Listing the whole archive worked at 21 notes and would not have worked at 200; the notes now live on the category pages.
   - `components/landing/archive-browser.tsx` shows the categories by default, and replaces them with matching notes while a search is active. `/` focuses the field, Escape clears it.
   - `components/archive/note-list.tsx` renders a group of notes for both the search results and the category pages.

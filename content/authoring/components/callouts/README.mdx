@@ -1,0 +1,89 @@
+---
+title: Callouts
+description: Semantic notices for a caveat, a tip or a danger, with the five types and when each is honest.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+  - accessibility
+---
+
+# Callouts
+
+A callout lifts one remark out of the prose and announces what kind of remark it
+is. The type is semantic rather than decorative: each one carries its own icon,
+its own colour, and the ARIA role that matches its urgency, so a screen reader
+hears a warning as a warning.
+
+The cost of a callout is that it interrupts. A page of them reads as a page of
+interruptions and the reader starts skipping them, which is exactly the content
+that could not afford to be skipped.
+
+## The types
+
+<Callout type="note" title="Note">
+  Background a reader can take or leave. Supports Markdown, including **emphasis**
+  and [links](/stash/authoring/markdown/links).
+</Callout>
+
+<Callout type="tip" title="Tip">
+  A shortcut that is faster once you know it. `bun test --filter mdx` runs only the
+  renderer suite.
+</Callout>
+
+<Callout type="warning" title="Watch out">
+  Something that will go wrong if ignored. MDX documents are evaluated on the server,
+  so a component using hooks must be marked `"use client"`.
+</Callout>
+
+<Callout type="danger" title="Destructive">
+  Something unrecoverable. Deleting an entry directory removes its adjacent code and
+  images with it.
+</Callout>
+
+<Callout type="important" title="Important">
+  Something that cannot be skipped without the rest being wrong.
+</Callout>
+
+`info` and `caution` are accepted as aliases for `note` and `warning`, so a
+document pasted from elsewhere keeps rendering.
+
+## Compact
+
+A one-sentence aside does not need a heading of its own. `compact` drops the
+title row and renders on a single line:
+
+<Callout type="tip" compact>
+  Press <kbd>/</kbd> to jump to the sidebar filter.
+</Callout>
+
+## Props
+
+<PropsTable
+  of="<Callout />"
+  rows={[
+    {
+      name: "type",
+      type: "note | tip | warning | danger | important",
+      default: "note",
+      description: "Which notice to show. info and caution are accepted as aliases.",
+    },
+    {
+      name: "title",
+      type: "string",
+      description: "Replaces the default heading for the chosen type.",
+    },
+    {
+      name: "compact",
+      type: "boolean",
+      default: "false",
+      description: "Renders on one line without a heading, for a short aside.",
+    },
+  ]}
+/>
+
+## Choosing one
+
+- A quotation is a [blockquote](/stash/authoring/markdown/typography), not a callout.
+- A consequence the reader must know before acting is a `warning`; an unrecoverable one is `danger`.
+- If the sentence would survive in the paragraph above, leave it there.

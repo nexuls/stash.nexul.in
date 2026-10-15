@@ -1,0 +1,79 @@
+---
+title: Link cards
+description: A cross-reference that deserves a larger target than an inline link, in a grid of one or two columns.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+  - navigation
+---
+
+# Link cards
+
+For the end of a note, where the question is what to read next. A card carries a
+title, a line of description and an eyebrow naming where it leads, so the reader
+chooses between destinations rather than guessing from four words of link text.
+
+<CardGrid>
+  <LinkCard
+    href="/stash/react/hooks/use-debounce"
+    eyebrow="react/hooks"
+    title="useDebounce"
+    description="Debouncing a rapidly updating value without dropping the last one."
+  />
+  <LinkCard
+    href="/stash/typescript/patterns/result-type"
+    eyebrow="typescript/patterns"
+    title="Result type"
+    description="Error handling without exceptions, and what it costs at the boundary."
+  />
+</CardGrid>
+
+`<CardGrid>` lays them out in two columns on a wide screen and one on a narrow
+one. A single card is fine, and three read as a list of equals — which is the
+point, so do not use cards to rank.
+
+## Inside the prose
+
+Cards interrupt reading, so they belong at a stopping point: the end of a
+section, or the end of the note. A reference made in passing stays an
+[inline link](/stash/authoring/markdown/links), which keeps the sentence intact.
+
+<CardGrid>
+  <LinkCard
+    href="/stash/authoring/markdown/links"
+    eyebrow="authoring/markdown"
+    title="Links"
+    description="The four kinds of link, and which of them the build checks."
+  />
+</CardGrid>
+
+## Props
+
+<PropsTable
+  of="<LinkCard />"
+  rows={[
+    {
+      name: "href",
+      type: "string",
+      required: true,
+      description: "Internal route or external URL. Internal routes are validated at build time.",
+    },
+    {
+      name: "title",
+      type: "string",
+      required: true,
+      description: "The destination's name, usually its title.",
+    },
+    {
+      name: "description",
+      type: "string",
+      description: "One line on why to follow it.",
+    },
+    {
+      name: "eyebrow",
+      type: "string",
+      description: "Short label above the title, usually the destination's domain.",
+    },
+  ]}
+/>

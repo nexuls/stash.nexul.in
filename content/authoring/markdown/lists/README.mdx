@@ -1,0 +1,69 @@
+---
+title: Lists
+description: Bulleted, numbered, nested and task lists, including how a list holding code behaves.
+date: 2026-10-16
+tags:
+  - authoring
+  - markdown
+  - lists
+---
+
+# Lists
+
+Three kinds, and the choice between them is about meaning rather than looks: a
+bulleted list for a set, a numbered list for a sequence, a task list for work
+with a state.
+
+## Bulleted
+
+Items in no particular order. Nest one level where a point needs its own detail,
+and stop there; a third level is a sign the list wants to be headings.
+
+- **Discovery** walks `content/` and finds every directory holding a `README.mdx`.
+  - Directory names become the route, so they must be lowercase and hyphenated.
+  - A directory named `home` is its category's own page rather than a note.
+- **Parsing** reads frontmatter, headings, links and adjacent assets.
+- **Validation** fails the build on a broken internal link or a missing asset.
+
+## Numbered
+
+Items where the order is the content. Markdown renumbers automatically, so the
+source can stay `1.` throughout; writing the real numbers makes a later
+insertion a diff of every line.
+
+1. Create the entry directory.
+2. Write `README.mdx`, starting the body at `h2`.
+3. Run `bun run validate:content`.
+4. Commit the directory as one change.
+
+A procedure whose steps carry commands or explanation reads better as
+[Steps](/stash/authoring/components/steps), which keeps the numbering visible
+beside the code instead of letting a block push the next marker out of view.
+
+## Task lists
+
+GitHub-style checkboxes, rendered as state rather than as controls — they are
+not clickable, because a page is a document and not a tracker.
+
+- [x] Derive entry metadata from the path and document
+- [x] Dual-theme code highlighting
+- [x] Accessible callouts, tabs and steps
+- [ ] Build-time search index
+- [ ] Offline bundle of the whole archive
+
+## Lists holding code
+
+A fenced block inside an item needs to be indented to the item's text, and the
+panel keeps its header and copy button where it is:
+
+1. Install the dependencies:
+
+   ```bash noLineNumbers
+   bun install
+   ```
+
+2. Check the content tree before committing:
+
+   ```bash noLineNumbers
+   bun run validate:content
+   ```

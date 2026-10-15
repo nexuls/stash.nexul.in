@@ -1,0 +1,142 @@
+---
+title: Tabs
+description: One panel per alternative, with keyboard navigation and a shared choice across the document.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+  - accessibility
+---
+
+# Tabs
+
+Tabs are for genuine alternatives: the same instruction expressed for a
+different tool, runtime or language. The reader needs exactly one of the panels,
+so showing all of them as stacked code blocks makes them read three snippets to
+find theirs.
+
+They are the wrong shape for sequential content. A panel a reader has to open to
+know they need it is hidden content, not organised content.
+
+<Tabs items={["Bun", "pnpm", "npm", "yarn"]} group="package-manager">
+  <Tab value="Bun">
+    ```bash noLineNumbers
+    bun add lucide-react clsx tailwind-merge
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash noLineNumbers
+    pnpm add lucide-react clsx tailwind-merge
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash noLineNumbers
+    npm install lucide-react clsx tailwind-merge
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash noLineNumbers
+    yarn add lucide-react clsx tailwind-merge
+    ```
+  </Tab>
+</Tabs>
+
+## A shared choice
+
+A `group` key ties every tab set in the document to the same selection. A reader
+who picks pnpm at the top of a long guide sees pnpm in every block after it,
+which is the difference between a tab set and a trap. The block above and the
+one below share the `package-manager` group — change one and watch the other.
+
+<Tabs items={["Bun", "pnpm", "npm", "yarn"]} group="package-manager">
+  <Tab value="Bun">
+    ```bash noLineNumbers
+    bun run build
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash noLineNumbers
+    pnpm build
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash noLineNumbers
+    npm run build
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash noLineNumbers
+    yarn build
+    ```
+  </Tab>
+</Tabs>
+
+## Rich panels
+
+A panel holds whatever a document holds — prose, lists, nested components — not
+only code:
+
+<Tabs items={["Architecture", "Prerequisites"]}>
+  <Tab value="Architecture">
+    Entries live on the filesystem under `content/`. The pipeline discovers them,
+    derives metadata from the path and document, and checks every internal link
+    while the site builds.
+
+    <Callout type="tip" compact>
+      Nothing registers an entry. The directory is the route.
+    </Callout>
+  </Tab>
+  <Tab value="Prerequisites">
+    - Bun 1.2 or newer
+    - A browser with ES2022 support
+    - A clean working tree before `bun run check`
+  </Tab>
+</Tabs>
+
+## Keyboard and semantics
+
+The tab strip is a real `tablist`. <kbd>←</kbd> and <kbd>→</kbd> move between
+tabs, <kbd>Home</kbd> and <kbd>End</kbd> jump to the ends, and the selected tab
+is the only one in the tab order, so a reader is not made to tab through four
+labels to reach the panel.
+
+## Props
+
+<PropsTable
+  of="<Tabs />"
+  rows={[
+    {
+      name: "items",
+      type: "string[]",
+      description: "Tab labels, in order. Each one matches a Tab by its value.",
+    },
+    {
+      name: "defaultValue",
+      type: "string",
+      default: "the first item",
+      description: "Which tab opens selected.",
+    },
+    {
+      name: "group",
+      type: "string",
+      description: "Shared key. Every Tabs block with this key follows the same choice.",
+    },
+  ]}
+/>
+
+<PropsTable
+  of="<Tab />"
+  rows={[
+    {
+      name: "value",
+      type: "string",
+      required: true,
+      description: "Matches one of the parent's items.",
+    },
+    {
+      name: "label",
+      type: "string",
+      description: "Overrides the label taken from items.",
+    },
+  ]}
+/>

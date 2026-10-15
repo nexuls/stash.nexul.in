@@ -1,0 +1,36 @@
+---
+title: Keyboard keys
+description: Keys printed as keys, in either the HTML or the component form.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+  - accessibility
+---
+
+# Keyboard keys
+
+A key renders as a key cap: <kbd>Ctrl</kbd> + <kbd>K</kbd> opens the command
+menu, <kbd>/</kbd> focuses the sidebar filter, <kbd>Esc</kbd> closes whatever is
+open.
+
+Both forms work and render identically. A `<kbd>` typed into the document is
+passed through as HTML, and the cap is styled on the element rather than on the
+component, which is what keeps the two the same:
+
+```mdx noLineNumbers
+Press <kbd>Ctrl</kbd> + <kbd>K</kbd> to open the command menu.
+Press <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> to open the command menu.
+```
+
+## Writing shortcuts
+
+- One key per element, with the separator as ordinary text: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>, not a single cap reading `Ctrl+Shift+P`.
+- Name the platform when it differs: <kbd>Ctrl</kbd> on Linux and Windows, <kbd>Cmd</kbd> on macOS.
+- Spell the keys as the keyboard does — <kbd>Esc</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Home</kbd>, <kbd>End</kbd> — and use the arrows for arrows: <kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd>.
+- A key is not inline code. `Ctrl` in backticks is a string; <kbd>Ctrl</kbd> is a key.
+
+## Props
+
+`<Kbd>` takes no props of its own; anything passed goes to the underlying
+element.

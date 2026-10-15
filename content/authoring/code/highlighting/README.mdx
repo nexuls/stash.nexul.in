@@ -1,0 +1,88 @@
+---
+title: Line and token highlighting
+description: Drawing attention to the lines or words that matter inside a block, with ranges and quoted tokens.
+date: 2026-10-16
+tags:
+  - authoring
+  - code
+  - shiki
+---
+
+# Line and token highlighting
+
+A snippet is usually shown for two or three of its lines; the rest is there so
+those lines make sense. Highlighting says which is which, and saves a paragraph
+that would otherwise have to count lines out loud.
+
+## Line ranges
+
+Put the lines in curly braces on the fence. Single lines and ranges can be
+mixed:
+
+```tsx title="components/counter.tsx" {4,8-10}
+import { useState } from "react";
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div className="flex items-center gap-4">
+      <button type="button" onClick={() => setCount((n) => n - 1)}>
+        Decrement
+      </button>
+      <span aria-live="polite">{count}</span>
+      <button type="button" onClick={() => setCount((n) => n + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+Highlighting half a block highlights nothing. If most lines matter, the block is
+too long rather than under-marked.
+
+## Tokens
+
+Quote a word on the fence and every occurrence of it is marked, wherever it
+appears. This is the better tool when the subject is an identifier rather than a
+place — a reader following `useCallback` through a file does not care which line
+it is on:
+
+```typescript title="hooks/use-toggle.ts" "boolean" "useCallback"
+import { useCallback, useState } from "react";
+
+export function useToggle(
+  initialValue = false,
+): [boolean, () => void, (next: boolean) => void] {
+  const [value, setValue] = useState<boolean>(initialValue);
+  const toggle = useCallback(() => setValue((prev) => !prev), []);
+  const set = useCallback((next: boolean) => setValue(next), []);
+  return [value, toggle, set];
+}
+```
+
+## Both at once
+
+Ranges and tokens combine, and the marks are distinguishable: the range tints
+the line, the token outlines the word.
+
+```typescript title="lib/content/validate.ts" {6-8} "permalink"
+export function checkLinks(entries: ContentEntry[]): string[] {
+  const known = new Set(entries.map((entry) => entry.permalink));
+  const problems: string[] = [];
+
+  for (const entry of entries) {
+    for (const link of entry.links) {
+      if (link.external || known.has(link.permalink)) continue;
+      problems.push(`${entry.slug}: unresolved link to ${link.permalink}`);
+    }
+  }
+
+  return problems;
+}
+```
+
+Highlighting is decoration to a screen reader, so the surrounding prose still
+has to name what was marked. The marks make the prose quicker to follow; they do
+not replace it.

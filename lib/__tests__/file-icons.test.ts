@@ -74,7 +74,7 @@ describe("codeIconId", () => {
   });
 
   it("falls back to the language when the title is just a label", () => {
-    // The showcase heads a shell block with title="Terminal".
+    // The authoring notes head a shell block with title="Terminal".
     expect(codeIconId("Terminal", "bash")).toBe("console");
     expect(codeIconId("Example", "python")).toBe("python");
     expect(codeIconId("Before / after", "diff")).toBe("diff");

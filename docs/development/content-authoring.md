@@ -4,6 +4,12 @@
 
 Implemented (Stage 1: Content foundation, Stage 2: MDX and code presentation).
 
+Everything specified here also has a rendered page in the archive itself, under
+the `authoring` domain (`content/authoring/`): one entry per element and
+component, each showing the thing it documents. This document is the
+specification; those pages are the proof, and a renderer regression shows up
+there first.
+
 ## Entry convention
 
 Every content entry in Stash is a directory under `content/` with a primary `README.mdx` document and optional adjacent code and media files:

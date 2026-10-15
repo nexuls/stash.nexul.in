@@ -55,7 +55,7 @@ gone; a block with no `title=` shows its language as plain text instead.
 
 The theme ships 1251 SVGs (about 5 MB) as a dependency. None of it is served:
 only the icons an entry actually uses are inlined, which is roughly 12 KB across
-the showcase page's 29 icons, and the repetition compresses well. If that ever
+a dense authoring note's icons, and the repetition compresses well. If that ever
 matters, the per-page set is small enough to emit once as `<symbol>` definitions
 and reference with `<use>`.
 

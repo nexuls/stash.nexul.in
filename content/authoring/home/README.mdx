@@ -1,0 +1,66 @@
+---
+title: Authoring
+description: How an entry is written here, and a page for every element and component the document surface renders.
+date: 2026-10-03
+updated: 2026-10-16
+tags:
+  - authoring
+  - mdx
+  - reference
+---
+
+# Authoring
+
+Notes about the archive itself: what an entry document may contain, and what
+each element looks like once rendered.
+
+Every page in this domain is both reference and test. The prose says when to
+reach for something and what it costs; the examples below the prose are live, so
+a regression in the renderer shows up here first. If a page here looks wrong,
+the renderer is wrong rather than the note.
+
+## How this is organised
+
+- **markdown** — the plain Markdown surface: typography, lists, tables, links.
+- **code** — code panels, highlighting, terminals and diffs.
+- **components** — the JSX tags an entry can use without importing anything.
+- **assets** — images and source files that live beside the document.
+
+## The shape of an entry
+
+An entry is a directory under `content/` holding a `README.mdx` and whatever
+files that document refers to. Nothing registers it: the directory path is the
+route, and the loader derives the title, description, headings and assets from
+the document when frontmatter leaves them out.
+
+<FileTree>
+  <Folder name="content">
+    <Folder name="authoring" defaultOpen={false}>
+      <File name="home" comment="this page" />
+    </Folder>
+    <Folder name="react">
+      <Folder name="hooks">
+        <Folder name="use-debounce" highlight>
+          <File name="README.mdx" highlight comment="the entry document" />
+          <File name="use-debounce.ts" comment="served as-is" />
+          <File name="debounce-diagram.svg" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+</FileTree>
+
+Frontmatter is optional and stays small. The authoring guide in the repository
+documents every field; the short version is that `title` and `description` are
+worth writing by hand and the rest is usually better derived.
+
+```yaml
+---
+title: useDebounce Hook
+description: Debouncing a rapidly updating value without dropping the last one.
+date: 2026-10-02
+tags:
+  - react
+  - hooks
+---
+```

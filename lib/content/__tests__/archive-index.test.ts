@@ -16,6 +16,7 @@ import {
   getCategoryIndexes,
   getEntryBySlug,
 } from "../discovery";
+import type { ContentEntry } from "../types";
 
 const entries = await getAllEntries();
 const categoryIndexes = await getCategoryIndexes();
@@ -76,10 +77,25 @@ describe("buildArchiveIndex", () => {
   });
 
   it("keeps a note sitting directly in its domain in an unlabelled group", () => {
-    const showcase = index.domains.find((domain) => domain.slug === "showcase");
-    expect(showcase?.groups).toHaveLength(1);
-    expect(showcase?.groups[0]?.label).toBeNull();
-    expect(showcase?.groups[0]?.path).toBe("showcase");
+    // No authored entry currently sits directly inside a domain, so this builds
+    // one: the shape is legal on disk and the index has to place it somewhere.
+    const loose = {
+      slug: "linux/journalctl",
+      title: "journalctl",
+      description: "Reading the journal without a pager fight.",
+      permalink: "/stash/linux/journalctl",
+      categories: ["linux"],
+      category: "linux",
+      tags: [],
+      date: "2026-10-16",
+    } as unknown as ContentEntry;
+
+    const built = buildArchiveIndex([loose]);
+    const linux = built.domains.find((domain) => domain.slug === "linux");
+    expect(linux?.groups).toHaveLength(1);
+    expect(linux?.groups[0]?.label).toBeNull();
+    expect(linux?.groups[0]?.path).toBe("linux");
+    expect(linux?.groups[0]?.notes[0]?.title).toBe("journalctl");
   });
 
   it("carries presentable metadata only, never MDX source", () => {

@@ -1,0 +1,49 @@
+---
+title: Tables
+description: GFM tables, column alignment, and what happens to a wide table on a narrow screen.
+date: 2026-10-16
+tags:
+  - authoring
+  - markdown
+  - tables
+---
+
+# Tables
+
+GitHub Flavoured Markdown tables, with a shaded header, hairline borders and a
+row hover. A table earns its place when a reader compares values across the same
+few fields; prose is better for anything read top to bottom.
+
+## A table
+
+Alignment comes from the delimiter row: `:---` left, `:---:` centre, `---:`
+right. Numbers belong on the right, where their digits line up.
+
+| Component | Tag | Role | Lines |
+| :--- | :--- | :---: | ---: |
+| Callout | `<Callout />` | `note` / `alert` | 118 |
+| Tabs | `<Tabs />` | `tablist` | 204 |
+| Steps | `<Steps />` | list | 96 |
+| FileTree | `<FileTree />` | `tree` | 171 |
+
+Cells take inline formatting — code, links, emphasis — but not block content. A
+cell that wants a list or a code block is a sign the table should be a set of
+headings, or a [props table](/stash/authoring/components/props-table).
+
+## Width
+
+A table wider than the measure scrolls inside its own container rather than
+widening the page, so the prose column keeps its line length and the page never
+scrolls sideways as a whole.
+
+| Field | Type | Required | Default | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| `title` | `string` | no | first `# Heading` | Falls back to the formatted directory name. |
+| `description` | `string` | no | first paragraph | Truncated at a word boundary near 180 characters. |
+| `date` | `string` | no | — | ISO `YYYY-MM-DD`. |
+| `updated` | `string` | no | — | ISO `YYYY-MM-DD`; shown in place of `date` when present. |
+| `tags` | `string[]` | no | `[]` | Indexed for search, not printed as chips. |
+| `draft` | `boolean` | no | `false` | Hidden from listings while true. |
+
+Keep columns few enough that the common case fits. Horizontal scroll is a
+rescue, not a layout.

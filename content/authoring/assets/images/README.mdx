@@ -1,0 +1,49 @@
+---
+title: Images and figures
+description: How an image beside a document is referenced, captioned, and kept readable in both themes.
+date: 2026-10-16
+tags:
+  - authoring
+  - assets
+  - images
+---
+
+# Images and figures
+
+An image lives in the entry directory beside the document that uses it and is
+referenced with a relative path. The reference is rewritten while the document
+compiles, so it resolves against the directory on disk rather than the route,
+and the file is served from `content/` at build time.
+
+```markdown noLineNumbers
+![Content processing pipeline](./pipeline-diagram.svg "How an entry becomes a page")
+```
+
+![Content processing pipeline](./pipeline-diagram.svg "How an entry becomes a page")
+
+## Figures and captions
+
+An image alone on its line becomes a figure, and the Markdown title becomes its
+caption — the text after the path, in quotes. An image inside a sentence stays
+inline, so a small glyph can sit in a paragraph without breaking it.
+
+Alt text and a caption do different jobs and should not repeat each other. The
+alt text says what the image shows, for a reader who cannot see it; the caption
+says what to notice, for everyone.
+
+## Both themes
+
+A figure sits on a light plate in both themes. Diagrams are usually drawn with
+dark strokes on nothing, and nothing becomes black in dark mode, which leaves
+the strokes invisible — so the plate stays light and the diagram keeps its
+contrast. Author for a light surface and it will be right in both.
+
+SVG is the right format for anything drawn: it is text, so it diffs, it stays
+sharp at any size, and it is usually smaller than the PNG of the same diagram.
+Screenshots are for interfaces, and a screenshot ages with the interface it
+shows.
+
+<Callout type="warning" title="Everything in an entry directory is public">
+  Assets are discovered, not declared. A file dropped beside a document is served
+  once it is found, whether or not the document refers to it.
+</Callout>

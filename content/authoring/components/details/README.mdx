@@ -1,0 +1,70 @@
+---
+title: Details
+description: A native disclosure for the paragraph most readers do not need, and the rule for what may go inside one.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+---
+
+# Details
+
+A disclosure for content that is worth keeping and not worth reading twice: a
+full type definition, the derivation behind a number, the long version of a
+short answer.
+
+It is built on the browser's own `<details>` and `<summary>`, so it works
+without JavaScript, it is searchable by the browser's find, and the chevron is
+the only thing added.
+
+<Details summary="The full ContentEntry shape">
+  ```typescript title="lib/content/types.ts"
+  export interface ContentEntry {
+    slug: string;
+    permalink: string;
+    title: string;
+    description: string;
+    categories: string[];
+    tags: string[];
+    headings: ContentHeading[];
+    links: ContentLink[];
+    assets: ContentAsset[];
+    draft: boolean;
+  }
+  ```
+</Details>
+
+<Details summary="Why adjacent assets are discovered rather than declared" defaultOpen={true}>
+  A declared asset list is a second place to forget. The loader reads the entry
+  directory, types what it finds by extension, and exposes it on the entry, so a
+  file dropped beside the document is available to it immediately.
+</Details>
+
+## What not to hide
+
+The summary has to tell the truth about the contents, because that line is all a
+reader has to decide with. "More information" is not a summary.
+
+Nothing a reader needs in order to follow the next paragraph belongs behind a
+disclosure, and neither does a warning — hiding a caveat is how it gets missed.
+That belongs in a [callout](/stash/authoring/components/callouts).
+
+## Props
+
+<PropsTable
+  of="<Details />"
+  rows={[
+    {
+      name: "summary",
+      type: "string",
+      required: true,
+      description: "The closed-state line. Say what is inside, in plain text.",
+    },
+    {
+      name: "defaultOpen",
+      type: "boolean",
+      default: "false",
+      description: "Opens on load, for content shown by default but foldable away.",
+    },
+  ]}
+/>

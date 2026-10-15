@@ -1,0 +1,87 @@
+---
+title: Steps
+description: A numbered procedure whose rail survives the code blocks inside it.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+---
+
+# Steps
+
+A procedure where the order is part of the content. The markers sit on a rail
+that connects them, so a step holding a code block still reads as step three of
+four rather than as a heading followed by a panel.
+
+A plain [ordered list](/stash/authoring/markdown/lists) is better when the items
+are short and the order is incidental. Steps earn their weight once each item
+carries a command or a paragraph.
+
+<Steps>
+  <Step title="Create the entry directory">
+    The path is the route, so every segment is lowercase and hyphenated.
+
+    ```bash noLineNumbers
+    mkdir -p content/react/hooks/use-interval
+    ```
+  </Step>
+  <Step title="Write the document">
+    Open with `# useInterval`, then start the body's structure at `h2`. Frontmatter
+    is optional; anything left out is derived from the path, the first heading and
+    the body.
+  </Step>
+  <Step title="Put the code beside it">
+    An adjacent `use-interval.ts` is served as-is and can be quoted from the
+    document, so the code in the note is the code the note is about.
+  </Step>
+  <Step title="Check it before committing">
+    Validation resolves every internal link and asset reference, and fails on the
+    first one that does not exist.
+
+    ```bash noLineNumbers
+    bun run validate:content
+    ```
+  </Step>
+</Steps>
+
+## Numbering from elsewhere
+
+`start` continues a procedure that began in an earlier section, so the second
+half does not restart at one:
+
+<Steps start={5}>
+  <Step title="Build the site">
+    ```bash noLineNumbers
+    bun run build
+    ```
+  </Step>
+  <Step title="Read the summary">
+    The build prints the entry count and every derived route; a missing note is
+    visible here before it is visible in the navigation.
+  </Step>
+</Steps>
+
+## Props
+
+<PropsTable
+  of="<Steps />"
+  rows={[
+    {
+      name: "start",
+      type: "number",
+      default: "1",
+      description: "Number the first step from something other than one.",
+    },
+  ]}
+/>
+
+<PropsTable
+  of="<Step />"
+  rows={[
+    {
+      name: "title",
+      type: "string",
+      description: "The step's heading. An imperative phrase reads best next to a number.",
+    },
+  ]}
+/>

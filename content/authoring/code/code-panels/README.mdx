@@ -1,0 +1,175 @@
+---
+title: Code panels
+description: What every fenced block becomes — a titled panel with a file icon, line numbers, soft wrap, copy and collapse.
+date: 2026-10-16
+tags:
+  - authoring
+  - code
+  - shiki
+---
+
+# Code panels
+
+A fenced code block is rendered as a panel rather than a bare `<pre>`. The
+header reports what the block is, and the controls on it are the three things a
+reader actually does with code on a page: wrap it, copy it, or get it out of the
+way.
+
+Highlighting happens while the document is compiled, with a light and a dark
+theme emitted together, so no syntax highlighter ships to the browser and
+switching theme costs nothing.
+
+## A plain fence
+
+With nothing but a language, the header shows the language and the line count:
+
+```typescript
+export function add(a: number, b: number) {
+  return a + b;
+}
+```
+
+## Titles
+
+Add `title="..."` and the header reads like an editor tab. The icon is chosen
+from the filename when the title names a file, and from the language when it
+does not, so a path carries its own glyph:
+
+```typescript title="lib/cache.ts"
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+export class MemoryCache<T> {
+  private readonly store = new Map<string, CacheEntry<T>>();
+
+  set(key: string, value: T, ttlMs = 60_000): void {
+    this.store.set(key, { value, expiresAt: Date.now() + ttlMs });
+  }
+
+  get(key: string): T | null {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= Date.now()) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+}
+```
+
+Give a title whenever the code belongs to a real file. It tells the reader where
+to put what they are about to copy, which is usually the missing half of a
+snippet.
+
+## Line numbers
+
+Numbers are on by default and drawn with CSS counters, so they are never part of
+what the copy button puts on the clipboard. Turn them off with `noLineNumbers`
+where they would be noise — a single command, or output that is really prose:
+
+```bash noLineNumbers
+bun run dev
+```
+
+```text noLineNumbers
+content/authoring/code/code-panels/README.mdx
+  18 headings, 9 code blocks, 0 unresolved links
+```
+
+`showLineNumbers=false` is the longer spelling of the same thing, and writing
+`showLineNumbers` on its own still turns them on.
+
+## Long blocks
+
+A block longer than 28 lines opens collapsed, with a control that reveals the
+rest. A long listing is worth keeping intact in the archive; it is not worth
+making a reader scroll past it to reach the next paragraph.
+
+```typescript title="lib/content/discovery.ts" noLineNumbers
+// Abridged: the real module also parses frontmatter and assets.
+import { readdir } from "node:fs/promises";
+import { join } from "node:path";
+
+const CONTENT_ROOT = "content";
+const ENTRY_DOCUMENT = "README.mdx";
+
+export async function findEntryDirectories(
+  root = CONTENT_ROOT,
+): Promise<string[]> {
+  const found: string[] = [];
+
+  async function walk(directory: string) {
+    const items = await readdir(directory, { withFileTypes: true });
+    const hasDocument = items.some(
+      (item) => item.isFile() && item.name === ENTRY_DOCUMENT,
+    );
+
+    if (hasDocument) {
+      found.push(directory);
+    }
+
+    for (const item of items) {
+      if (!item.isDirectory()) continue;
+      if (item.name.startsWith(".")) continue;
+      await walk(join(directory, item.name));
+    }
+  }
+
+  await walk(root);
+  return found.sort();
+}
+
+export function routeFor(directory: string): string {
+  const path = directory.slice(CONTENT_ROOT.length + 1);
+  const segments = path.split("/");
+  const last = segments.at(-1);
+  // A `home` directory answers at its category's own path.
+  return last === "home"
+    ? `/stash/${segments.slice(0, -1).join("/")}`
+    : `/stash/${path}`;
+}
+```
+
+## Soft wrap
+
+Long lines scroll horizontally inside the panel by default, which keeps
+indentation readable. The wrap toggle in the header breaks them to the panel
+width instead, for the case where the end of the line is the point:
+
+```typescript title="lib/site-config.ts"
+export const siteConfig = { name: "Stash", description: "A personal, searchable archive of reusable engineering work, kept as plain files on disk." } as const;
+```
+
+## Which languages
+
+Any language Shiki knows, which is effectively any language worth pasting:
+
+```json title="package.json"
+{
+  "name": "stash",
+  "private": true,
+  "scripts": {
+    "validate:content": "bun run scripts/validate-content.ts"
+  }
+}
+```
+
+```css title="app/globals.css"
+:root {
+  --surface: oklch(99% 0 0);
+  --accent: oklch(62% 0.19 262);
+}
+```
+
+```python title="scripts/summarise.py"
+def summarise(durations: list[float]) -> dict[str, float]:
+    """Mean, best and worst of a set of compile times."""
+    return {
+        "mean": sum(durations) / len(durations),
+        "best": min(durations),
+        "worst": max(durations),
+    }
+```

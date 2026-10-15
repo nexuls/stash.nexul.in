@@ -1,0 +1,94 @@
+---
+title: Props table
+description: A reference for a component's props or a function's options, built as a definition list rather than a grid.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+  - reference
+---
+
+# Props table
+
+The reference block at the end of a component note. Despite the name it is not a
+table: it is a definition list, because a props reference is read one entry at a
+time — a reader arrives looking for `defaultOpen`, not comparing four columns —
+and a four-column grid is the first thing to collapse badly on a phone.
+
+<PropsTable
+  of="<Callout />"
+  rows={[
+    {
+      name: "type",
+      type: "note | tip | warning | danger | important",
+      default: "note",
+      description: "Which notice to show. info and caution are accepted as aliases.",
+    },
+    {
+      name: "title",
+      type: "string",
+      description: "Replaces the default heading for the chosen type.",
+    },
+    {
+      name: "compact",
+      type: "boolean",
+      default: "false",
+      description: "Renders on one line without a heading.",
+    },
+  ]}
+/>
+
+## Required and optional
+
+A row marked `required` says so beside the name, and a row with a `default`
+prints it. Between them a reader can tell what they must pass from what they may:
+
+<PropsTable
+  of="loadEntry(options)"
+  rows={[
+    {
+      name: "slug",
+      type: "string",
+      required: true,
+      description: "Path from the content root, without a leading slash.",
+    },
+    {
+      name: "includeDrafts",
+      type: "boolean",
+      default: "false",
+      description: "Return the entry even when its frontmatter marks it a draft.",
+    },
+    {
+      name: "compile",
+      type: "boolean",
+      default: "true",
+      description: "Compile the MDX body. Pass false when only metadata is wanted.",
+    },
+  ]}
+/>
+
+## Writing the rows
+
+Row text is plain text, not Markdown: a description is one sentence about what
+the prop does, and the name and type are already rendered as code. If a prop
+needs a paragraph, an example or a caveat, that belongs in the prose above,
+where it can have a heading and a code block.
+
+## Props
+
+<PropsTable
+  of="<PropsTable />"
+  rows={[
+    {
+      name: "of",
+      type: "string",
+      description: "What is being documented, e.g. \"<Callout />\". Shown as the heading.",
+    },
+    {
+      name: "rows",
+      type: "PropRow[]",
+      required: true,
+      description: "One object per prop: name, type, default, required, description.",
+    },
+  ]}
+/>

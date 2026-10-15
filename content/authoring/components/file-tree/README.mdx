@@ -1,0 +1,91 @@
+---
+title: File tree
+description: A directory listing with selectable names and real file icons, instead of ASCII art in a code fence.
+date: 2026-10-16
+tags:
+  - authoring
+  - components
+  - filesystem
+---
+
+# File tree
+
+Hierarchy here comes from directory paths, so entries describe layouts often. A
+tree drawn with box characters inside a code fence is an image of a structure: a
+screen reader reads the box characters, and the names cannot be selected without
+dragging in the pipes.
+
+`<FileTree>` renders the same thing as a list. Names are text, nesting is
+nesting, and each row picks its own icon from its name — the Material Icon Theme
+glyphs VS Code uses — so a `.mdx` and a `.ts` are distinguishable without
+reading them.
+
+<FileTree>
+  <Folder name="content">
+    <Folder name="react">
+      <Folder name="hooks">
+        <Folder name="use-debounce" highlight>
+          <File name="README.mdx" highlight comment="the entry document" />
+          <File name="use-debounce.ts" comment="served as-is" />
+          <File name="debounce-diagram.svg" />
+        </Folder>
+        <Folder name="use-media-query" defaultOpen={false}>
+          <File name="README.mdx" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+  <Folder name="lib" defaultOpen={false}>
+    <Folder name="content">
+      <File name="discovery.ts" comment="walks the tree" />
+      <File name="assets.ts" />
+      <File name="validate.ts" comment="fails the build on a bad link" />
+    </Folder>
+    <Folder name="mdx">
+      <File name="options.ts" />
+      <File name="renderer.tsx" />
+    </Folder>
+  </Folder>
+  <File name="package.json" />
+  <File name="biome.json" />
+</FileTree>
+
+## Marking the subject
+
+`highlight` marks the node the surrounding prose is about, and `comment` adds a
+short trailing note. Both are for the one or two rows that matter; a tree with
+every row highlighted has marked nothing.
+
+A folder opens by default. `defaultOpen={false}` collapses a branch that is
+there for context — the shape of the parent — rather than for reading.
+
+## Props
+
+<PropsTable
+  of="<Folder /> and <File />"
+  rows={[
+    {
+      name: "name",
+      type: "string",
+      required: true,
+      description: "The file or directory name. The icon is chosen from it.",
+    },
+    {
+      name: "highlight",
+      type: "boolean",
+      default: "false",
+      description: "Marks the node as the subject of the surrounding prose.",
+    },
+    {
+      name: "comment",
+      type: "string",
+      description: "Short trailing note, in plain text.",
+    },
+    {
+      name: "defaultOpen",
+      type: "boolean",
+      default: "true",
+      description: "Folder only. Collapses a branch kept for context.",
+    },
+  ]}
+/>

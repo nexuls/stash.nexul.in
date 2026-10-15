@@ -1,0 +1,65 @@
+---
+title: Adjacent files
+description: Source files kept beside a document, served as-is, quoted from the note that explains them.
+date: 2026-10-16
+tags:
+  - authoring
+  - assets
+  - filesystem
+---
+
+# Adjacent files
+
+An entry is a directory, so the code a note is about can live in it as a real
+file. This is the point of the whole arrangement: the snippet in the document
+and the file on disk are the same code, and the file can be opened, linted and
+type-checked like any other.
+
+<FileTree>
+  <Folder name="adjacent-files" highlight>
+    <File name="README.mdx" comment="this document" />
+    <File name="sample-snippet.ts" highlight comment="served as-is" />
+  </Folder>
+</FileTree>
+
+This directory holds [sample-snippet.ts](./sample-snippet.ts). Following that
+link serves the file itself rather than a page about it.
+
+## Quoting the file
+
+A document quotes the part worth reading and titles the panel with the file's
+name, so a reader knows the snippet is an excerpt of something they can open:
+
+```typescript title="sample-snippet.ts"
+export interface RenderTarget {
+  id: string;
+  label: string;
+  /** Milliseconds the last compile of this target took. */
+  durationMs: number;
+  status: "idle" | "compiling" | "rendered";
+}
+```
+
+The quote is written by hand. Nothing keeps it in step with the file
+automatically, so quote the smallest part that carries the point — a signature
+rather than a body — and the two will not drift.
+
+## What belongs here
+
+Anything the note refers to: `.ts`, `.tsx`, `.js`, `.json`, `.py`, `.sh`,
+`.css`, a schema, a config, a diagram. Discovery types each file by extension
+and exposes it on the entry's metadata; there is no manifest to update.
+
+What does not belong is anything secret. Discovery is by directory, so a file
+beside a document is published with it — a `.env`, a key, a dump with real data
+in it is public the moment the directory is. Keep those out of `content/`
+entirely rather than relying on nothing linking to them.
+
+## Checking it
+
+Validation resolves every asset reference against the filesystem, so a renamed
+file fails the build at the document that still points at the old name:
+
+```bash noLineNumbers
+bun run validate:content
+```

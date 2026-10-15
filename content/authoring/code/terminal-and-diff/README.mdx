@@ -1,0 +1,80 @@
+---
+title: Terminals and diffs
+description: Shell blocks that read as a session, and diff blocks whose header reports the shape of the change.
+date: 2026-10-16
+tags:
+  - authoring
+  - code
+  - diff
+---
+
+# Terminals and diffs
+
+Two fence languages are treated as more than syntax, because what the reader
+does with them is different: a terminal block is typed, and a diff block is
+applied.
+
+## Terminal blocks
+
+Fences tagged `bash`, `sh`, `shell` or `zsh` are headed with a console icon.
+Line numbers are usually noise here, so a short session is better off with
+`noLineNumbers`:
+
+```bash title="Terminal" noLineNumbers
+bun install
+bun run validate:content
+bun run dev
+```
+
+Keep the commands and nothing else: no `$` prompt, since the reader copies the
+block and a prompt breaks the paste. Where output matters, show it as its own
+`text` block rather than mixing it into the commands.
+
+```bash noLineNumbers
+bun run validate:content
+```
+
+```text noLineNumbers
+28 entries, 141 links, 9 assets
+content ok
+```
+
+A comment line is the right way to group a longer session:
+
+```bash title="Terminal"
+# Create the entry
+mkdir -p content/react/hooks/use-interval
+
+# Write it, then check the tree before committing
+bun run validate:content
+bun run check
+```
+
+## Diff blocks
+
+Fences tagged `diff` have their additions and deletions marked while the
+document is compiled, and the panel header reports the shape of the change as
+`+n -n` instead of a line count:
+
+```diff title="lib/site-config.ts"
+  export const siteConfig = {
+    name: "Stash",
+-   url: "https://example.com",
+-   author: "unknown",
++   url: "https://stash.nexul.in",
++   author: "Arif Sardar",
+  } as const;
+```
+
+Show the smallest diff that is still legible. Context lines are what make a
+change readable, but a diff of thirty unchanged lines is a listing with two
+marks in it, and a before-and-after pair of panels reads better once the change
+is structural:
+
+```diff title="content/authoring/home/README.mdx"
+- # Showcase
++ # Authoring
+```
+
+Addition and deletion are shown with a sign as well as a colour, so the diff
+survives both themes and a reader who cannot tell the two colours apart.
