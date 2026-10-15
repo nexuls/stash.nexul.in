@@ -35,12 +35,37 @@ export interface NavGroupNode {
 
 export type NavNode = NavGroupNode | NavEntryNode;
 
+/**
+ * Names that capitalisation rules get wrong, keyed by their lowercase form.
+ * A directory called `typescript` should read as TypeScript, not Typescript.
+ */
+const WORD_CASING: Record<string, string> = {
+  api: "API",
+  cli: "CLI",
+  css: "CSS",
+  graphql: "GraphQL",
+  html: "HTML",
+  javascript: "JavaScript",
+  jsx: "JSX",
+  mdx: "MDX",
+  nodejs: "Node.js",
+  sql: "SQL",
+  tsx: "TSX",
+  typescript: "TypeScript",
+  ui: "UI",
+  ux: "UX",
+};
+
 /** Converts a kebab-case directory segment into a human-readable label. */
 export function formatSegmentLabel(segment: string): string {
   return segment
     .split("-")
     .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(
+      (word) =>
+        WORD_CASING[word.toLowerCase()] ??
+        word.charAt(0).toUpperCase() + word.slice(1),
+    )
     .join(" ");
 }
 
