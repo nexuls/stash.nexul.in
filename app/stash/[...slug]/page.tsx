@@ -201,7 +201,7 @@ export default async function DocPage({ params }: DocPageProps) {
             </div>
           )}
 
-          <div className="stash-doc-body">
+          <div className="stash-doc-body pt-6">
             <MDXRenderer
               source={entry.body}
               sourcePath={entry.filePath}

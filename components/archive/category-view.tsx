@@ -72,7 +72,7 @@ export function CategoryView({ entry, domain }: CategoryViewProps) {
             </div>
           </header>
 
-          <div className="stash-doc-body">
+          <div className="stash-doc-body pt-6">
             <MDXRenderer
               source={entry.body}
               sourcePath={entry.filePath}
