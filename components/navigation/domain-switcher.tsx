@@ -10,7 +10,6 @@
 
 import { CheckIcon, ChevronsUpDown, LayoutGrid } from "lucide-react";
 import Link from "next/link";
-import { getDomainIcon } from "@/components/landing/domain-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +26,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import type { NavDomain } from "@/lib/content/nav-tree";
+import { getDomainIcon } from "@/lib/icons/domain-icons";
 
 interface DomainSwitcherProps {
   domains: NavDomain[];
