@@ -2,7 +2,7 @@
 
 This document records what has been decided, built, and verified. Update it whenever an architectural decision is approved or a milestone is reached.
 
-## Current milestone: Stage 3.5 (Document surface) — Completed
+## Current milestone: Stage 3.6 (Landing page) — Completed
 
 ### 1. Stage 1: Content foundation (Completed)
 - Filesystem content system implemented under `content/` and `lib/content/` (`types.ts`, `parser.ts`, `assets.ts`, `discovery.ts`, `validator.ts`) with strict Zod validation.
@@ -61,7 +61,7 @@ This document records what has been decided, built, and verified. Update it when
   - `DocsPager`: Linear Previous / Next entry navigation cards, restrained "See Also & Related Notes" discovery section based on category/tag scoring, reading time, timestamp, and GitHub source links.
 - Routes & Pages:
   - Dynamic route `/stash/[...slug]`: Implements `generateStaticParams()` and `generateMetadata()`, MDX rendering, adjacent companion files/assets section, mobile/desktop TOC, and pager.
-  - Archive index: the landing page at `/` carries the hero, domain cards, note directory, and indexed topics/tags. Note that `app/stash/page.tsx` does not exist, so `/stash` currently 404s while `docs-header.tsx`, `docs-mobile-header.tsx`, and both `not-found.tsx` pages still link to it.
+  - Archive index: the landing page at `/` (rebuilt in Stage 3.6, below). Note that `app/stash/page.tsx` does not exist, so `/stash` currently 404s while `docs-header.tsx`, `docs-mobile-header.tsx`, and both `not-found.tsx` pages still link to it.
   - Custom 404 pages: `/stash/not-found.tsx` and root `/app/not-found.tsx` with helpful recovery actions and search trigger.
 - Verification & Test Suite:
   - 65 tests passing across 4 test suites (`bun test`), including navigation tree derivation, filtering, and domain resolution.
@@ -98,6 +98,30 @@ Recorded in [ADR-0005](architecture/decisions/0005-file-type-icons.md).
 ### Known failing test
 
 `components/navigation/__tests__/navigation.test.tsx` → "scopes the tree to the active domain and counts its notes" asserts a note count that commit `bba74cb` removed from the sidebar. Pre-existing and unrelated to the document surface.
+
+### 6. Stage 3.6: Category entry points and the landing page (Completed)
+
+Recorded in [ADR-0006](architecture/decisions/0006-landing-page-as-archive-index.md) and [ADR-0007](architecture/decisions/0007-category-entry-points.md).
+
+- Category entry points: a `home` directory inside a category is that category's page, authored like any entry and served at the category's path (`content/react/home/README.mdx` → `/stash/react`). `/stash/react/home` returns 404, so no page is served under two URLs.
+  - `lib/content/discovery.ts` sets `isCategoryIndex` on the entry, rewrites its `permalink` to the category route while the `slug` keeps naming the directory on disk (which assets are served under), excludes these entries from `getAllEntries` by default, resolves a category path to its index in `getEntryBySlug`, adds `getCategoryIndexes()`, and makes `getAllSlugs` emit route segments.
+  - `app/stash/[...slug]/page.tsx` renders `components/archive/category-view.tsx` for them: the authored document, then every note in the category grouped by directory. Entries now 404 at any path other than their own `permalink`.
+  - Authored `home` entries exist for `react`, `typescript` and `showcase`; their titles and descriptions name those categories everywhere they are listed.
+- The landing page leads with the categories rather than every note. Listing the whole archive worked at 21 notes and would not have worked at 200; the notes now live on the category pages.
+  - `components/landing/archive-browser.tsx` shows the categories by default, and replaces them with matching notes while a search is active. `/` focuses the field, Escape clears it.
+  - `components/archive/note-list.tsx` renders a group of notes for both the search results and the category pages.
+  - Hero copy names no technology and quotes no quantity, since both change without the copy being revisited. Every figure shown is derived from the content at build time.
+- `lib/content/archive-index.ts` derives the model (`buildArchiveIndex`, `filterArchive`); it now takes the category indexes so a category carries its authored label, summary and `href`. The client receives title, description, permalink, date and a prepared search string, never `body` or `rawContent`.
+- Motion: a canvas draws contour lines of a slowly drifting field behind the hero, at 30fps, stopped while off-screen or on a hidden tab, capped at 2× backing store, re-reading its colour on theme change, and reduced to a single still frame under `prefers-reduced-motion`. Nothing else on the page animates.
+- The field runs behind the header: `main` is pulled up by the header's height and the hero adds it back as padding, so the hero's box starts at the top of the document. The header's backdrop is transparent at rest and solidifies over the first 10rem of scroll.
+  - The page scrolls inside a shadcn `ScrollArea` rather than the document, matching the documentation pages, so everything scroll-reactive reads that container. `lib/dom/scroll-parent.ts` resolves it and is now shared with `DocsToc`, which had its own copy.
+  - Two drivers for one ramp: a CSS scroll timeline (`.stash-header-backdrop` in `app/globals.css`) where scroll timelines exist, and `components/landing/header-backdrop.tsx` — the header's only Client Component — where they do not. Firefox 156 reports `CSS.supports('animation-timeline: scroll()') === false`, so the `@supports` block is skipped there and the listener takes over. The component detects which case it is in from `element.getAnimations()` (a scroll-driven animation is never on the document timeline), because a browser can parse the property without running the animation.
+  - Dashed guides (`components/landing/page-guides.tsx`) run the full height of the content column, with section rules and category dividers dashed to match; content rows keep solid rules, so dashed always means structure. Hidden below `sm`, where they would sit on the viewport edge.
+  - Transparent is the resting state, so neither driver has a solid first paint to undo; a `noscript` rule pins the backdrop solid when no script runs at all. Verified in Chromium and in Firefox 156 over WebDriver BiDi, both before and after the move into a `ScrollArea`: both ramp 0 → 0.25 → 0.5625 → 1 across the same scroll offsets of the container, and in Chromium the component leaves the element's inline style untouched.
+- The landing page no longer shows a ⌘K control that nothing listens for; the documentation pages keep theirs, wired for Stage 5.
+- `getDomainIcon` moved to `lib/icons/domain-icons.ts`, since `components/navigation/domain-switcher.tsx` was importing it from a landing page component. `formatSegmentLabel` gained a casing table, so `typescript` reads as TypeScript in the sidebar too.
+- Known gap: the sidebar's domain switcher still opens a category's first note rather than its new category page.
+- Verification: 21 tests in `lib/content/__tests__/archive-index.test.ts` covering the model, the filter and the category-index convention; `bun x tsc --noEmit` and `bun run validate:content` clean; `bun run build` prerenders `/`, every category and every note. The category-first default, search, the live field, the reduced-motion still frame, route resolution and the absence of horizontal overflow were driven and checked in a real browser.
 
 ## Confirmed architecture
 
