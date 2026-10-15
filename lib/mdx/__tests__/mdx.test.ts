@@ -612,7 +612,7 @@ describe("Document components", () => {
     expect(html).toContain("contains-task-list");
   });
 
-  it("gives every heading an anchor", async () => {
+  it("gives every heading a permalink control", async () => {
     const source = `
 ## Section one
 
@@ -620,8 +620,12 @@ describe("Document components", () => {
 `;
     const { content } = await renderMdx({ source });
     const html = renderStatic(content);
-    expect(html).toContain('href="#section-one"');
-    expect(html).toContain('href="#nested-heading"');
-    expect(html).toContain("Link to this section");
+    // The id is the permalink; the control copies it rather than linking to it,
+    // so the heading carries an id and a button, not an anchor.
+    expect(html).toContain('id="section-one"');
+    expect(html).toContain('id="nested-heading"');
+    expect(html.match(/aria-label="Copy link to this section"/g)).toHaveLength(
+      2,
+    );
   });
 });

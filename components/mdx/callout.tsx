@@ -86,11 +86,11 @@ export function Callout({
         </>
       ) : (
         <>
-          <p className="flex items-center gap-2 font-medium text-foreground">
+          <p className="flex items-center gap-2 font-medium text-prose-emphasis">
             <Icon className="stash-callout-mark size-4 shrink-0" aria-hidden />
             <span className="tracking-tight">{heading}</span>
           </p>
-          <div className="mt-1.5 text-foreground/80 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+          <div className="mt-1.5 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
             {children}
           </div>
         </>

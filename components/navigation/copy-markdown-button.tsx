@@ -9,6 +9,7 @@
 
 import { Check, Copy } from "lucide-react";
 import * as React from "react";
+import { copyText } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 
 /** How long the confirmed state stays visible. */
@@ -30,7 +31,7 @@ export function CopyMarkdownButton({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopied(true);
       clearTimeout(timeout.current);
       timeout.current = setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
@@ -56,7 +57,7 @@ export function CopyMarkdownButton({
       ) : (
         <Copy className="size-3.5" aria-hidden />
       )}
-      <span>{copied ? "Copied" : "Copy Markdown"}</span>
+      <span>{copied ? "Copied Markdown" : "Copy Markdown"}</span>
     </button>
   );
 }

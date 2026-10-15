@@ -9,11 +9,17 @@
  *
  * Sizes are relative to the document font size set by `.stash-doc`, so the
  * whole surface scales from one declaration.
+ *
+ * Colour works the same way, in two levels: running text inherits the dimmed
+ * `--prose` set on `.stash-doc-body`, and anything the author marked up —
+ * emphasis, inline code, links, term names, table headers — opts up to
+ * `--prose-emphasis`. Nothing here restates a foreground colour for plain
+ * text, so the balance is tuned in components/mdx/styles/tokens.css.
  */
 
-import { Hash } from "lucide-react";
 import Link from "next/link";
 import type * as React from "react";
+import { HeadingLinkButton } from "@/components/mdx/heading-link-button";
 import { MdxImage } from "@/components/mdx/image";
 import { Kbd } from "@/components/mdx/kbd";
 import { cn } from "@/lib/utils";
@@ -27,8 +33,9 @@ type HeadingLevel = "h2" | "h3" | "h4" | "h5" | "h6";
 /**
  * Builds a heading that carries its own anchor.
  *
- * The anchor moves into the left margin on wide viewports (see `.stash-anchor`)
- * so heading text keeps a flush left edge with the prose beneath it.
+ * The control follows the heading text inline (see `.stash-anchor`) and is
+ * revealed on hover or keyboard focus. It copies a permalink rather than
+ * navigating, so it is a button and not an anchor.
  */
 function createHeading(level: HeadingLevel, headingClassName: string) {
   const Tag = level;
@@ -43,22 +50,14 @@ function createHeading(level: HeadingLevel, headingClassName: string) {
       <Tag
         id={id}
         className={cn(
-          "stash-heading relative scroll-mt-24 font-display text-foreground",
+          "stash-heading scroll-mt-24 font-display text-foreground",
           headingClassName,
           className,
         )}
         {...props}
       >
-        {id && (
-          <a
-            href={`#${id}`}
-            className="stash-anchor text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-          >
-            <Hash className="size-[0.7em]" aria-hidden />
-            <span className="sr-only">Link to this section</span>
-          </a>
-        )}
         {children}
+        {id && <HeadingLinkButton id={id} />}
       </Tag>
     );
   }
@@ -72,7 +71,7 @@ function createHeading(level: HeadingLevel, headingClassName: string) {
 /* -------------------------------------------------------------------------- */
 
 const linkClassName = cn(
-  "font-medium text-foreground underline decoration-primary/45 decoration-1 underline-offset-[3px]",
+  "font-medium text-prose-emphasis underline decoration-primary/45 decoration-1 underline-offset-[3px]",
   "transition-colors hover:decoration-primary",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-sm",
 );
@@ -249,7 +248,7 @@ function MdxCode({
     <code
       className={cn(
         "rounded border border-border/70 bg-muted px-[0.3em] py-[0.1em]",
-        "font-mono text-[0.85em] text-foreground",
+        "font-mono text-[0.85em] text-prose-emphasis",
         // A link or heading already carries its own emphasis.
         "[a_&]:border-primary/25 [a_&]:text-inherit",
         className,
@@ -297,7 +296,7 @@ export const typographyComponents = {
   ),
 
   p: ({ className, ...props }: React.ComponentPropsWithoutRef<"p">) => (
-    <p className={cn("my-5 text-foreground/90", className)} {...props} />
+    <p className={cn("my-5", className)} {...props} />
   ),
 
   a: MdxLink,
@@ -312,7 +311,7 @@ export const typographyComponents = {
   }: React.ComponentPropsWithoutRef<"blockquote">) => (
     <blockquote
       className={cn(
-        "my-6 border-l-2 border-primary/50 pl-5 text-foreground/80",
+        "my-6 border-l-2 border-primary/50 pl-5",
         "[&>p:first-child]:mt-0 [&>p:last-child]:mb-0",
         // A nested quotation steps back rather than adding another rule.
         "[&_blockquote]:border-border [&_blockquote]:text-muted-foreground",
@@ -342,7 +341,7 @@ export const typographyComponents = {
   th: ({ className, ...props }: React.ComponentPropsWithoutRef<"th">) => (
     <th
       className={cn(
-        "px-4 py-2.5 text-left align-bottom font-medium text-foreground",
+        "px-4 py-2.5 text-left align-bottom font-medium text-prose-emphasis",
         className,
       )}
       {...props}
@@ -351,7 +350,7 @@ export const typographyComponents = {
   td: ({ className, ...props }: React.ComponentPropsWithoutRef<"td">) => (
     <td
       className={cn(
-        "px-4 py-2.5 align-top text-foreground/90 [&>code]:whitespace-nowrap",
+        "px-4 py-2.5 align-top [&>code]:whitespace-nowrap",
         className,
       )}
       {...props}
@@ -376,12 +375,12 @@ export const typographyComponents = {
     ...props
   }: React.ComponentPropsWithoutRef<"strong">) => (
     <strong
-      className={cn("font-semibold text-foreground", className)}
+      className={cn("font-semibold text-prose-emphasis", className)}
       {...props}
     />
   ),
   em: ({ className, ...props }: React.ComponentPropsWithoutRef<"em">) => (
-    <em className={cn("italic", className)} {...props} />
+    <em className={cn("italic text-prose-emphasis", className)} {...props} />
   ),
   del: ({ className, ...props }: React.ComponentPropsWithoutRef<"del">) => (
     <del
@@ -410,7 +409,7 @@ export const typographyComponents = {
         // Shiki wraps highlighted tokens in <mark>; those are styled as part
         // of the code panel and must not pick up prose highlighting.
         props["data-highlighted-chars"] === undefined &&
-          "rounded bg-warn/20 px-0.5 text-foreground",
+          "rounded bg-warn/20 px-0.5 text-prose-emphasis",
         className,
       )}
       {...props}
@@ -421,10 +420,13 @@ export const typographyComponents = {
     <dl className={cn("my-5 space-y-3", className)} {...props} />
   ),
   dt: ({ className, ...props }: React.ComponentPropsWithoutRef<"dt">) => (
-    <dt className={cn("font-medium text-foreground", className)} {...props} />
+    <dt
+      className={cn("font-medium text-prose-emphasis", className)}
+      {...props}
+    />
   ),
   dd: ({ className, ...props }: React.ComponentPropsWithoutRef<"dd">) => (
-    <dd className={cn("pl-5 text-foreground/85", className)} {...props} />
+    <dd className={cn("pl-5", className)} {...props} />
   ),
 
   /** Footnote references, emitted by remark-gfm. */
