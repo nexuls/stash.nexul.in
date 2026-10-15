@@ -93,7 +93,6 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
   );
 
   const isFiltering = query.trim().length > 0;
-  const domainCount = activeDomain?.entryCount ?? 0;
   const matchCount = React.useMemo(
     () => countNavEntries(visibleNodes),
     [visibleNodes],
@@ -273,7 +272,7 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
   return (
     <Sidebar className="border-none overflow-clip py-2 bg-sidebar">
       <SidebarHeader className="gap-2.5">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 px-2">
           <Link
             href="/"
             className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
@@ -326,20 +325,10 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
               </kbd>
             )}
           </div>
-
-          <p
-            id="sidebar-filter-status"
-            aria-live="polite"
-            className="mt-1.5 px-1 text-[11px] text-muted-foreground tabular-nums"
-          >
-            {isFiltering
-              ? `${matchCount} of ${domainCount} notes`
-              : `${domainCount} ${domainCount === 1 ? "note" : "notes"}`}
-          </p>
         </div>
       </SidebarHeader>
 
-      <SidebarSeparator className="mx-0 my-1" />
+      <SidebarSeparator className="mx-0" />
 
       <SidebarContent className="gap-0">
         <SidebarGroup>
