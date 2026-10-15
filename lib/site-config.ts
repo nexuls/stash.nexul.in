@@ -40,10 +40,10 @@ export const siteConfig = siteConfigSchema.parse({
     alias: "Nexul",
     url: "https://nexul.in",
     email: "arifsardar.private@gmail.com",
-    github: "https://github.com/nexul",
+    github: "https://github.com/nexuls",
   },
   links: {
-    github: "https://github.com/nexul",
+    github: "https://github.com/nexuls/stash.nexul.in",
   },
   locale: "en_US",
 });
