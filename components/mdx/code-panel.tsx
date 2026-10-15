@@ -20,6 +20,11 @@ export const COLLAPSE_LINE_THRESHOLD = 28;
 export interface CodePanelProps {
   /** Shiki language id, shown as the block's extension-style label. */
   language: string;
+  /**
+   * File-type glyph, rendered on the server so no icon data is bundled.
+   * Supplied by the caller because this component runs on the client.
+   */
+  icon?: React.ReactNode;
   /** Author-supplied `title="..."`, usually a file path. */
   title?: string;
   terminal?: boolean;
@@ -82,6 +87,7 @@ function ToolbarButton({
 
 export function CodePanel({
   language,
+  icon,
   title,
   terminal = false,
   lineCount = 0,
@@ -106,22 +112,22 @@ export function CodePanel({
       data-collapsed={collapsed}
     >
       <div className="flex h-9 items-center gap-2 border-b border-code-rule bg-code-header px-2.5">
-        {terminal ? (
-          <Terminal className="size-3.5 shrink-0 text-primary" aria-hidden />
-        ) : (
-          <span className="shrink-0 rounded bg-foreground/8 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            {language}
-          </span>
-        )}
+        {/* Headed like an editor tab: glyph, then name. The lucide terminal is
+            only reached if the icon package could not be read at build time,
+            which `lib/icons/file-icons.ts` warns about. */}
+        {icon ??
+          (terminal && (
+            <Terminal className="size-3.5 shrink-0 text-primary" aria-hidden />
+          ))}
 
         {title ? (
           <TitlePath title={title} />
         ) : (
-          terminal && (
-            <span className="truncate font-mono text-xs text-muted-foreground">
-              shell
-            </span>
-          )
+          // Without a title the block still has to say what it is, so the
+          // language stands in for the filename.
+          <span className="truncate font-mono text-xs text-muted-foreground">
+            {terminal ? "shell" : language}
+          </span>
         )}
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5">

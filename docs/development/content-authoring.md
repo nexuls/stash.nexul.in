@@ -76,17 +76,31 @@ export function debounce(fn: Function, ms = 300) {
 ```
 ````
 
+### Panel header
+
+A code panel is headed like an editor tab: the file-type icon, then the `title=` path if there is one, or the language id if there is not. The icon is chosen from the title's filename when present and from the language otherwise, so `title="components/counter.tsx"` shows the React/TypeScript glyph.
+
 ### Line numbers
 
-Add `showLineNumbers` to render line numbers using CSS counters. Line numbers are never copied when the user clicks the copy button:
+Every code block is numbered, using CSS counters. Line numbers are never copied when the user clicks the copy button:
 
 ````markdown
-```typescript title="lib/math.ts" showLineNumbers
+```typescript title="lib/math.ts"
 export function add(a: number, b: number) {
   return a + b;
 }
 ```
 ````
+
+Opt out with `showLineNumbers=false`, or the shorter `noLineNumbers`, when the numbers would be noise — a one-line shell command, or a block of prose-like output:
+
+````markdown
+```bash noLineNumbers
+bun run dev
+```
+````
+
+The `<CodeBlock>` form takes `showLineNumbers={false}` for the same purpose. Writing `showLineNumbers` explicitly is still valid and still turns them on, so existing entries need no change.
 
 ### Line highlighting
 
@@ -259,6 +273,8 @@ A numbered procedure. Use it when the order is part of the content; a plain orde
 ### FileTree, Folder and File
 
 A directory listing with selectable names, rather than ASCII art in a code fence. `Folder` takes `defaultOpen`; both nodes take `highlight` to mark the subject of the surrounding prose, and `comment` for a short trailing note.
+
+Each row picks its own icon from the name you give it — the same Material Icon Theme glyphs VS Code shows — so `use-debounce.ts` and `README.mdx` are distinguishable at a glance. There is nothing to configure; see [ADR-0005](../architecture/decisions/0005-file-type-icons.md).
 
 ```mdx
 <FileTree>

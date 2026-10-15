@@ -159,8 +159,14 @@ export function remarkCodeBlockJsx() {
             const meta: string[] = [];
             const title = filename ? readString(filename) : undefined;
             if (title) meta.push(`title="${title}"`);
-            if (showLineNumbers && readBoolean(showLineNumbers)) {
-              meta.push("showLineNumbers");
+            // Line numbers are on by default (see remarkCodeLineNumbers);
+            // only an explicit `false` has to be carried across.
+            if (showLineNumbers) {
+              meta.push(
+                readBoolean(showLineNumbers)
+                  ? "showLineNumbers"
+                  : "showLineNumbers=false",
+              );
             }
             const lines = highlightLines
               ? readNumbers(highlightLines)

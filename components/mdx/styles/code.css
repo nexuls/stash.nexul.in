@@ -58,11 +58,15 @@ html.dark code[data-language] span {
   counter-increment: line;
   content: counter(line);
   display: inline-block;
+  /* Preflight makes every pseudo-element border-box, which folds the gutter
+     padding below into this width, collapses the digit column to zero and
+     takes `text-align` with it. The width is the digits; the padding is the
+     gutter around them. */
+  box-sizing: content-box;
   width: calc(var(--stash-line-digits, 2) * 1ch);
   margin-right: 1rem;
   padding-right: 0.875rem;
   padding-left: 1rem;
-  border-right: 1px solid var(--code-rule);
   text-align: right;
   color: var(--code-gutter);
   opacity: 0.65;

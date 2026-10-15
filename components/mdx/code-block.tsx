@@ -14,6 +14,7 @@
 
 import type * as React from "react";
 import { CodePanel } from "@/components/mdx/code-panel";
+import { FileIcon } from "@/components/mdx/file-icon";
 import { type CodeBlockProps, codeBlockPropsSchema } from "@/lib/mdx/types";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +116,16 @@ export function CodeFigure({ children, className, ...props }: FigureProps) {
   return (
     <CodePanel
       language={language}
+      // Resolved here because the panel is a client component and the glyph is
+      // read from disk. The title wins when it names a real file; a title like
+      // "Terminal" is a label, so the language decides instead.
+      icon={
+        <FileIcon
+          name={typeof rawTitle === "string" ? rawTitle : undefined}
+          language={language}
+          className="size-4.5"
+        />
+      }
       title={typeof rawTitle === "string" ? rawTitle : undefined}
       terminal={
         props["data-terminal"] !== undefined || isTerminalLanguage(language)
@@ -161,7 +172,8 @@ export function CodeBlock({
   code = "",
   language = "text",
   filename,
-  showLineNumbers = false,
+  // Matches the schema default; see lib/mdx/types.ts for why it is on.
+  showLineNumbers = true,
   highlightLines,
   className,
 }: CodeBlockProps) {
@@ -180,6 +192,10 @@ export function CodeBlock({
   return (
     <CodePanel
       language={language}
+      // Same resolution as a compiled fence; see CodeFigure above.
+      icon={
+        <FileIcon name={filename} language={language} className="size-4.5" />
+      }
       title={filename}
       terminal={isTerminalLanguage(language)}
       lineCount={lines.length}

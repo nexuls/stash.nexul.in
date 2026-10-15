@@ -112,7 +112,12 @@ export const codeBlockPropsSchema = z.object({
   code: z.string().optional(),
   language: z.string().optional().default("text"),
   filename: z.string().optional(),
-  showLineNumbers: z.boolean().optional().default(false),
+  /**
+   * On by default: prose refers to "line 12" far more often than a block is
+   * hurt by a gutter. Authors opt out with `showLineNumbers={false}`, which
+   * `remarkCodeLineNumbers` carries through to the fence.
+   */
+  showLineNumbers: z.boolean().optional().default(true),
   highlightLines: z.array(z.number()).optional(),
   className: z.string().optional(),
 });

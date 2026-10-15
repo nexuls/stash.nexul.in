@@ -84,7 +84,8 @@ describe("MDX Zod Schemas & Prop Validation", () => {
       code: "const x = 1;",
     });
     expect(parsed.language).toBe("text");
-    expect(parsed.showLineNumbers).toBe(false);
+    // Line numbers are on unless an author opts out.
+    expect(parsed.showLineNumbers).toBe(true);
 
     const full = codeBlockPropsSchema.parse({
       code: "const y = 2;",
@@ -222,7 +223,10 @@ bun add next-mdx-remote-client
     expect(content).not.toBeNull();
 
     const html = renderStatic(content);
-    expect(html).toContain("lucide-terminal");
+    // A shell block with no title is headed by the console glyph and the word
+    // "shell" rather than the language id.
+    expect(html).toContain('focusable="false"');
+    expect(html).toContain(">shell<");
     expect(html).toContain("next-mdx-remote-client");
   });
 
@@ -610,6 +614,34 @@ describe("Document components", () => {
     expect(html).toContain("stash-task-checkbox");
     expect(html).toContain("checked");
     expect(html).toContain("contains-task-list");
+  });
+
+  it("numbers code lines without being asked", async () => {
+    const { content } = await renderMdx({
+      source: "```ts\nconst a = 1;\n```",
+    });
+    expect(renderStatic(content)).toContain('data-line-numbers=""');
+  });
+
+  it("lets an author opt out of line numbers", async () => {
+    for (const meta of ["showLineNumbers=false", "noLineNumbers"]) {
+      const { content } = await renderMdx({
+        source: `\`\`\`ts ${meta}\nconst a = 1;\n\`\`\``,
+      });
+      const html = renderStatic(content);
+      expect(html).not.toContain("data-line-numbers");
+      // The opt-out token must not survive into the rendered title either.
+      expect(html).not.toContain("showLineNumbers");
+    }
+  });
+
+  it("keeps a title when line numbers are turned off", async () => {
+    const { content } = await renderMdx({
+      source: '```ts title="a.ts" showLineNumbers=false\nconst a = 1;\n```',
+    });
+    const html = renderStatic(content);
+    expect(html).toContain("a.ts");
+    expect(html).not.toContain("data-line-numbers");
   });
 
   it("gives every heading a permalink control", async () => {

@@ -86,6 +86,15 @@ Recorded in [ADR-0004](architecture/decisions/0004-document-surface-and-mdx-pipe
 - `lib/content/parser.ts` now splits a Markdown link title from its destination, so `![alt](./x.svg "Caption")` validates.
 - Verification: 79 of 80 tests pass (`bun test`); `bun x tsc --noEmit` and `bun run validate:content` are clean; `bun run build` prerenders every entry and asset. Light and dark renderings were reviewed at desktop and phone widths, with no horizontal page overflow at 390px.
 
+### 5. File type icons (Completed)
+
+Recorded in [ADR-0005](architecture/decisions/0005-file-type-icons.md).
+
+- `material-icon-theme` added as a dependency, read at build time only; `lib/icons/file-icons.ts` resolves a filename, Shiki language id or folder name against the theme's own manifest.
+- `components/mdx/file-icon.tsx` is a Server Component that inlines the SVG, so no icon data reaches the client bundle.
+- Wired into code panel headers, `<FileTree>` rows and the companion-files list. The code panel's language pill was replaced by icon-then-name, the way an editor tab reads.
+- Shiki's language ids are translated to VS Code's (`tsx` → `typescriptreact`, `sh` → `shellscript`); that mapping is covered by `lib/__tests__/file-icons.test.ts`.
+
 ### Known failing test
 
 `components/navigation/__tests__/navigation.test.tsx` → "scopes the tree to the active domain and counts its notes" asserts a note count that commit `bba74cb` removed from the sidebar. Pre-existing and unrelated to the document surface.

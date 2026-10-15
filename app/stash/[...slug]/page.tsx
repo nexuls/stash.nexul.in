@@ -7,15 +7,10 @@
  * come from `.stash-doc` in globals.css; this route only composes the parts.
  */
 
-import {
-  Clock,
-  FileCode2,
-  FolderTree,
-  History,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Clock, FolderTree, History } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { FileIcon } from "@/components/mdx/file-icon";
 import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
@@ -209,17 +204,12 @@ export default async function DocPage({ params }: DocPageProps) {
                       href={entryAssetUrl(entry.slug, asset.relativePath)}
                       className="flex items-center gap-2.5 px-3.5 py-2.5 font-mono text-[0.8125rem] no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     >
-                      {asset.type === "image" ? (
-                        <ImageIcon
-                          className="size-3.5 shrink-0 text-muted-foreground/70"
-                          aria-hidden
-                        />
-                      ) : (
-                        <FileCode2
-                          className="size-3.5 shrink-0 text-muted-foreground/70"
-                          aria-hidden
-                        />
-                      )}
+                      {/* Same glyphs as code panels and file trees, so one
+                          vocabulary covers every file named on the page. */}
+                      <FileIcon
+                        name={asset.relativePath}
+                        className="size-4.5"
+                      />
                       <span className="truncate text-foreground/90">
                         {asset.relativePath}
                       </span>

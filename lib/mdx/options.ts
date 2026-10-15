@@ -1,8 +1,8 @@
 /**
  * MDX compilation and plugin options.
  *
- * The pipeline is: GitHub Flavored Markdown, `<CodeBlock>` lowering,
- * entry-relative asset resolution, standalone-image promotion, removal of a
+ * The pipeline is: GitHub Flavored Markdown, `<CodeBlock>` lowering, the
+ * line-number default, entry-relative asset resolution, standalone-image promotion, removal of a
  * duplicated title heading, heading slugs, Shiki highlighting, then a pass that
  * lifts code metadata onto the figure element so the React renderer never
  * inspects its own children.
@@ -15,6 +15,7 @@ import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import { rehypeCodeMeta } from "./plugins/rehype-code-meta";
 import { remarkCodeBlockJsx } from "./plugins/remark-code-block-jsx";
+import { remarkCodeLineNumbers } from "./plugins/remark-code-line-numbers";
 import { remarkEntryAssets } from "./plugins/remark-entry-assets";
 import { remarkImageFigures } from "./plugins/remark-image-figures";
 import { remarkStripTitleHeading } from "./plugins/remark-strip-title-heading";
@@ -62,6 +63,7 @@ export function getMdxOptions(config: MdxOptionsConfig = {}) {
     remarkPlugins: [
       remarkGfm,
       remarkCodeBlockJsx,
+      remarkCodeLineNumbers,
       [remarkEntryAssets, { assetBaseUrl: config.assetBaseUrl }] as [
         typeof remarkEntryAssets,
         { assetBaseUrl?: string },
