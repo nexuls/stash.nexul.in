@@ -1,64 +1,61 @@
-import { Archive } from "lucide-react";
+/**
+ * Landing page header.
+ *
+ * Identity and the two controls a reader might reach for. Searching is the
+ * archive's job, a little further down, so nothing here competes with it.
+ *
+ * The bar itself is transparent at the top of the page, letting the hero's
+ * field show through, and solidifies as the page scrolls.
+ */
+
 import Link from "next/link";
 import { GitHubIcon } from "@/components/icons/github-icon";
-import { SearchTrigger } from "@/components/search/search-trigger";
+import { HeaderBackdrop } from "@/components/landing/header-backdrop";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/site-config";
 
-interface LandingHeaderProps {
-  firstEntryHref?: string;
-}
-
-export function LandingHeader({ firstEntryHref }: LandingHeaderProps) {
+export function LandingHeader() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-md transition-colors">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 md:px-8">
-        {/* Brand */}
+    <header className="sticky top-0 z-40 w-full">
+      {/* Transparent over the field at rest, solid once the page has scrolled.
+          A CSS scroll timeline drives it where one exists, and a scroll
+          listener where one does not; with no scripting at all, neither runs,
+          so the backdrop is pinned solid rather than left transparent over the
+          text that scrolls beneath it. */}
+      <noscript>
+        <style>{".stash-header-backdrop { opacity: 1 }"}</style>
+      </noscript>
+      <HeaderBackdrop />
+
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-6 sm:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-semibold text-foreground transition-opacity hover:opacity-90"
+          className="font-display text-base font-bold tracking-[-0.02em] text-foreground transition-colors hover:text-primary"
         >
-          <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-            <Archive className="size-4" />
-          </div>
-          <span className="text-base tracking-tight">{siteConfig.name}</span>
-          <Badge
-            variant="outline"
-            className="hidden font-mono text-[10px] sm:inline-flex"
-          >
-            Archive
-          </Badge>
+          {siteConfig.name}
         </Link>
 
-        {/* Actions & Utilities */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <SearchTrigger variant="header" />
+        <span
+          aria-hidden="true"
+          className="hidden h-3.5 w-px bg-border sm:block"
+        />
 
-          {firstEntryHref && (
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link href={firstEntryHref} />}
-              className="text-xs font-medium"
-            >
-              Documentation
-            </Button>
-          )}
+        <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
+          {siteConfig.author.name}
+        </span>
 
+        <div className="ml-auto flex items-center gap-1">
           <a
             href={siteConfig.links.github}
             target="_blank"
             rel="noopener noreferrer"
             className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="GitHub Repository"
+            aria-label="Source repository on GitHub"
           >
             <GitHubIcon className="size-4" />
           </a>
 
-          <ThemeToggle variant="dropdown" />
+          <ThemeToggle variant="compact" />
         </div>
       </div>
     </header>

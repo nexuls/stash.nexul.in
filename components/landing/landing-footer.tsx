@@ -1,46 +1,31 @@
-import { Archive } from "lucide-react";
-import Link from "next/link";
+/**
+ * Landing page footer.
+ *
+ * States how the archive is actually built, which is the one thing a reader
+ * arriving at the bottom of the index might still want to know.
+ */
+
 import { GitHubIcon } from "@/components/icons/github-icon";
 import { siteConfig } from "@/lib/site-config";
 
 export function LandingFooter() {
   return (
-    <footer className="w-full border-t border-border/60 bg-muted/20 py-8 text-xs text-muted-foreground transition-colors">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 md:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Archive className="size-3.5" />
-          </div>
-          <span className="font-semibold text-foreground">
-            {siteConfig.name}
-          </span>
-          <span>—</span>
-          <span>{siteConfig.description}</span>
-        </div>
+    <footer className="border-t border-dashed border-border">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
+          Every note is a directory of plain MDX files in one repository. Edit
+          the files and the archive follows.
+        </p>
 
-        <div className="flex items-center gap-4">
-          <span className="hidden text-[11px] text-muted-foreground sm:inline-block">
-            Press{" "}
-            <kbd className="rounded border bg-muted px-1 py-0.5 font-mono text-[10px]">
-              ⌘K
-            </kbd>{" "}
-            to search
-          </span>
-
-          <a
-            href={siteConfig.links.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 transition-colors hover:text-foreground"
-          >
-            <GitHubIcon className="size-3.5" />
-            <span>GitHub</span>
-          </a>
-
-          <Link href="/" className="transition-colors hover:text-foreground">
-            Back to top ↑
-          </Link>
-        </div>
+        <a
+          href={siteConfig.links.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <GitHubIcon className="size-3.5" />
+          <span>{siteConfig.author.name}</span>
+        </a>
       </div>
     </footer>
   );

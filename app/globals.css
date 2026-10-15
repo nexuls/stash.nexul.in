@@ -200,3 +200,44 @@
     transition: none;
   }
 }
+
+/* ==========================================================================
+   Landing page header
+   ========================================================================== */
+
+/* The header sits over the hero's field, so at the top of the page its backdrop
+   is transparent and the contours run behind the wordmark. It solidifies as the
+   page scrolls, before any content reaches it.
+
+   Transparent is the default state, so whichever driver takes over has nothing
+   to undo and no solid first paint flashes past. A scroll timeline drives it
+   where one exists, costing no script and no work on the scroll thread; Firefox
+   has no scroll timelines, so components/landing/header-backdrop.tsx drives the
+   same ramp from a scroll listener there.
+
+   The timeline names `nearest` rather than `root` because the page scrolls
+   inside a ScrollArea and the document itself never moves.
+
+   With scripting off neither driver runs, so the `noscript` rule in that
+   component pins the backdrop solid: a transparent header that never
+   solidifies would sit unreadable over the text beneath it. */
+.stash-header-backdrop {
+  opacity: 0;
+}
+
+@keyframes stash-header-solidify {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .stash-header-backdrop {
+    animation: stash-header-solidify linear both;
+    animation-timeline: scroll(nearest block);
+    animation-range: 0 10rem;
+  }
+}
