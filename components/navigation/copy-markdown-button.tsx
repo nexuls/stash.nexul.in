@@ -35,18 +35,18 @@ export function CopyMarkdownButton({
   return (
     <Button
       variant="outline"
-      size="sm"
+      size="lg"
       onClick={handleCopy}
-      className={cn("h-7 px-2.5 text-xs text-muted-foreground", className)}
+      className={cn("h-9 px-2.5 text-sm text-muted-foreground", className)}
     >
       {copied ? (
         <>
-          <Check className="size-3.5 mr-1.5 text-green-500" />
+          <Check className="size-4 mr-1.5 text-green-500" />
           <span>Copied Markdown</span>
         </>
       ) : (
         <>
-          <Copy className="size-3.5 mr-1.5" />
+          <Copy className="size-4 mr-1.5" />
           <span>Copy Markdown</span>
         </>
       )}

@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 
 export default function NavBar({
   items,
@@ -23,7 +22,6 @@ export default function NavBar({
       aria-label="Breadcrumbs"
       className="mb-4 not-prose flex items-center gap-2"
     >
-      <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

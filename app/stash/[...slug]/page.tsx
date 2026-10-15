@@ -17,7 +17,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
-import NavBar from "@/components/navigation/docs-navbar";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsToc } from "@/components/navigation/docs-toc";
 import { Badge } from "@/components/ui/badge";
@@ -135,19 +134,16 @@ export default async function DocPage({ params }: DocPageProps) {
       {/* Mobile-only header for small viewports */}
       <DocsMobileHeader />
 
-      <div className="flex flex-1 w-full justify-center">
+      <div className="flex flex-1 w-full justify-center gap-6">
         {/* Main Document Content Column (Centered) */}
         <main
           id="main-content"
-          className="flex-1 min-w-0 px-4 py-8 sm:px-6 md:px-8 lg:px-10 max-w-200"
+          className="flex-1 min-w-0 px-4 py-8 pt-18 max-w-200"
         >
           <article className="prose dark:prose-invert max-w-none">
-            {/* In-content Breadcrumb Navigation & Desktop Sidebar Trigger */}
-            <NavBar items={breadcrumbs} />
-
             {/* Article Header & Metadata */}
             <header className="mb-8 space-y-4 not-prose">
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+              <h1 className="text-xl font-semibold tracking-tight text-foreground lg:text-3xl">
                 {entry.title}
               </h1>
 
@@ -157,46 +153,6 @@ export default async function DocPage({ params }: DocPageProps) {
                 </p>
               )}
 
-              {/* Action Buttons & Metadata Badges */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className="gap-1 text-xs capitalize font-medium"
-                  >
-                    <FolderOpen className="size-3 text-muted-foreground" />
-                    <span>{entry.category}</span>
-                  </Badge>
-
-                  {formattedDate && (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 text-xs font-normal"
-                    >
-                      <Calendar className="size-3 text-muted-foreground" />
-                      <span>{formattedDate}</span>
-                    </Badge>
-                  )}
-
-                  <Badge
-                    variant="secondary"
-                    className="gap-1 text-xs font-normal"
-                  >
-                    <Clock className="size-3 text-muted-foreground" />
-                    <span>{entry.readingTime.minutes} min read</span>
-                  </Badge>
-
-                  {entry.draft && (
-                    <Badge variant="destructive" className="text-xs">
-                      Draft
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Copy Markdown Source Button */}
-                <CopyMarkdownButton content={entry.rawContent} />
-              </div>
-
               {/* Tags */}
               {entry.tags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -204,7 +160,7 @@ export default async function DocPage({ params }: DocPageProps) {
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="text-[11px] font-mono font-normal text-muted-foreground"
+                      className="h-5 text-[11px] font-mono font-normal text-muted-foreground"
                     >
                       #{tag}
                     </Badge>
@@ -212,7 +168,37 @@ export default async function DocPage({ params }: DocPageProps) {
                 </div>
               )}
 
-              <Separator className="mt-6" />
+              {/* Action Buttons & Metadata Badges */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="capitalize font-medium px-3"
+                  >
+                    <FolderOpen className="size-3.5 text-muted-foreground" />
+                    <span>{entry.category}</span>
+                  </Badge>
+
+                  {formattedDate && (
+                    <Badge variant="secondary" className="font-normal px-3">
+                      <Calendar className="size-3 text-muted-foreground" />
+                      <span>{formattedDate}</span>
+                    </Badge>
+                  )}
+
+                  <Badge variant="secondary" className="font-normal pr-3">
+                    <Clock className="size-3 text-muted-foreground" />
+                    <span>{entry.readingTime.minutes} min read</span>
+                  </Badge>
+
+                  {entry.draft && <Badge variant="destructive">Draft</Badge>}
+                </div>
+
+                {/* Copy Markdown Source Button */}
+                <CopyMarkdownButton content={entry.rawContent} />
+              </div>
+
+              <Separator />
             </header>
 
             {/* Mobile / Tablet Table of Contents */}
@@ -282,9 +268,9 @@ export default async function DocPage({ params }: DocPageProps) {
         {/* Right Rail: Desktop Scroll-Aware Table of Contents */}
         <aside
           aria-label="Table of contents navigation"
-          className="hidden xl:block w-60 shrink-0 px-4 py-8 border-l border-border/40"
+          className="hidden xl:block w-60 shrink-0 px-4 py-8 pt-18"
         >
-          <div className="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
+          <div className="sticky top-18 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
             <DocsToc headings={entry.headings} />
           </div>
         </aside>
