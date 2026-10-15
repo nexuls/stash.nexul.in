@@ -16,6 +16,7 @@ export const siteConfigSchema = z.object({
   url: z.string().url(),
   author: z.object({
     name: z.string().min(1),
+    alias: z.string().min(1),
     url: z.string().url(),
     email: z.string().email(),
     github: z.string().url(),
@@ -36,6 +37,7 @@ export const siteConfig = siteConfigSchema.parse({
   url: "https://stash.nexul.in",
   author: {
     name: "Arif Sardar",
+    alias: "Nexul",
     url: "https://nexul.in",
     email: "arifsardar.private@gmail.com",
     github: "https://github.com/nexul",

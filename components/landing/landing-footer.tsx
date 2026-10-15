@@ -24,7 +24,7 @@ export function LandingFooter() {
           className="inline-flex shrink-0 items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <GitHubIcon className="size-3.5" />
-          <span>{siteConfig.author.name}</span>
+          <span>{siteConfig.author.alias}</span>
         </a>
       </div>
     </footer>
