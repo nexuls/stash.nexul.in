@@ -130,7 +130,7 @@ export default async function DocPage({ params }: DocPageProps) {
   const formattedDate = entry.updated || entry.date;
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex p-2 min-h-screen w-full flex-col">
       {/* Mobile-only header for small viewports */}
       <DocsMobileHeader />
 

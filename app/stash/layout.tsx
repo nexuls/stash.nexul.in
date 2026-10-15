@@ -54,7 +54,7 @@ export default async function StashLayout({
           <SidebarTrigger size="icon-lg" />
         </div>
 
-        <ScrollArea className="bg-background h-full md:p-2 overflow-clip md:rounded-2xl border">
+        <ScrollArea className="bg-background h-full overflow-clip md:rounded-2xl border">
           {children}
         </ScrollArea>
       </SidebarInset>
