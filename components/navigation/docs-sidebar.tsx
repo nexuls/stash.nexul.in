@@ -1,255 +1,416 @@
 "use client";
 
 /**
- * Documentation navigation sidebar using standard shadcn Sidebar primitives.
+ * Documentation navigation sidebar.
  *
- * Scoped to the currently active knowledge domain, with a top domain switcher
- * dropdown, collapsible subcategory groups, and search integration.
+ * Scoped to one knowledge domain at a time: a switcher selects the domain and
+ * the tree below it shows that domain's contents as the directory structure it
+ * is derived from. The group containing the current note is expanded and
+ * scrolled into view on navigation.
+ *
+ * Keyboard: "/" focuses the filter, arrow keys walk the tree, Left/Right
+ * collapse and expand groups, Enter in the filter opens the first match.
  */
 
-import { Archive, Home } from "lucide-react";
+import { Archive, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { GitHubIcon } from "@/components/icons/github-icon";
-import {
-  type DomainItem,
-  DomainSwitcher,
-} from "@/components/navigation/domain-switcher";
-import { SidebarCollapsibleGroup } from "@/components/navigation/sidebar-collapsible-group";
-import { SidebarEntryItem } from "@/components/navigation/sidebar-entry-item";
-import { SearchTrigger } from "@/components/search/search-trigger";
+import { DomainSwitcher } from "@/components/navigation/domain-switcher";
+import { SidebarNavTree } from "@/components/navigation/sidebar-nav-tree";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+  SidebarInput,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import type { ContentCategory, ContentEntry } from "@/lib/content/types";
+import {
+  buildNavTree,
+  countNavEntries,
+  filterNavTree,
+  getActiveDomain,
+  getActiveTrail,
+  getNavDomains,
+} from "@/lib/content/nav-tree";
+import type { ContentEntry } from "@/lib/content/types";
 import { siteConfig } from "@/lib/site-config";
 
 interface DocsSidebarProps {
   entries: ContentEntry[];
-  categories: ContentCategory[];
-  currentSlug?: string;
 }
 
-export function DocsSidebar({
-  entries,
-  categories: _categories,
-  currentSlug,
-}: DocsSidebarProps) {
-  const pathname = usePathname();
+/** Moves focus between visible tree rows, wrapping at both ends. */
+function moveRowFocus(
+  container: HTMLElement,
+  delta: number | "first" | "last",
+) {
+  const rows = Array.from(
+    container.querySelectorAll<HTMLElement>("[data-nav-row]"),
+  ).filter((row) => row.offsetParent !== null);
 
-  // Extract all available domains from entries
-  const domains: DomainItem[] = React.useMemo(() => {
-    const domainMap = new Map<
-      string,
-      { count: number; firstEntry?: ContentEntry }
-    >();
+  if (rows.length === 0) return;
 
-    for (const entry of entries) {
-      const domainKey = entry.categories[0] || entry.category || "general";
-      const existing = domainMap.get(domainKey) || { count: 0 };
-      existing.count += 1;
-      if (!existing.firstEntry) {
-        existing.firstEntry = entry;
+  if (delta === "first") {
+    rows[0]?.focus();
+    return;
+  }
+  if (delta === "last") {
+    rows[rows.length - 1]?.focus();
+    return;
+  }
+
+  const index = rows.indexOf(document.activeElement as HTMLElement);
+  const next = index === -1 ? 0 : (index + delta + rows.length) % rows.length;
+  rows[next]?.focus();
+}
+
+export function DocsSidebar({ entries }: DocsSidebarProps) {
+  const pathname = usePathname() ?? "";
+  const { isMobile, setOpen, setOpenMobile } = useSidebar();
+
+  const filterRef = React.useRef<HTMLInputElement>(null);
+  const navRef = React.useRef<HTMLDivElement>(null);
+
+  const [query, setQuery] = React.useState("");
+
+  const domains = React.useMemo(
+    () => getNavDomains(buildNavTree(entries)),
+    [entries],
+  );
+  const activeDomain = getActiveDomain(domains, pathname);
+
+  const visibleNodes = React.useMemo(
+    () => filterNavTree(activeDomain?.nodes ?? [], query),
+    [activeDomain, query],
+  );
+
+  const isFiltering = query.trim().length > 0;
+  const domainCount = activeDomain?.entryCount ?? 0;
+  const matchCount = React.useMemo(
+    () => countNavEntries(visibleNodes),
+    [visibleNodes],
+  );
+
+  // A filter is scoped to the open domain, so surface where the other hits are.
+  const otherDomainMatches = React.useMemo(() => {
+    if (!isFiltering || matchCount > 0) return [];
+
+    return domains
+      .filter((domain) => domain.slug !== activeDomain?.slug)
+      .map((domain) => ({
+        domain,
+        count: countNavEntries(filterNavTree(domain.nodes, query)),
+      }))
+      .filter((candidate) => candidate.count > 0);
+  }, [domains, activeDomain, query, isFiltering, matchCount]);
+
+  // Directories start expanded, matching the shape of the archive at a glance;
+  // only the ones a reader collapses are tracked.
+  const [closedGroups, setClosedGroups] = React.useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const handleToggleGroup = React.useCallback((id: string, open: boolean) => {
+    setClosedGroups((previous) => {
+      if (open === !previous.has(id)) return previous;
+      const next = new Set(previous);
+      if (open) {
+        next.delete(id);
+      } else {
+        next.add(id);
       }
-      domainMap.set(domainKey, existing);
-    }
-
-    return Array.from(domainMap.entries()).map(([slug, data]) => {
-      const formattedName = slug
-        .split("-")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
-
-      return {
-        slug,
-        name: formattedName,
-        count: data.count,
-        firstEntryPermalink: data.firstEntry?.permalink || `/stash/${slug}`,
-      };
+      return next;
     });
-  }, [entries]);
+  }, []);
 
-  // Derive initial active domain from pathname or currentSlug
-  const getDomainFromPath = React.useCallback(
-    (path: string | undefined): string => {
-      if (!path) return domains[0]?.slug || "react";
-
-      // If currentSlug is provided e.g. "react/hooks/use-debounce"
-      if (currentSlug) {
-        const parts = currentSlug.split("/");
-        if (parts[0]) return parts[0];
-      }
-
-      // If matching from pathname e.g. "/stash/react/hooks/use-debounce"
-      const cleanPath = path.replace(/^\/stash\/?/, "").replace(/^\//, "");
-      const segments = cleanPath.split("/");
-      if (segments[0] && domains.some((d) => d.slug === segments[0])) {
-        return segments[0];
-      }
-
-      return domains[0]?.slug || "react";
-    },
-    [domains, currentSlug],
-  );
-
-  const [activeDomainSlug, setActiveDomainSlug] = React.useState<string>(() =>
-    getDomainFromPath(pathname),
-  );
-
-  // Sync active domain when route changes
+  // A filter is a way to get somewhere; once you arrive, show the full context.
+  const lastPathname = React.useRef(pathname);
   React.useEffect(() => {
-    const matched = getDomainFromPath(pathname);
-    if (matched && matched !== activeDomainSlug) {
-      setActiveDomainSlug(matched);
+    if (lastPathname.current === pathname) return;
+    lastPathname.current = pathname;
+    setQuery("");
+  }, [pathname]);
+
+  // Navigating to a note always reveals it, even inside a collapsed directory.
+  React.useEffect(() => {
+    const trail = getActiveTrail(entries, pathname);
+    if (trail.length === 0) return;
+
+    setClosedGroups((previous) => {
+      if (trail.every((id) => !previous.has(id))) return previous;
+      const next = new Set(previous);
+      for (const id of trail) next.delete(id);
+      return next;
+    });
+  }, [entries, pathname]);
+
+  // Keep the current note visible, scrolling the sidebar only.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measures the DOM whenever the route or the expanded directories change
+  React.useEffect(() => {
+    const row = navRef.current?.querySelector<HTMLElement>(
+      '[aria-current="page"]',
+    );
+    const scroller = row?.closest<HTMLElement>('[data-sidebar="content"]');
+    if (!row || !scroller) return;
+
+    const rowBox = row.getBoundingClientRect();
+    const scrollerBox = scroller.getBoundingClientRect();
+
+    if (rowBox.top < scrollerBox.top || rowBox.bottom > scrollerBox.bottom) {
+      scroller.scrollTop +=
+        rowBox.top - scrollerBox.top - scrollerBox.height / 3;
     }
-  }, [pathname, getDomainFromPath, activeDomainSlug]);
+  }, [pathname, closedGroups]);
 
-  // Group entries for ONLY the active domain: subCategory -> entries
-  const activeDomainSubMap = React.useMemo(() => {
-    const subMap = new Map<string, ContentEntry[]>();
-
-    for (const entry of entries) {
-      const domainKey = entry.categories[0] || entry.category || "general";
-      if (domainKey !== activeDomainSlug) {
-        continue;
+  // "/" jumps to the filter from anywhere, opening the sidebar if it is closed.
+  React.useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
       }
 
-      const subCategory =
-        entry.categories.length > 1 ? entry.categories[1] : "default";
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.isContentEditable ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
 
-      const subList = subMap.get(subCategory) || [];
-      subList.push(entry);
-      subMap.set(subCategory, subList);
+      event.preventDefault();
+      if (isMobile) {
+        setOpenMobile(true);
+      } else {
+        setOpen(true);
+      }
+      // Wait for the sidebar to mount its content before taking focus.
+      requestAnimationFrame(() => filterRef.current?.focus());
     }
 
-    return subMap;
-  }, [entries, activeDomainSlug]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile, setOpen, setOpenMobile]);
 
-  const activeDomainInfo = domains.find((d) => d.slug === activeDomainSlug);
+  function clearFilter() {
+    setQuery("");
+    filterRef.current?.focus();
+  }
+
+  function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      if (query) {
+        event.preventDefault();
+        setQuery("");
+        return;
+      }
+      filterRef.current?.blur();
+      return;
+    }
+
+    if (event.key === "ArrowDown" && navRef.current) {
+      event.preventDefault();
+      moveRowFocus(navRef.current, "first");
+      return;
+    }
+
+    // Enter opens the top match by activating the link the tree already renders.
+    if (event.key === "Enter") {
+      const firstLink =
+        navRef.current?.querySelector<HTMLAnchorElement>("a[data-nav-row]");
+      if (!firstLink) return;
+      event.preventDefault();
+      firstLink.click();
+    }
+  }
+
+  function handleTreeKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const container = navRef.current;
+    const row = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-nav-row]",
+    );
+    if (!container || !row) return;
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        moveRowFocus(container, 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        moveRowFocus(container, -1);
+        break;
+      case "Home":
+        event.preventDefault();
+        moveRowFocus(container, "first");
+        break;
+      case "End":
+        event.preventDefault();
+        moveRowFocus(container, "last");
+        break;
+      case "ArrowRight":
+      case "ArrowLeft": {
+        const groupId = row.dataset.navGroup;
+        if (!groupId) return;
+        event.preventDefault();
+        handleToggleGroup(groupId, event.key === "ArrowRight");
+        break;
+      }
+      default:
+        break;
+    }
+  }
 
   return (
     <Sidebar className="border-none overflow-clip py-2 bg-sidebar">
-      {/* Sidebar Header: Logo, Toggle, Domain Switcher, and Search */}
-      <SidebarHeader className="space-y-2">
-        <SidebarMenu className="flex flex-row items-center justify-between">
-          <SidebarMenuItem>
-            <Link
-              href="/"
-              className="flex items-center gap-2 p-1.5 font-semibold text-foreground transition-opacity hover:opacity-85"
-            >
-              <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                <Archive className="size-4" />
-              </div>
-              <span className="text-sm font-semibold tracking-tight">
-                {siteConfig.name}
-              </span>
-            </Link>
-          </SidebarMenuItem>
+      <SidebarHeader className="gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            href="/"
+            className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Archive className="size-4" />
+            </span>
+            <span className="text-sm font-semibold tracking-tight text-foreground">
+              {siteConfig.name}
+            </span>
+          </Link>
 
-          <SidebarMenuItem>
-            <SidebarTrigger size="icon-lg" />
-          </SidebarMenuItem>
-        </SidebarMenu>
+          <SidebarTrigger />
+        </div>
 
-        {/* Domain Switcher Dropdown on top of sidebar */}
-        <DomainSwitcher
-          domains={domains}
-          activeDomainSlug={activeDomainSlug}
-          onSelectDomain={setActiveDomainSlug}
-        />
+        {activeDomain && (
+          <DomainSwitcher domains={domains} activeDomain={activeDomain} />
+        )}
 
-        {/* Search Trigger */}
-        <SearchTrigger variant="sidebar" />
+        <div>
+          <div className="relative">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            />
+            <SidebarInput
+              ref={filterRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={handleFilterKeyDown}
+              placeholder="Filter notes"
+              aria-label={`Filter notes in ${activeDomain?.label ?? "this domain"} by title, path, or tag`}
+              aria-describedby="sidebar-filter-status"
+              className="pr-8 pl-8 text-[13px]"
+            />
+            {isFiltering ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={clearFilter}
+                className="absolute top-1/2 right-1 size-6 -translate-y-1/2 text-muted-foreground"
+              >
+                <X className="size-3.5" />
+                <span className="sr-only">Clear filter</span>
+              </Button>
+            ) : (
+              <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                /
+              </kbd>
+            )}
+          </div>
+
+          <p
+            id="sidebar-filter-status"
+            aria-live="polite"
+            className="mt-1.5 px-1 text-[11px] text-muted-foreground tabular-nums"
+          >
+            {isFiltering
+              ? `${matchCount} of ${domainCount} notes`
+              : `${domainCount} ${domainCount === 1 ? "note" : "notes"}`}
+          </p>
+        </div>
       </SidebarHeader>
 
       <SidebarSeparator className="mx-0 my-1" />
 
-      {/* Scrollable Navigation Tree for Active Domain */}
-      <SidebarContent>
+      <SidebarContent className="gap-0">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {activeDomainInfo?.name || "Navigation"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {Array.from(activeDomainSubMap.entries()).map(
-                ([subKey, subEntries]) => {
-                  const hasSubcategory = subKey !== "default";
+          <nav
+            ref={navRef}
+            onKeyDown={handleTreeKeyDown}
+            aria-label={`${activeDomain?.label ?? "Archive"} contents`}
+          >
+            {matchCount === 0 ? (
+              <div className="px-2 py-5 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Nothing in{" "}
+                  <span className="font-mono">{activeDomain?.slug}</span>{" "}
+                  matches “{query.trim()}”.
+                </p>
 
-                  if (hasSubcategory) {
-                    const formattedSubName = subKey
-                      .split("-")
-                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
+                {otherDomainMatches.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-left">
+                    {otherDomainMatches.map(({ domain, count }) => (
+                      <li key={domain.slug}>
+                        <Link
+                          href={domain.firstPermalink}
+                          onClick={() => {
+                            if (isMobile) setOpenMobile(false);
+                          }}
+                          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        >
+                          <span className="font-mono">{domain.slug}</span>
+                          <span className="ml-auto tabular-nums">{count}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-                    return (
-                      <SidebarCollapsibleGroup
-                        key={subKey}
-                        title={formattedSubName}
-                        entries={subEntries}
-                        currentSlug={currentSlug}
-                        pathname={pathname}
-                        defaultOpen={true}
-                      />
-                    );
-                  }
-
-                  // Root entries in active domain
-                  return subEntries.map((entry) => (
-                    <SidebarEntryItem
-                      key={entry.slug}
-                      entry={entry}
-                      currentSlug={currentSlug}
-                      pathname={pathname}
-                    />
-                  ));
-                },
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilter}
+                  className="mt-2 h-7 text-xs"
+                >
+                  Clear filter
+                </Button>
+              </div>
+            ) : (
+              <SidebarNavTree
+                nodes={visibleNodes}
+                closedGroups={closedGroups}
+                onToggleGroup={handleToggleGroup}
+                activePermalink={pathname}
+                forceOpen={isFiltering}
+              />
+            )}
+          </nav>
         </SidebarGroup>
       </SidebarContent>
 
       <SidebarSeparator className="mx-0 my-1" />
 
-      {/* Sidebar Footer: Home link, GitHub repo, and Theme Toggle */}
-      <SidebarFooter>
-        <SidebarMenu className="mb-1">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/" />}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Home className="size-4" />
-              <span>Archive Home</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
-        <div className="flex items-center justify-between pt-1">
+      <SidebarFooter className="gap-0">
+        <div className="flex items-center justify-between gap-2">
           <a
             href={siteConfig.links.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            aria-label="View source repository on GitHub"
-            title="GitHub Repository"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
+            title="Source repository on GitHub"
           >
-            <span className="sr-only">GitHub</span>
             <GitHubIcon className="size-4" />
+            <span className="sr-only">GitHub source repository</span>
           </a>
 
           <ThemeToggle variant="compact" />

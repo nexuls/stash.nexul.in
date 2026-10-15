@@ -13,7 +13,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { getAllCategories, getAllEntries } from "@/lib/content/discovery";
+import { getAllEntries } from "@/lib/content/discovery";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -30,10 +30,7 @@ export default async function StashLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [entries, categories] = await Promise.all([
-    getAllEntries(),
-    getAllCategories(),
-  ]);
+  const entries = await getAllEntries();
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -45,7 +42,7 @@ export default async function StashLayout({
         Skip to main content
       </a>
 
-      <DocsSidebar entries={entries} categories={categories} />
+      <DocsSidebar entries={entries} />
 
       <SidebarInset
         className={cn(

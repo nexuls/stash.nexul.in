@@ -53,16 +53,18 @@ This document records what has been decided, built, and verified. Update it when
   - Dual presentation: sticky right rail on desktop (`xl+`) and compact card for mobile/tablet.
   - Filters to `h2` and `h3` levels with indented depth hierarchy and "Scroll to top" button.
 - Documentation Navigation Shell:
-  - `DocsSidebar`: Dynamic category taxonomy grouping without hard-coded taxonomy, active entry highlighting, domain badges, count indicators, author attribution footer, and search trigger.
+  - `DocsSidebar`: Domain-scoped navigation shell. A `DomainSwitcher` selects one knowledge domain and `SidebarNavTree` renders that domain's contents as the directory tree it is derived from, at arbitrary nesting depth, with guide rails, an active-row tick, per-directory counts, and a live filter.
+  - `lib/content/nav-tree.ts`: Pure derivation of the navigation tree from entry category paths (`buildNavTree`, `filterNavTree`, `getNavDomains`, `getActiveDomain`, `getActiveTrail`), keeping navigation logic out of the UI. The active domain and the expanded trail are resolved from the route rather than held in component state, so the sidebar cannot disagree with the page on display.
+  - Sidebar interaction: `collapsible="icon"` rail (no floating overlay trigger), `SidebarRail` edge toggling, `Ctrl/Cmd+B` to collapse, `/` to focus the filter, arrow keys to walk the tree, Left/Right to collapse and expand directories, Enter to open the top match, Escape to clear. The filter clears on navigation, the active trail auto-expands, and the current note is scrolled into view within the sidebar only.
   - `DocsHeader`: Sticky header with `SidebarTrigger`, breadcrumbs (`Breadcrumb`), dummy search button with `⌘K` badge, external GitHub repository link, and `ThemeToggle`.
   - `SearchTrigger`: Reusable client trigger component emitting `stash:open-search` for Stage 5 search dialog.
   - `DocsPager`: Linear Previous / Next entry navigation cards, restrained "See Also & Related Notes" discovery section based on category/tag scoring, reading time, timestamp, and GitHub source links.
 - Routes & Pages:
   - Dynamic route `/stash/[...slug]`: Implements `generateStaticParams()` and `generateMetadata()`, MDX rendering, adjacent companion files/assets section, mobile/desktop TOC, and pager.
-  - Archive index `/stash`: Visual hero, domain categorization cards, note directory with reading times and dates, and indexed topics/tags.
+  - Archive index: the landing page at `/` carries the hero, domain cards, note directory, and indexed topics/tags. Note that `app/stash/page.tsx` does not exist, so `/stash` currently 404s while `docs-header.tsx`, `docs-mobile-header.tsx`, and both `not-found.tsx` pages still link to it.
   - Custom 404 pages: `/stash/not-found.tsx` and root `/app/not-found.tsx` with helpful recovery actions and search trigger.
 - Verification & Test Suite:
-  - 53 tests passing across 3 test suites (`bun test`).
+  - 65 tests passing across 4 test suites (`bun test`), including navigation tree derivation, filtering, and domain resolution.
   - Strict Biome check, TypeScript check (`tsc --noEmit`), and content validation check (`bun run check`) pass with 0 errors.
   - Production build `bun run build` verifies clean static generation (SSG) of all routes.
 

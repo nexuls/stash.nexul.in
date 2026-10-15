@@ -14,12 +14,20 @@ import { SearchTrigger } from "@/components/search/search-trigger";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
-  getAllCategories,
   getAllEntries,
   getEntryBySlug,
   getPrevNextEntries,
   getRelatedEntries,
 } from "@/lib/content";
+import {
+  buildNavTree,
+  countNavEntries,
+  filterNavTree,
+  findFirstNavEntry,
+  getActiveDomain,
+  getActiveTrail,
+  getNavDomains,
+} from "@/lib/content/nav-tree";
 import type { ContentHeading } from "@/lib/content/types";
 
 function renderStatic(element: React.ReactElement | null): string {
@@ -121,25 +129,128 @@ describe("Documentation Pager (DocsPager)", () => {
 });
 
 describe("Documentation Sidebar (DocsSidebar)", () => {
-  it("renders entries, categories, and theme toggle in sidebar", async () => {
-    const [entries, categories] = await Promise.all([
-      getAllEntries(),
-      getAllCategories(),
-    ]);
+  it("renders the brand, filter, domain tree, and footer controls", async () => {
+    const entries = await getAllEntries();
 
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebar entries={entries} categories={categories} />
+        <DocsSidebar entries={entries} />
       </SidebarProvider>,
     );
 
     expect(html).toContain("Stash");
-    expect(html).toContain("Archive Home");
-    expect(html).toContain("Domain");
+    expect(html).toContain("Filter notes");
     expect(html).toContain("GitHub");
     // Theme toggle buttons in sidebar footer
     expect(html).toContain("Light theme");
     expect(html).toContain("Dark theme");
+  });
+
+  it("scopes the tree to the active domain and counts its notes", async () => {
+    const entries = await getAllEntries();
+    const domains = getNavDomains(buildNavTree(entries));
+    const firstDomain = domains[0];
+    if (!firstDomain) throw new Error("Expected at least one domain");
+
+    const html = renderStatic(
+      <SidebarProvider defaultOpen={true}>
+        <DocsSidebar entries={entries} />
+      </SidebarProvider>,
+    );
+
+    // The switcher shows the active domain and its note count.
+    expect(html).toContain(firstDomain.slug);
+    expect(html).toContain(`${firstDomain.entryCount} notes`);
+
+    // Notes from other domains stay out of the scoped tree.
+    const otherDomain = domains.find((d) => d.slug !== firstDomain.slug);
+    if (otherDomain) {
+      const foreign = findFirstNavEntry(otherDomain.nodes);
+      if (foreign) expect(html).not.toContain(foreign.entry.permalink);
+    }
+  });
+});
+
+describe("Domain derivation (getNavDomains / getActiveDomain)", () => {
+  it("builds one domain per top-level content directory", async () => {
+    const entries = await getAllEntries();
+    const domains = getNavDomains(buildNavTree(entries));
+
+    const expected = new Set(
+      entries.map((entry) => entry.categories[0]).filter(Boolean),
+    );
+    expect(domains.map((domain) => domain.slug).sort()).toEqual(
+      [...expected].sort(),
+    );
+
+    for (const domain of domains) {
+      expect(domain.entryCount).toBe(countNavEntries(domain.nodes));
+      expect(domain.firstPermalink.startsWith("/stash/")).toBe(true);
+    }
+  });
+
+  it("resolves the active domain from the route", async () => {
+    const entries = await getAllEntries();
+    const domains = getNavDomains(buildNavTree(entries));
+
+    expect(
+      getActiveDomain(domains, "/stash/react/hooks/use-debounce")?.slug,
+    ).toBe("react");
+    expect(getActiveDomain(domains, "/stash/typescript")?.slug).toBe(
+      "typescript",
+    );
+    // The archive index has no domain of its own, so the first one opens.
+    expect(getActiveDomain(domains, "/stash")?.slug).toBe(domains[0]?.slug);
+  });
+});
+
+describe("Navigation tree derivation (buildNavTree)", () => {
+  it("nests entries under their directory path and counts them", async () => {
+    const entries = await getAllEntries();
+    const tree = buildNavTree(entries);
+
+    expect(countNavEntries(tree)).toBe(entries.length);
+
+    const react = tree.find(
+      (node) => node.kind === "group" && node.id === "react",
+    );
+    expect(react?.kind).toBe("group");
+    if (react?.kind !== "group") throw new Error("Expected a react group");
+
+    // content/react/hooks/use-debounce and content/react/components/command-menu
+    expect(react.children.every((child) => child.kind === "group")).toBe(true);
+    expect(react.entryCount).toBe(
+      entries.filter((entry) => entry.categories[0] === "react").length,
+    );
+  });
+
+  it("filters by path, title, and tag, pruning empty groups", async () => {
+    const entries = await getAllEntries();
+    const tree = buildNavTree(entries);
+
+    const byPath = filterNavTree(tree, "hooks");
+    expect(countNavEntries(byPath)).toBeGreaterThan(0);
+    expect(
+      byPath.every((node) => node.kind === "group" && node.id === "react"),
+    ).toBe(true);
+
+    const byTitle = filterNavTree(tree, "debounce");
+    expect(countNavEntries(byTitle)).toBe(1);
+    expect(findFirstNavEntry(byTitle)?.entry.slug).toBe(
+      "react/hooks/use-debounce",
+    );
+
+    expect(countNavEntries(filterNavTree(tree, "zzz-no-such-note"))).toBe(0);
+  });
+
+  it("resolves the group trail leading to the active entry", async () => {
+    const entries = await getAllEntries();
+
+    expect(getActiveTrail(entries, "/stash/react/hooks/use-debounce")).toEqual([
+      "react",
+      "react/hooks",
+    ]);
+    expect(getActiveTrail(entries, "/stash/nope")).toEqual([]);
   });
 });
 

@@ -1,9 +1,16 @@
 "use client";
 
-import { CheckIcon, ChevronsUpDown, Home } from "lucide-react";
+/**
+ * Knowledge domain switcher for the documentation sidebar.
+ *
+ * The sidebar is scoped to one domain at a time; this control shows which one
+ * and navigates to another. Selecting a domain opens its first note, so the
+ * route stays the single source of truth for what the tree displays.
+ */
+
+import { CheckIcon, ChevronsUpDown, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { getDomainIcon } from "@/components/landing/domain-card";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,35 +24,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
-
-export interface DomainItem {
-  slug: string;
-  name: string;
-  count: number;
-  firstEntryPermalink: string;
-}
+import type { NavDomain } from "@/lib/content/nav-tree";
 
 interface DomainSwitcherProps {
-  domains: DomainItem[];
-  activeDomainSlug: string;
-  onSelectDomain?: (slug: string) => void;
+  domains: NavDomain[];
+  activeDomain: NavDomain;
 }
 
-export function DomainSwitcher({
-  domains,
-  activeDomainSlug,
-  onSelectDomain,
-}: DomainSwitcherProps) {
-  const activeDomain =
-    domains.find((d) => d.slug === activeDomainSlug) || domains[0];
+export function DomainSwitcher({ domains, activeDomain }: DomainSwitcherProps) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const ActiveIcon = getDomainIcon(activeDomain.slug);
 
-  const ActiveIcon = activeDomain
-    ? getDomainIcon(activeDomain.name)
-    : getDomainIcon("general");
-
-  if (!activeDomain) {
-    return null;
+  function closeMobileSidebar() {
+    if (isMobile) setOpenMobile(false);
   }
 
   return (
@@ -56,95 +49,75 @@ export function DomainSwitcher({
             render={
               <SidebarMenuButton
                 size="lg"
-                className="w-full justify-between gap-3 rounded-xl border border-border/60 bg-card/60 p-2 shadow-2xs transition-all duration-200 hover:border-border hover:bg-card hover:shadow-xs data-[state=open]:border-primary/40 data-[state=open]:bg-sidebar-accent"
-                aria-label={`Current domain: ${activeDomain.name}. Click to change domain`}
+                className="h-10 gap-2.5 bg-sidebar-accent/50 hover:bg-sidebar-accent data-open:bg-sidebar-accent"
+                aria-label={`Knowledge domain: ${activeDomain.label}. Switch domain`}
               />
             }
           >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors">
-              <ActiveIcon className="size-4" />
-            </div>
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <ActiveIcon className="size-3.5" />
+            </span>
 
-            <div className="flex min-w-0 flex-1 flex-col text-left leading-tight">
-              <span className="truncate text-xs font-medium text-muted-foreground">
-                Domain
-              </span>
-              <span className="truncate text-sm font-semibold text-foreground">
-                {activeDomain.name}
-              </span>
-            </div>
+            <span className="truncate font-mono text-[13px] tracking-tight text-foreground">
+              {activeDomain.slug}
+            </span>
 
-            <Badge
-              variant="secondary"
-              className="font-mono text-[10px] shrink-0"
-            >
-              {activeDomain.count}
-            </Badge>
+            <span className="ml-auto shrink-0 text-[11px] text-muted-foreground tabular-nums">
+              {activeDomain.entryCount}
+            </span>
 
-            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+            <ChevronsUpDown className="shrink-0 text-muted-foreground" />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
-            className="w-(--anchor-width) min-w-60 rounded-xl p-1.5 shadow-md"
+            className="w-(--anchor-width) min-w-56 p-1"
             align="start"
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenuGroup className="space-y-0.5">
-              <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Knowledge Domains
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
+                Knowledge domains
               </DropdownMenuLabel>
-
               {domains.map((domain) => {
-                const isSelected = domain.slug === activeDomain.slug;
-                const Icon = getDomainIcon(domain.name);
+                const Icon = getDomainIcon(domain.slug);
+                const isActive = domain.slug === activeDomain.slug;
 
                 return (
                   <DropdownMenuItem
                     key={domain.slug}
-                    render={<Link href={domain.firstEntryPermalink} />}
-                    onClick={() => {
-                      if (onSelectDomain) {
-                        onSelectDomain(domain.slug);
-                      }
-                    }}
-                    className="flex cursor-pointer items-center justify-between gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors hover:bg-muted"
+                    render={<Link href={domain.firstPermalink} />}
+                    onClick={closeMobileSidebar}
+                    className="gap-2.5 px-2 py-1.5 text-[13px]"
                   >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/50 text-muted-foreground">
-                        <Icon className="size-3.5" />
-                      </div>
-                      <span className="truncate font-semibold text-foreground">
-                        {domain.name}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="font-mono text-[10px]"
-                      >
-                        {domain.count}
-                      </Badge>
-                      {isSelected ? (
-                        <CheckIcon className="size-3.5 text-primary" />
-                      ) : (
-                        <span className="size-3.5" />
-                      )}
-                    </div>
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate font-mono tracking-tight">
+                      {domain.slug}
+                    </span>
+                    <span className="ml-auto shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                      {domain.entryCount}
+                    </span>
+                    <CheckIcon
+                      className={
+                        isActive
+                          ? "size-3.5 shrink-0 text-primary"
+                          : "size-3.5 shrink-0 text-transparent"
+                      }
+                    />
                   </DropdownMenuItem>
                 );
               })}
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator className="my-1.5" />
+            <DropdownMenuSeparator />
 
             <DropdownMenuItem
               render={<Link href="/" />}
-              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={closeMobileSidebar}
+              className="gap-2.5 px-2 py-1.5 text-[13px] text-muted-foreground"
             >
-              <Home className="size-4" />
-              <span>Back to Home (All Domains)</span>
+              <LayoutGrid className="size-4 shrink-0" />
+              <span>All domains</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -206,3 +206,52 @@ html.dark [data-rehype-pretty-code-figure] span {
   border-left: 2px solid oklch(0.6 0.2 25);
   padding-left: calc(1rem - 2px);
 }
+
+/* ==========================================================================
+   Sidebar navigation tree
+   ========================================================================== */
+
+/* Base UI Collapsible panels report their natural height as a CSS variable,
+   which lets the sidebar tree expand and collapse to an explicit height. */
+@keyframes stash-collapse-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--collapsible-panel-height);
+  }
+}
+
+@keyframes stash-collapse-up {
+  from {
+    height: var(--collapsible-panel-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.stash-collapsible-panel {
+  overflow: hidden;
+}
+
+.stash-collapsible-panel[data-open] {
+  animation: stash-collapse-down 180ms ease-out;
+}
+
+.stash-collapsible-panel[data-closed] {
+  animation: stash-collapse-up 150ms ease-in;
+}
+
+/* Motion in the shell answers a click; none of it is required to read the page. */
+@media (prefers-reduced-motion: reduce) {
+  .stash-collapsible-panel[data-open],
+  .stash-collapsible-panel[data-closed] {
+    animation: none;
+  }
+
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"] {
+    transition: none;
+  }
+}
