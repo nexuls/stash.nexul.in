@@ -10,6 +10,7 @@
 
 import { ChevronRight, FileText, FolderOpen } from "lucide-react";
 import Link from "next/link";
+import { NavHoverHighlight } from "@/components/navigation/nav-hover-highlight";
 import {
   Collapsible,
   CollapsibleContent,
@@ -40,6 +41,13 @@ interface NavTreeContext {
   /** Forces every group open while a filter is applied */
   forceOpen: boolean;
 }
+
+/**
+ * Rows sit above the shared hover background and leave the painting to it;
+ * the active row keeps its own background so it reads while hovering elsewhere.
+ */
+const ROW_CLASSES =
+  "relative z-10 text-muted-foreground transition-colors hover:bg-transparent active:bg-transparent data-open:hover:bg-transparent data-active:bg-linear-to-r data-active:from-primary/40 data-active:to-transparent bg-transparent! data-active:text-primary-foreground!";
 
 function DraftMarker() {
   return (
@@ -83,9 +91,9 @@ function EntryRow({
         <SidebarMenuButton
           render={link}
           isActive={isActive}
-          className="rounded-lg text-xs font-medium transition-colors"
+          className={cn(ROW_CLASSES, "h-8 rounded-lg text-xs font-medium")}
         >
-          <FileText className="size-4 shrink-0 text-muted-foreground" />
+          <FileText className="size-4 shrink-0" />
           <span className="truncate">{entry.title}</span>
           {entry.draft && <DraftMarker />}
         </SidebarMenuButton>
@@ -98,7 +106,10 @@ function EntryRow({
       <SidebarMenuSubButton
         render={link}
         isActive={isActive}
-        className="relative rounded-md text-xs font-normal transition-colors"
+        className={cn(
+          "relative h-8 rounded-md text-xs font-normal text-muted-foreground transition-colors",
+          "data-active:bg-linear-to-r data-active:from-primary/40 data-active:to-transparent bg-transparent! data-active:text-primary-foreground!",
+        )}
       >
         <span className="truncate">{entry.title}</span>
         {entry.draft && <DraftMarker />}
@@ -120,8 +131,8 @@ function GroupRow({
 
   const rowContent = (
     <>
-      <div className="flex items-center gap-2 truncate">
-        <FolderOpen className="size-4 shrink-0 text-muted-foreground transition-colors group-hover/collapsible:text-foreground" />
+      <div className="flex items-center gap-2 truncate text-foreground/75">
+        <FolderOpen className="size-4 shrink-0 transition-colors group-hover/collapsible:text-foreground" />
         <span className="truncate">{node.label}</span>
       </div>
       <ChevronRight
@@ -136,7 +147,7 @@ function GroupRow({
 
   const children = (
     <CollapsibleContent className="stash-collapsible-panel">
-      <SidebarMenuSub className="my-0.5 border-l border-border/50 py-0.5 pl-2.5">
+      <SidebarMenuSub className="mr-0 pr-0 my-0.5 border-l border-border/50 py-0.5 pl-2.5 gap-0">
         <NavTreeNodes nodes={node.children} context={context} nested />
       </SidebarMenuSub>
     </CollapsibleContent>
@@ -156,7 +167,10 @@ function GroupRow({
             <SidebarMenuButton
               data-nav-row
               data-nav-group={node.id}
-              className="w-full justify-between gap-2 rounded-lg font-medium transition-colors hover:bg-sidebar-accent"
+              className={cn(
+                ROW_CLASSES,
+                "w-full justify-between gap-2 rounded-lg font-medium",
+              )}
             />
           }
         >
@@ -180,7 +194,10 @@ function GroupRow({
             render={<button type="button" />}
             data-nav-row
             data-nav-group={node.id}
-            className="w-full justify-between gap-2 rounded-md text-xs font-medium transition-colors"
+            className={cn(
+              ROW_CLASSES,
+              "w-full justify-between gap-2 rounded-md text-xs font-medium",
+            )}
           />
         }
       >
@@ -214,8 +231,10 @@ export function SidebarNavTree({
   ...context
 }: { nodes: NavNode[] } & NavTreeContext) {
   return (
-    <SidebarMenu>
-      <NavTreeNodes nodes={nodes} context={context} />
-    </SidebarMenu>
+    <NavHoverHighlight>
+      <SidebarMenu>
+        <NavTreeNodes nodes={nodes} context={context} />
+      </SidebarMenu>
+    </NavHoverHighlight>
   );
 }
