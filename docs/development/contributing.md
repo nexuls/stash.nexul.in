@@ -8,5 +8,6 @@ Read [AGENTS.md](../../AGENTS.md), [Project state](../PROJECT_STATE.md), and rel
 4. Review `git diff` and `git status` for generated output, secrets, `.env` files, and unrelated files.
 5. Update architecture documentation, ADRs, or project state only when a meaningful decision or architecture change occurred.
 6. Commit directly to `main` with a focused conventional commit.
+7. Keep the commit message short, preferred single line. Don't co-author yourself.
 
 Do not introduce a database, CMS, authentication, admin interface, broad client state, or unnecessary packages without a concrete requirement and an architectural decision record.

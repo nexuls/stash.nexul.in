@@ -59,6 +59,7 @@ bun run build
 - Record meaningful architectural decisions in `docs/architecture/decisions/` and update `docs/PROJECT_STATE.md` after meaningful architecture changes.
 - Work directly on `main`. Do not create branches, rewrite history, force-push, reset, or discard unrelated changes.
 - Review `git status` and `git diff` before committing. Make focused conventional commits and never include secrets, `.env` files, generated build output, or unrelated user changes.
+- Keep the commit message short, preferred single line. Don't co-author yourself.
 
 ## Documentation map
 
