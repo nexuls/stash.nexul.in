@@ -10,14 +10,18 @@
 import { Clock, FolderTree, History } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CategoryView } from "@/components/archive/category-view";
 import { FileIcon } from "@/components/mdx/file-icon";
 import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsToc } from "@/components/navigation/docs-toc";
+import { buildArchiveIndex } from "@/lib/content/archive-index";
 import { entryAssetBaseUrl, entryAssetUrl } from "@/lib/content/asset-url";
 import {
+  getAllEntries,
   getAllSlugs,
+  getCategoryIndexes,
   getEntryBySlug,
   getPrevNextEntries,
   getRelatedEntries,
@@ -98,6 +102,29 @@ export default async function DocPage({ params }: DocPageProps) {
 
   if (!entry) {
     notFound();
+  }
+
+  // An entry answers at one path only. A category index is reached at its
+  // category (`/stash/react`), so the directory that holds it
+  // (`/stash/react/home`) must not serve the same page under a second URL.
+  if (entry.permalink !== `/stash/${slug.join("/")}`) {
+    notFound();
+  }
+
+  if (entry.isCategoryIndex) {
+    const [entries, categoryIndexes] = await Promise.all([
+      getAllEntries(),
+      getCategoryIndexes(),
+    ]);
+    const index = buildArchiveIndex(entries, categoryIndexes);
+    const path = entry.categories.join("/");
+
+    return (
+      <CategoryView
+        entry={entry}
+        domain={index.domains.find((domain) => domain.path === path)}
+      />
+    );
   }
 
   const [{ prev, next }, related] = await Promise.all([
