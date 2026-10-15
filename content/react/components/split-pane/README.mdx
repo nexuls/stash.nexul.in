@@ -1,0 +1,55 @@
+---
+title: Resizable Split Pane
+description: A two-pane layout with a keyboard-accessible drag separator and persisted pane sizes.
+date: 2026-10-08
+tags:
+  - react
+  - components
+  - layout
+  - accessibility
+---
+
+# Resizable Split Pane
+
+Two panes divided by a draggable separator that is fully operable from the keyboard and remembers its position between sessions.
+
+## Separator Semantics
+
+The separator is a `separator` role with the window-splitter pattern's required attributes:
+
+```tsx
+<div
+  role="separator"
+  aria-orientation="vertical"
+  aria-valuenow={percent}
+  aria-valuemin={20}
+  aria-valuemax={80}
+  aria-label="Resize panels"
+  tabIndex={0}
+  onKeyDown={onSeparatorKeyDown}
+/>
+```
+
+## Keyboard Controls
+
+- `ArrowLeft` / `ArrowRight`: Move the separator by one step.
+- `Shift` + arrow: Move by a coarse step.
+- `Home` / `End`: Jump to the configured minimum or maximum.
+- `Enter`: Collapse the leading pane, or restore it if already collapsed.
+
+## Pointer Dragging
+
+Use pointer capture rather than document-level listeners so the drag survives the cursor leaving the element:
+
+```typescript
+function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+  event.currentTarget.setPointerCapture(event.pointerId);
+}
+```
+
+Write the resulting size to a CSS custom property instead of React state during the drag; re-rendering both panes on every pointer move is what makes hand-rolled splitters feel sluggish.
+
+## Related Entries
+
+- [useLocalStorage Hook](/stash/react/hooks/use-local-storage) — Persists the separator position.
+- [useMediaQuery Hook](/stash/react/hooks/use-media-query) — Collapse to a single stacked column on narrow viewports.

@@ -1,0 +1,81 @@
+---
+title: Virtual List
+description: Render only the visible slice of a long list using fixed-height windowing and an absolute spacer.
+date: 2026-10-07
+tags:
+  - react
+  - components
+  - performance
+  - virtualization
+---
+
+# Virtual List
+
+Renders a window of rows around the scroll position and reserves the remaining height with a spacer, keeping DOM node count constant regardless of dataset size.
+
+## Overview
+
+A list of ten thousand rows costs tens of thousands of DOM nodes, which stalls layout and inflates memory. Windowing renders the two dozen rows actually on screen.
+
+## Implementation
+
+```tsx
+"use client";
+
+import { useState } from "react";
+
+export function VirtualList<T>({
+  items,
+  rowHeight,
+  height,
+  renderRow,
+}: {
+  items: T[];
+  rowHeight: number;
+  height: number;
+  renderRow: (item: T, index: number) => React.ReactNode;
+}) {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const overscan = 4;
+  const first = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+  const visibleCount = Math.ceil(height / rowHeight) + overscan * 2;
+  const last = Math.min(items.length, first + visibleCount);
+
+  return (
+    <div
+      style={{ height, overflowY: "auto", position: "relative" }}
+      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+    >
+      <div style={{ height: items.length * rowHeight }}>
+        {items.slice(first, last).map((item, offset) => (
+          <div
+            key={first + offset}
+            style={{
+              position: "absolute",
+              top: (first + offset) * rowHeight,
+              height: rowHeight,
+              width: "100%",
+            }}
+          >
+            {renderRow(item, first + offset)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Variable Row Heights
+
+Fixed heights keep the math trivial. Variable heights require measuring rows and maintaining a cumulative offset index, which is considerably more code — reach for a library before writing it by hand.
+
+## Accessibility
+
+Windowing breaks the implicit relationship between visible rows and total count. Set `aria-setsize` to the full length and `aria-posinset` to the absolute index on each row.
+
+## Related Entries
+
+- [Headless Data Table](/stash/react/components/data-table) — Supplies the row model this list renders.
+- [List Virtualization](/stash/react/performance/list-virtualization) — The measurement work that justifies reaching for this component.

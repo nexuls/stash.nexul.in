@@ -1,0 +1,44 @@
+---
+title: Render Props
+description: Pass rendering control to the caller through a function child, and when a hook is the better answer.
+date: 2026-10-03
+tags:
+  - react
+  - patterns
+  - composition
+---
+
+# Render Props
+
+A component accepts a function and calls it with its internal state, letting the caller decide what to render.
+
+## The Pattern
+
+```tsx
+<Toggle>
+  {({ on, toggle }) => (
+    <button type="button" aria-pressed={on} onClick={toggle}>
+      {on ? "Enabled" : "Disabled"}
+    </button>
+  )}
+</Toggle>
+```
+
+## When A Hook Is Better
+
+For pure state logic with no markup of its own, a hook is simpler and avoids the nesting that render props accumulate:
+
+```tsx
+const { on, toggle } = useToggle();
+```
+
+Render props remain the right answer when the component must render something itself — a measurement wrapper, a virtualized container, a portal boundary — and only delegates part of the output.
+
+## Avoiding Needless Re-Renders
+
+An inline function child is a new reference on every render, so the wrapper cannot be memoized against it. If the wrapper is expensive, hoist the function or move to a hook.
+
+## Related Entries
+
+- [Compound Components](/stash/react/patterns/compound-components) — Preferable when the caller needs structure rather than values.
+- [Virtual List](/stash/react/components/virtual-list) — A legitimate render-prop use: the container measures, the caller renders rows.

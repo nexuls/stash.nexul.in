@@ -1,0 +1,57 @@
+---
+title: Headless Data Table
+description: A sortable, selectable table built from a headless state model so markup and styling stay under your control.
+date: 2026-10-04
+tags:
+  - react
+  - components
+  - tables
+  - accessibility
+---
+
+# Headless Data Table
+
+Separates table behavior — sorting, selection, column visibility — from presentation, so the same model drives a dense admin grid and a spacious reading view.
+
+## Overview
+
+The state model is a plain reducer over a column definition array. Nothing in the model touches the DOM, which makes it trivially testable.
+
+![Data Table Layout](./data-table-layout.svg)
+
+## Column Definitions
+
+A column is a pure description of how to read and render a field:
+
+```tsx
+import type { Column } from "./data-table";
+
+const columns: Column<Entry>[] = [
+  { id: "title", header: "Title", accessor: (row) => row.title, sortable: true },
+  { id: "category", header: "Category", accessor: (row) => row.category, sortable: true },
+  { id: "updated", header: "Updated", accessor: (row) => row.updatedAt, sortable: true },
+];
+```
+
+## Sorting
+
+Sorting state is a single `{ columnId, direction }` pair. Clicking a sortable header cycles ascending, descending, unsorted:
+
+```typescript
+function nextDirection(current: SortDirection | null) {
+  if (current === null) return "asc";
+  if (current === "asc") return "desc";
+  return null;
+}
+```
+
+Always render `aria-sort` on the active header cell, otherwise screen reader users get no feedback that the order changed.
+
+## Row Selection
+
+Selection is stored as a `Set` of row ids rather than a boolean on each row, which keeps the source data immutable and makes "select all" an O(n) construction instead of an O(n) mutation.
+
+## Related Entries
+
+- [Virtual List](/stash/react/components/virtual-list) — Pair with the table body once row counts exceed a few hundred.
+- [Compound Components](/stash/react/patterns/compound-components) — The composition pattern the table's subcomponents follow.

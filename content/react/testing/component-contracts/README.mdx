@@ -1,0 +1,49 @@
+---
+title: Component Contracts
+description: Define the behavioral guarantees worth testing for a component, and the implementation details that are not.
+date: 2026-10-10
+tags:
+  - react
+  - testing
+  - accessibility
+---
+
+# Component Contracts
+
+A component's contract is what callers and users can rely on. Tests should cover exactly that, and nothing below it.
+
+## In The Contract
+
+- Rendered accessible roles, names, and states.
+- Keyboard interactions and resulting focus position.
+- Callbacks invoked, with their arguments.
+- Behavior at the boundaries: empty, single item, loading, error.
+
+## Not In The Contract
+
+- Class names and inline styles.
+- Internal state shape and hook call order.
+- Child component identity, or how many times anything rendered.
+
+## Querying By Role
+
+Role queries assert accessibility and behavior in one line, which is why they are the default:
+
+```typescript
+const trigger = screen.getByRole("button", { name: "Open Palette (⌘K)" });
+await userEvent.click(trigger);
+
+const dialog = screen.getByRole("dialog", { name: "Command menu" });
+expect(dialog).toHaveFocus();
+```
+
+If a role query cannot find the element, that is usually a genuine accessibility defect rather than a reason to fall back to a test id.
+
+## Focus Assertions
+
+Every dialog, menu, and popover test should assert where focus lands on open and where it returns on close. Focus restoration is the single most commonly broken part of these components.
+
+## Related Entries
+
+- [Accessible Command Menu](/stash/react/components/command-menu) — The contract exercised above.
+- [Testing Custom Hooks](/stash/react/testing/testing-hooks) — The equivalent approach for logic without markup.

@@ -1,0 +1,53 @@
+---
+title: Testing Custom Hooks
+description: Test hook behavior through a host component and real timers rather than asserting on internals.
+date: 2026-10-10
+tags:
+  - react
+  - testing
+  - hooks
+---
+
+# Testing Custom Hooks
+
+A hook has no public surface of its own, so tests exercise it through a component and assert on what that component renders or calls.
+
+## Minimal Host Component
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { useDebounce } from "../use-debounce";
+
+function Host({ value }: { value: string }) {
+  const debounced = useDebounce(value, 200);
+  return <output>{debounced}</output>;
+}
+```
+
+## Controlling Time
+
+Fake timers keep debounce and throttle tests fast and deterministic:
+
+```typescript
+it("holds the previous value until the delay elapses", async () => {
+  vi.useFakeTimers();
+  const { rerender } = render(<Host value="a" />);
+
+  rerender(<Host value="b" />);
+  expect(screen.getByRole("status")).toHaveTextContent("a");
+
+  await vi.advanceTimersByTimeAsync(200);
+  expect(screen.getByRole("status")).toHaveTextContent("b");
+});
+```
+
+Always restore real timers in an `afterEach`; a leaked fake clock turns unrelated async tests into silent timeouts.
+
+## What Not To Assert
+
+Do not assert on effect call counts or render counts. Both change when React's scheduling changes, which makes the test a maintenance liability rather than a safety net.
+
+## Related Entries
+
+- [useDebounce Hook](/stash/react/hooks/use-debounce) — The hook under test above.
+- [Component Contracts](/stash/react/testing/component-contracts) — Choosing what a component test should guarantee.

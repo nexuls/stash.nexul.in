@@ -1,0 +1,39 @@
+---
+title: Memoization Rules
+description: A decision procedure for memo, useMemo, and useCallback that avoids caching for its own sake.
+date: 2026-10-09
+tags:
+  - react
+  - performance
+  - memoization
+---
+
+# Memoization Rules
+
+Memoization is a cache, and every cache costs memory plus a comparison on each render. These rules decide when that trade is worth making.
+
+## Measure First
+
+Open the React Profiler and confirm three things before adding a `memo`: the component actually re-renders, the re-render is actually slow, and the slowness is actually visible. Most suspected re-render problems are a single expensive child, not a broad cascade.
+
+## The Rules
+
+1. **Restructure before you memoize.** Moving state down or lifting content up removes re-renders outright instead of making them cheaper.
+2. **`useMemo` is for expensive computation or referential stability**, not for arithmetic. Memoizing `a + b` costs more than recomputing it.
+3. **`useCallback` only matters when the consumer compares.** Passing a handler to a plain DOM element gains nothing.
+4. **`memo` requires stable props.** A memoized component receiving a fresh object literal re-renders every time and now also pays for the comparison.
+5. **Memoize the whole subtree or none of it.** A memo boundary with an unstable prop somewhere inside is pure overhead.
+
+## Common Anti-Pattern
+
+```tsx
+// Pointless: the object literal defeats the memo on every render.
+<ExpensiveChart config={{ height: 320 }} data={rows} />
+```
+
+Hoist the config to a module constant, or memoize it alongside whatever produced `rows`.
+
+## Related Entries
+
+- [List Virtualization](/stash/react/performance/list-virtualization) — When the fix is rendering less, not caching more.
+- [Render Props](/stash/react/patterns/render-props) — Inline function children and memo boundaries interact badly.

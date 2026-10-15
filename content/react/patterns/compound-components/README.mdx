@@ -1,0 +1,63 @@
+---
+title: Compound Components
+description: Expose a component's internals as named subcomponents sharing implicit state through context.
+date: 2026-10-03
+tags:
+  - react
+  - patterns
+  - composition
+---
+
+# Compound Components
+
+Instead of a single component with twenty configuration props, expose a small family of subcomponents that coordinate through context.
+
+## The Problem With Prop Explosion
+
+A configurable accordion grows props like `headerClassName`, `renderIcon`, `iconPosition`, and `hideDivider`. Each one is a guess about a caller's layout, and none of them compose.
+
+## The Pattern
+
+```tsx
+<Accordion defaultOpen="billing">
+  <Accordion.Item value="billing">
+    <Accordion.Trigger>Billing</Accordion.Trigger>
+    <Accordion.Panel>Invoices and payment methods.</Accordion.Panel>
+  </Accordion.Item>
+  <Accordion.Item value="security">
+    <Accordion.Trigger>Security</Accordion.Trigger>
+    <Accordion.Panel>Sessions and two-factor settings.</Accordion.Panel>
+  </Accordion.Item>
+</Accordion>
+```
+
+The parent owns the open state; subcomponents read it from a private context.
+
+## Guarding The Context
+
+Always fail loudly when a subcomponent is used outside its parent:
+
+```typescript
+const AccordionContext = createContext<AccordionState | null>(null);
+
+function useAccordionContext(component: string) {
+  const context = useContext(AccordionContext);
+  if (!context) {
+    throw new Error(`<${component}> must be rendered inside <Accordion>.`);
+  }
+  return context;
+}
+```
+
+A thrown error during development is far cheaper than a component that silently renders nothing.
+
+## Trade-Offs
+
+- Callers can reorder and wrap parts freely, which is the whole point.
+- Callers can also produce invalid structures, so the context guard is mandatory.
+- Attaching subcomponents as static properties hurts tree-shaking; export them individually as well.
+
+## Related Entries
+
+- [Render Props](/stash/react/patterns/render-props) — The alternative when consumers need the state value itself.
+- [Headless Data Table](/stash/react/components/data-table) — Built from this pattern.

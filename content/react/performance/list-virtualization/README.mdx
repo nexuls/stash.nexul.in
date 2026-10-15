@@ -1,0 +1,41 @@
+---
+title: List Virtualization Budget
+description: Decide when windowing is worth its complexity using node counts and measured frame budgets.
+date: 2026-10-09
+tags:
+  - react
+  - performance
+  - virtualization
+---
+
+# List Virtualization Budget
+
+Windowing is a real complexity cost — broken `Ctrl+F`, harder accessibility, scroll anchoring bugs. This entry is the threshold test for paying it.
+
+## Node Budget
+
+A rough working budget for a smooth list on mid-range hardware:
+
+- Under 100 rows: render everything. Windowing is premature.
+- 100 to 1,000 rows: render everything, but keep per-row DOM under roughly 10 nodes.
+- Over 1,000 rows, or over 10 nodes per row: window it.
+
+## Measuring Instead of Guessing
+
+Record a performance trace while scrolling and look at two numbers: the longest task during scroll and the recalculate-style duration. If the longest task stays under 16ms, the list is fine no matter how many rows it has.
+
+## What Windowing Costs
+
+- Browser find-in-page only sees rendered rows.
+- Row position must be announced manually via `aria-setsize` and `aria-posinset`.
+- Anchor links into the list need a programmatic scroll rather than a fragment.
+- Variable-height content requires measurement and invalidation.
+
+## Alternatives Worth Trying First
+
+Pagination, "load more", and collapsing groups all reduce node count without the drawbacks above, and they usually match what users actually want from a long list.
+
+## Related Entries
+
+- [Virtual List](/stash/react/components/virtual-list) — The implementation to reach for once the budget is exceeded.
+- [useIntersectionObserver Hook](/stash/react/hooks/use-intersection-observer) — Backs the "load more" alternative.

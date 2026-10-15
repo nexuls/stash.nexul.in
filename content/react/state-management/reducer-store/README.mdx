@@ -1,0 +1,81 @@
+---
+title: Reducer Store
+description: A dependency-free store built from useReducer, context splitting, and useSyncExternalStore.
+date: 2026-10-11
+tags:
+  - react
+  - state-management
+  - context
+---
+
+# Reducer Store
+
+Most applications reaching for a state library need three things: a typed reducer, a stable dispatch, and subscriptions that do not re-render every consumer. React provides all three.
+
+## Typed Reducer
+
+```typescript
+type Action =
+  | { type: "filter/set"; value: string }
+  | { type: "selection/toggle"; id: string }
+  | { type: "selection/clear" };
+
+interface State {
+  filter: string;
+  selected: Set<string>;
+}
+
+export function reduce(state: State, action: Action): State {
+  switch (action.type) {
+    case "filter/set":
+      return { ...state, filter: action.value };
+    case "selection/toggle": {
+      const selected = new Set(state.selected);
+      if (!selected.delete(action.id)) {
+        selected.add(action.id);
+      }
+      return { ...state, selected };
+    }
+    case "selection/clear":
+      return { ...state, selected: new Set() };
+  }
+}
+```
+
+An exhaustive `switch` over a discriminated union means a new action type is a type error until it is handled.
+
+## Splitting Context
+
+Put state and dispatch in separate contexts. Components that only dispatch then never re-render when state changes:
+
+```tsx
+<StateContext.Provider value={state}>
+  <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>
+</StateContext.Provider>
+```
+
+`dispatch` is referentially stable across renders, so its context never invalidates.
+
+## Selector Subscriptions
+
+Context delivers the whole value to every consumer. When that becomes the bottleneck, move the state into an external store and subscribe with selectors:
+
+```typescript
+const filter = useSyncExternalStore(
+  store.subscribe,
+  () => store.getSnapshot().filter,
+  () => initialState.filter,
+);
+```
+
+The third argument is the server snapshot; omitting it breaks hydration.
+
+## When To Reach For A Library
+
+Adopt a library when you need middleware, devtools time-travel, or cross-tab persistence out of the box. Do not adopt one to avoid writing a reducer.
+
+## Related Entries
+
+- [Headless Data Table](/stash/react/components/data-table) — Consumes the filter and selection slices above.
+- [Toast Notification Stack](/stash/react/components/toast-stack) — A second reducer over the same store shape.
+- [Type-Safe Result Pattern](/stash/typescript/patterns/result-type) — Model async action outcomes explicitly.

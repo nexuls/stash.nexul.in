@@ -1,0 +1,60 @@
+---
+title: useMediaQuery Hook
+description: Subscribe to a CSS media query from React without layout thrashing or resize listeners.
+date: 2026-10-05
+tags:
+  - react
+  - hooks
+  - responsive
+---
+
+# useMediaQuery Hook
+
+Reads a CSS media query as reactive state using `window.matchMedia`, avoiding the cost of a `resize` listener that fires on every pixel.
+
+## Overview
+
+Media query lists expose a `matches` boolean and a change event. Subscribing to that event is dramatically cheaper than measuring the viewport on every resize frame.
+
+## Implementation
+
+```typescript
+import { useEffect, useState } from "react";
+
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const list = window.matchMedia(query);
+    setMatches(list.matches);
+
+    function onChange(event: MediaQueryListEvent) {
+      setMatches(event.matches);
+    }
+
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  }, [query]);
+
+  return matches;
+}
+```
+
+## Usage Example
+
+```tsx
+export function Navigation() {
+  const isCompact = useMediaQuery("(max-width: 48rem)");
+
+  return isCompact ? <DrawerNav /> : <SidebarNav />;
+}
+```
+
+## Server Rendering
+
+The hook starts as `false` on the server and corrects itself after hydration. When the first paint matters, prefer a CSS-only solution and keep the hook for behavioral differences such as swapping a drawer for a sidebar.
+
+## Related Entries
+
+- [useEventListener Hook](/stash/react/hooks/use-event-listener) — Generic event subscription with stable handler identity.
+- [Split Pane Component](/stash/react/components/split-pane) — Collapses to a stacked layout on narrow viewports.

@@ -1,0 +1,69 @@
+---
+title: useIntersectionObserver Hook
+description: Track element visibility for lazy loading, infinite scroll, and scroll-spy navigation.
+date: 2026-10-06
+tags:
+  - react
+  - hooks
+  - performance
+  - intersection-observer
+---
+
+# useIntersectionObserver Hook
+
+Reports whether a ref'd element intersects the viewport, using a single `IntersectionObserver` instead of scroll math.
+
+## Overview
+
+Scroll handlers force layout reads on every frame. `IntersectionObserver` moves the work off the main thread and delivers batched callbacks only when visibility actually changes.
+
+## Implementation
+
+```typescript
+import { type RefObject, useEffect, useState } from "react";
+
+export function useIntersectionObserver(
+  target: RefObject<Element | null>,
+  options?: IntersectionObserverInit,
+): boolean {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+
+  useEffect(() => {
+    const element = target.current;
+    if (!element) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsIntersecting(entry.isIntersecting);
+    }, options);
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [target, options]);
+
+  return isIntersecting;
+}
+```
+
+## Infinite Scroll
+
+Place a sentinel element after the last row and fetch the next page when it becomes visible:
+
+```tsx
+const sentinel = useRef<HTMLDivElement>(null);
+const reachedEnd = useIntersectionObserver(sentinel, { rootMargin: "400px" });
+
+useEffect(() => {
+  if (reachedEnd) {
+    void loadNextPage();
+  }
+}, [reachedEnd]);
+```
+
+A generous `rootMargin` prefetches before the user hits the bottom, which hides the request latency.
+
+## Related Entries
+
+- [List Virtualization](/stash/react/performance/list-virtualization) — The alternative when the full dataset is already in memory.
+- [Memoization Rules](/stash/react/performance/memoization-rules) — Keep the options object stable to avoid re-creating the observer.
