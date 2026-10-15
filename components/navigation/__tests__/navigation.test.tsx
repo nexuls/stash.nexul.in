@@ -141,9 +141,9 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
     expect(html).toContain("Stash");
     expect(html).toContain("Filter notes");
     expect(html).toContain("GitHub");
-    // Theme toggle buttons in sidebar footer
-    expect(html).toContain("Light theme");
-    expect(html).toContain("Dark theme");
+    // The theme control in the sidebar footer, one button covering both themes.
+    expect(html).toContain('data-theme-option="light"');
+    expect(html).toContain('data-theme-option="dark"');
   });
 
   it("scopes the tree to the active domain and counts its notes", async () => {
@@ -320,9 +320,26 @@ describe("Search Trigger Component", () => {
 });
 
 describe("Theme Toggle Component", () => {
-  it("renders compact variant with sun and moon buttons", () => {
+  it("renders the compact group as a single button", () => {
     const html = renderStatic(<ThemeToggle variant="compact" />);
-    expect(html).toContain("Light theme");
-    expect(html).toContain("Dark theme");
+
+    // The group reads as a set of choices but acts as one control, so there is
+    // exactly one hit target and one tab stop in it.
+    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html).toContain('data-theme-option="light"');
+    expect(html).toContain('data-theme-option="dark"');
+    expect(html).toContain("Switch theme");
+  });
+
+  it("leaves the system theme out of the compact group by default", () => {
+    const html = renderStatic(<ThemeToggle variant="compact" />);
+    expect(html).not.toContain('data-theme-option="system"');
+  });
+
+  it("adds the system theme to the compact group on request", () => {
+    const html = renderStatic(<ThemeToggle variant="compact" showSystem />);
+
+    expect(html).toContain('data-theme-option="system"');
+    expect(html.match(/<button/g)).toHaveLength(1);
   });
 });
