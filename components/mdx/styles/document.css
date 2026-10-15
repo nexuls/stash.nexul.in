@@ -1,0 +1,36 @@
+/* ==========================================================================
+   Document surface
+   --------------------------------------------------------------------------
+   The archive is read, not browsed, so the document column sets its own
+   measure and rhythm. Element styling lives in components/mdx/typography.tsx;
+   these layers hold only what a React component cannot express: counters,
+   generated content, scroll state, and Shiki's token variables.
+   ========================================================================== */
+
+.stash-doc {
+  /* Holds running text to roughly 74 characters at the body size: long enough
+     for a line of code, short enough that the eye finds the next line. */
+  --stash-measure: 48rem;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+/* Only the rendered MDX is dimmed. The entry header above it carries its own
+   colours, and headings, emphasis and links opt back up to full contrast. */
+.stash-doc-body {
+  color: var(--prose);
+}
+
+/* A horizontal rule has already separated the sections, so the heading drops
+   the rule it would otherwise draw above itself. */
+.stash-doc hr + h2 {
+  margin-top: 0;
+  border-top-width: 0;
+  padding-top: 0;
+}
+
+/* Footnotes are emitted by remark-gfm as a bare <section>; the back-reference
+   arrow is generated content, so it is styled here. */
+.stash-doc [data-footnotes] a[data-footnote-backref] {
+  text-decoration: none;
+}

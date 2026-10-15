@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Inline HTML written directly in an entry
+   ========================================================================== */
+
+/* Inline HTML written directly in an entry.
+   MDX routes Markdown-generated elements through the component registry, but a
+   tag the author types is passed through as literal HTML and never reaches it.
+   These rules give those tags the same treatment, so `<kbd>Ctrl</kbd>` in a
+   sentence matches the registered <Kbd> component. */
+.stash-doc kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75em;
+  padding: 0 0.4em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 0.25rem;
+  background-color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 0.8125em;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--foreground);
+  vertical-align: baseline;
+}
+
+.stash-doc del {
+  color: var(--muted-foreground);
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.stash-doc abbr[title] {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}

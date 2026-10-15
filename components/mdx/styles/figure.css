@@ -1,0 +1,10 @@
+/* ==========================================================================
+   Figures
+   ========================================================================== */
+
+/* A standalone figure sits on a light plate in both themes. Entry diagrams are
+   authored for a light surface, and SVG text drawn in near-black disappears
+   against a dark card. */
+.stash-figure-image {
+  background-color: oklch(0.985 0 0);
+}

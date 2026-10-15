@@ -1,0 +1,19 @@
+/* ==========================================================================
+   Callouts
+   ========================================================================== */
+
+/* Callouts carry their hue in a single custom property, so one set of rules
+   covers every variant and the variants cannot drift apart. */
+.stash-callout {
+  border-color: color-mix(in oklab, var(--callout) 25%, var(--border));
+  border-left-color: var(--callout);
+  background-color: color-mix(in oklab, var(--callout) 5%, var(--background));
+}
+
+.stash-callout-mark {
+  color: var(--callout);
+}
+
+.stash-callout a {
+  text-decoration-color: color-mix(in oklab, var(--callout) 55%, transparent);
+}

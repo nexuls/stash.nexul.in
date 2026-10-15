@@ -1,0 +1,20 @@
+/* ==========================================================================
+   Document surface styles
+   --------------------------------------------------------------------------
+   Everything the MDX document surface needs that a React component cannot
+   express. Imported as a single unit by app/globals.css; the modules are
+   ordered to match the components they back.
+
+   These rules are deliberately unlayered, so they win over the Tailwind
+   utilities in `@layer utilities` the same way they did when they lived in
+   globals.css.
+   ========================================================================== */
+
+@import "./tokens.css";
+@import "./document.css";
+@import "./headings.css";
+@import "./inline.css";
+@import "./task-list.css";
+@import "./callout.css";
+@import "./figure.css";
+@import "./code.css";

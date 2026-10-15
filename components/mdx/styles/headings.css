@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Heading anchors
+   ========================================================================== */
+
+/* The anchor sits inline, immediately after the heading text. Its inline box is
+   always present and only its opacity changes, so revealing it on hover or focus
+   never reflows the heading. */
+.stash-anchor {
+  display: inline-flex;
+  align-items: center;
+  /* Centres the icon on the x-height of the heading text rather than its
+     baseline, which an icon with no descender would otherwise sit below. */
+  vertical-align: middle;
+  margin-inline-start: 0.6em;
+  opacity: 0;
+  transition:
+    opacity 120ms ease-out,
+    color 120ms ease-out,
+    background-color 120ms ease-out;
+}
+
+.stash-heading:hover .stash-anchor,
+.stash-heading:focus-within .stash-anchor,
+.stash-anchor:focus-visible {
+  opacity: 1;
+}
+
+/* A control that has just copied stays visible until its feedback window
+   closes, so the confirmation does not vanish with the pointer. */
+.stash-anchor[data-copied] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stash-anchor {
+    transition: none;
+  }
+}

@@ -1,0 +1,51 @@
+/* ==========================================================================
+   Document semantic tokens
+   --------------------------------------------------------------------------
+   Hues for callouts, diffs and code surfaces. Tuned around the teal primary
+   rather than taken from a stock palette, so the semantic states read as one
+   family. Exposed to Tailwind as utilities by the `@theme inline` block in
+   app/globals.css.
+   ========================================================================== */
+
+:root {
+  /* Running text sits below full foreground contrast: a wall of maximum-contrast
+     text is tiring to read, and holding it back is what lets bold and italic
+     register as brighter without having to shout. Emphasis keeps the full
+     foreground, so the pair tracks the theme from one declaration.
+     Both stay well inside WCAG AAA: 11.7:1 light, 12.7:1 dark, against 19:1
+     for emphasis. */
+  --prose: oklch(0.34 0.006 228.8);
+  --prose-emphasis: var(--foreground);
+
+  /* Callout hues. Tuned around the teal primary rather than taken from a stock
+     palette, so five semantic states still read as one family. */
+  --note: oklch(0.511 0.096 186.391);
+  --tip: oklch(0.54 0.115 152);
+  --warn: oklch(0.63 0.135 72);
+  --danger: oklch(0.56 0.195 25);
+  --highlight: oklch(0.52 0.16 292);
+
+  --code-bg: oklch(0.985 0.002 197.1);
+  --code-header: oklch(0.967 0.003 214.3);
+  --code-rule: oklch(0.915 0.006 214.3);
+  --code-gutter: oklch(0.6 0.015 213.5);
+  --diff-add: oklch(0.57 0.13 150);
+  --diff-del: oklch(0.58 0.19 24);
+}
+
+.dark {
+  --prose: oklch(0.855 0.005 210);
+
+  --note: oklch(0.72 0.1 187);
+  --tip: oklch(0.76 0.14 155);
+  --warn: oklch(0.81 0.14 78);
+  --danger: oklch(0.7 0.17 23);
+  --highlight: oklch(0.74 0.14 292);
+
+  --code-bg: oklch(0.192 0.007 226);
+  --code-header: oklch(0.226 0.009 224);
+  --code-rule: oklch(1 0 0 / 9%);
+  --code-gutter: oklch(0.63 0.015 214.4);
+  --diff-add: oklch(0.72 0.15 153);
+  --diff-del: oklch(0.69 0.18 22);
+}

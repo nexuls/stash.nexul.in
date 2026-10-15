@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Code presentation (rehype-pretty-code + Shiki)
+   --------------------------------------------------------------------------
+   Dual themes put both token colors on every token as custom properties, so
+   switching themes repaints without re-highlighting.
+   ========================================================================== */
+
+/* Token colours. `.stash-code` is the panel the renderer emits and
+   `code[data-language]` covers inline code highlighted with `{:ts}`; the
+   original figure attribute no longer survives into the DOM. */
+html:not(.dark) .stash-code span,
+html:not(.dark) code[data-language] span {
+  color: var(--shiki-light, inherit);
+}
+
+html.dark .stash-code span,
+html.dark code[data-language] span {
+  color: var(--shiki-dark, inherit);
+}
+
+.stash-code pre {
+  /* Horizontal padding belongs to the lines, not the block, so a highlighted
+     line can bleed to both edges of the panel. */
+  padding: 0.75rem 0;
+  margin: 0;
+  background: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--code-rule) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.stash-code pre::-webkit-scrollbar {
+  height: 0.5rem;
+}
+
+.stash-code pre::-webkit-scrollbar-thumb {
+  background: var(--code-rule);
+  border-radius: 9999px;
+}
+
+.stash-code [data-line] {
+  display: block;
+  padding-inline: 1rem;
+  min-height: 1.5em;
+}
+
+/* Line numbers --------------------------------------------------------- */
+
+.stash-code code[data-line-numbers] {
+  counter-reset: line;
+}
+
+.stash-code code[data-line-numbers] > [data-line] {
+  padding-left: 0;
+}
+
+.stash-code code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: calc(var(--stash-line-digits, 2) * 1ch);
+  margin-right: 1rem;
+  padding-right: 0.875rem;
+  padding-left: 1rem;
+  border-right: 1px solid var(--code-rule);
+  text-align: right;
+  color: var(--code-gutter);
+  opacity: 0.65;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Emphasis ------------------------------------------------------------- */
+
+.stash-code [data-line][data-highlighted-line] {
+  background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+  box-shadow: inset 2px 0 0 0 var(--primary);
+}
+
+/* When the author has pointed at specific lines, the rest of the block steps
+   back rather than competing for attention. */
+.stash-code code:has([data-highlighted-line])
+  > [data-line]:not([data-highlighted-line]) {
+  opacity: 0.5;
+}
+
+.stash-code mark[data-highlighted-chars] {
+  background-color: color-mix(in oklab, var(--primary) 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.2em;
+  color: inherit;
+}
+
+/* Diff ----------------------------------------------------------------- */
+
+.stash-code [data-line][data-diff="add"] {
+  background-color: color-mix(in oklab, var(--diff-add) 14%, transparent);
+  box-shadow: inset 2px 0 0 0 var(--diff-add);
+}
+
+.stash-code [data-line][data-diff="del"] {
+  background-color: color-mix(in oklab, var(--diff-del) 14%, transparent);
+  box-shadow: inset 2px 0 0 0 var(--diff-del);
+}
+
+.stash-code code:has([data-diff]) > [data-line]:not([data-diff]) {
+  opacity: 1;
+}
+
+/* Viewport state ------------------------------------------------------- */
+
+/* Soft wrap, toggled from the panel header for long single lines. */
+.stash-code[data-wrap="true"] pre,
+.stash-code[data-wrap="true"] code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.stash-code[data-wrap="true"] pre {
+  overflow-x: hidden;
+}
+
+/* Long blocks are clipped until expanded; the fade marks that there is more. */
+.stash-code[data-collapsed="true"] .stash-code-viewport {
+  max-height: var(--stash-code-max-height, 22rem);
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent);
+}
