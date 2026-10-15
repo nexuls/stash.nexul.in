@@ -15,6 +15,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   getAllEntries,
+  getCategoryIndexes,
   getEntryBySlug,
   getPrevNextEntries,
   getRelatedEntries,
@@ -134,7 +135,7 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
 
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebar entries={entries} />
+        <DocsSidebar entries={entries} categoryIndexPaths={[]} />
       </SidebarProvider>,
     );
 
@@ -154,7 +155,7 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
 
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebar entries={entries} />
+        <DocsSidebar entries={entries} categoryIndexPaths={[]} />
       </SidebarProvider>,
     );
 
@@ -168,6 +169,46 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
       const foreign = findFirstNavEntry(otherDomain.nodes);
       if (foreign) expect(html).not.toContain(foreign.entry.permalink);
     }
+  });
+});
+
+describe("Domain overview row", () => {
+  it("opens the tree with the domain page only when the domain has one", async () => {
+    const [entries, categoryIndexes] = await Promise.all([
+      getAllEntries(),
+      getCategoryIndexes(),
+    ]);
+    const first = getNavDomains(
+      buildNavTree(entries),
+      categoryIndexes.keys(),
+    )[0];
+    if (!first) throw new Error("Expected at least one domain");
+
+    const withHome = renderStatic(
+      <SidebarProvider defaultOpen={true}>
+        <DocsSidebar
+          entries={entries}
+          categoryIndexPaths={[...categoryIndexes.keys()]}
+        />
+      </SidebarProvider>,
+    );
+    expect(withHome).toContain("Overview");
+    expect(withHome).toContain(`href="/stash/${first.slug}"`);
+
+    // The row sits above the domain's contents.
+    const firstEntry = findFirstNavEntry(first.nodes);
+    if (!firstEntry) throw new Error("Expected the domain to hold a note");
+    expect(withHome.indexOf("Overview")).toBeLessThan(
+      withHome.indexOf(firstEntry.entry.permalink),
+    );
+
+    // No index entry means no domain page, so the row stays out.
+    const withoutHome = renderStatic(
+      <SidebarProvider defaultOpen={true}>
+        <DocsSidebar entries={entries} categoryIndexPaths={[]} />
+      </SidebarProvider>,
+    );
+    expect(withoutHome).not.toContain("Overview");
   });
 });
 
@@ -185,8 +226,29 @@ describe("Domain derivation (getNavDomains / getActiveDomain)", () => {
 
     for (const domain of domains) {
       expect(domain.entryCount).toBe(countNavEntries(domain.nodes));
-      expect(domain.firstPermalink.startsWith("/stash/")).toBe(true);
+      expect(domain.homePermalink.startsWith("/stash/")).toBe(true);
     }
+  });
+
+  it("opens a domain at its own page when the category has an index", async () => {
+    const [entries, categoryIndexes] = await Promise.all([
+      getAllEntries(),
+      getCategoryIndexes(),
+    ]);
+    const tree = buildNavTree(entries);
+
+    const withIndexes = getNavDomains(tree, categoryIndexes.keys());
+    const react = withIndexes.find((domain) => domain.slug === "react");
+    expect(react?.hasHomePage).toBe(true);
+    expect(react?.homePermalink).toBe("/stash/react");
+
+    // Without an index page there is no domain page, so the first note stands in.
+    const withoutIndexes = getNavDomains(tree);
+    const fallback = withoutIndexes.find((domain) => domain.slug === "react");
+    expect(fallback?.hasHomePage).toBe(false);
+    expect(fallback?.homePermalink).toBe(
+      findFirstNavEntry(fallback?.nodes ?? [])?.entry.permalink,
+    );
   });
 
   it("resolves the active domain from the route", async () => {

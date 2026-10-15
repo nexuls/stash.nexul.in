@@ -45,6 +45,8 @@ import { siteConfig } from "@/lib/site-config";
 
 interface DocsSidebarProps {
   entries: ContentEntry[];
+  /** Category paths that have an index page, e.g. `["react"]` */
+  categoryIndexPaths: string[];
 }
 
 /** Moves focus between visible tree rows, wrapping at both ends. */
@@ -72,7 +74,7 @@ function moveRowFocus(
   rows[next]?.focus();
 }
 
-export function DocsSidebar({ entries }: DocsSidebarProps) {
+export function DocsSidebar({ entries, categoryIndexPaths }: DocsSidebarProps) {
   const pathname = usePathname() ?? "";
   const { isMobile, setOpen, setOpenMobile } = useSidebar();
 
@@ -82,8 +84,8 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
   const [query, setQuery] = React.useState("");
 
   const domains = React.useMemo(
-    () => getNavDomains(buildNavTree(entries)),
-    [entries],
+    () => getNavDomains(buildNavTree(entries), categoryIndexPaths),
+    [entries, categoryIndexPaths],
   );
   const activeDomain = getActiveDomain(domains, pathname);
 
@@ -350,7 +352,7 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
                     {otherDomainMatches.map(({ domain, count }) => (
                       <li key={domain.slug}>
                         <Link
-                          href={domain.firstPermalink}
+                          href={domain.homePermalink}
                           onClick={() => {
                             if (isMobile) setOpenMobile(false);
                           }}
@@ -377,6 +379,13 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
             ) : (
               <SidebarNavTree
                 nodes={visibleNodes}
+                // A filter lists what it matched, so the domain page, which the
+                // filter never considers, is only offered unfiltered.
+                home={
+                  activeDomain?.hasHomePage && !isFiltering
+                    ? { href: activeDomain.homePermalink }
+                    : undefined
+                }
                 closedGroups={closedGroups}
                 onToggleGroup={handleToggleGroup}
                 activePermalink={pathname}

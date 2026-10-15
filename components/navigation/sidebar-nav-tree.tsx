@@ -6,9 +6,10 @@
  * Renders the directory-derived contents of one domain at arbitrary nesting
  * depth: groups are collapsible directories, leaves are entries. Top-level
  * rows read as full-width menu items; nested rows hang off the group rail.
+ * A domain with a page of its own opens the tree with a row for it.
  */
 
-import { ChevronRight, FileText, FolderOpen } from "lucide-react";
+import { ChevronRight, FileText, FolderOpen, House } from "lucide-react";
 import Link from "next/link";
 import { NavHoverHighlight } from "@/components/navigation/nav-hover-highlight";
 import {
@@ -48,6 +49,33 @@ interface NavTreeContext {
  */
 const ROW_CLASSES =
   "relative z-10 text-muted-foreground transition-colors hover:bg-transparent active:bg-transparent data-open:hover:bg-transparent data-active:bg-linear-to-r data-active:from-primary/40 data-active:to-transparent bg-transparent! data-active:text-primary-foreground!";
+
+/** The domain's own page, as the row above its contents. */
+function HomeRow({ href, active }: { href: string; active: boolean }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <SidebarMenuItem className="pb-2">
+      <SidebarMenuButton
+        render={
+          <Link
+            href={href}
+            data-nav-row
+            aria-current={active ? "page" : undefined}
+            onClick={() => {
+              if (isMobile) setOpenMobile(false);
+            }}
+          />
+        }
+        isActive={active}
+        className={cn(ROW_CLASSES, "h-8 rounded-lg text-xs font-medium")}
+      >
+        <House className="size-4 shrink-0" />
+        <span className="truncate">Overview</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
 function DraftMarker() {
   return (
@@ -228,11 +256,22 @@ function NavTreeNodes({
 
 export function SidebarNavTree({
   nodes,
+  home,
   ...context
-}: { nodes: NavNode[] } & NavTreeContext) {
+}: {
+  nodes: NavNode[];
+  /** The domain's own page, when it has one */
+  home?: { href: string };
+} & NavTreeContext) {
   return (
     <NavHoverHighlight>
       <SidebarMenu>
+        {home && (
+          <HomeRow
+            href={home.href}
+            active={home.href === context.activePermalink}
+          />
+        )}
         <NavTreeNodes nodes={nodes} context={context} />
       </SidebarMenu>
     </NavHoverHighlight>

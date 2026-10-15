@@ -251,8 +251,10 @@ export interface NavDomain {
   /** Human-readable segment, e.g. "React" */
   label: string;
   entryCount: number;
+  /** Whether the domain has a page of its own, i.e. a category index entry */
+  hasHomePage: boolean;
   /** Destination when switching to this domain */
-  firstPermalink: string;
+  homePermalink: string;
   /** Contents of the domain, used as the scoped sidebar tree */
   nodes: NavNode[];
 }
@@ -270,8 +272,17 @@ function containsPermalink(nodes: NavNode[], permalink: string): boolean {
  *
  * Entries stored at the content root are collected into a trailing "general"
  * domain so that nothing in the archive is unreachable from the switcher.
+ *
+ * A domain with a category index opens at its own page; `categoryIndexPaths`
+ * names the categories that have one, since index entries are not part of the
+ * tree. Without an index there is no domain page to open, so the first note in
+ * tree order stands in for it.
  */
-export function getNavDomains(tree: NavNode[]): NavDomain[] {
+export function getNavDomains(
+  tree: NavNode[],
+  categoryIndexPaths: Iterable<string> = [],
+): NavDomain[] {
+  const withIndex = new Set(categoryIndexPaths);
   const domains: NavDomain[] = [];
   const looseEntries: NavNode[] = [];
 
@@ -281,11 +292,16 @@ export function getNavDomains(tree: NavNode[]): NavDomain[] {
       continue;
     }
 
+    const hasHomePage = withIndex.has(node.id);
+
     domains.push({
       slug: node.id,
       label: node.label,
       entryCount: node.entryCount,
-      firstPermalink: findFirstNavEntry(node.children)?.entry.permalink ?? "/",
+      hasHomePage,
+      homePermalink: hasHomePage
+        ? `/stash/${node.id}`
+        : (findFirstNavEntry(node.children)?.entry.permalink ?? "/"),
       nodes: node.children,
     });
   }
@@ -295,7 +311,8 @@ export function getNavDomains(tree: NavNode[]): NavDomain[] {
       slug: "general",
       label: "General",
       entryCount: looseEntries.length,
-      firstPermalink: findFirstNavEntry(looseEntries)?.entry.permalink ?? "/",
+      hasHomePage: false,
+      homePermalink: findFirstNavEntry(looseEntries)?.entry.permalink ?? "/",
       nodes: looseEntries,
     });
   }

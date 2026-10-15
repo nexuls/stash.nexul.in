@@ -4,8 +4,8 @@
  * Knowledge domain switcher for the documentation sidebar.
  *
  * The sidebar is scoped to one domain at a time; this control shows which one
- * and navigates to another. Selecting a domain opens its first note, so the
- * route stays the single source of truth for what the tree displays.
+ * and navigates to another. Selecting a domain opens that domain's own page, so
+ * the route stays the single source of truth for what the tree displays.
  */
 
 import { CheckIcon, ChevronsUpDown, LayoutGrid } from "lucide-react";
@@ -86,7 +86,7 @@ export function DomainSwitcher({ domains, activeDomain }: DomainSwitcherProps) {
                 return (
                   <DropdownMenuItem
                     key={domain.slug}
-                    render={<Link href={domain.firstPermalink} />}
+                    render={<Link href={domain.homePermalink} />}
                     onClick={closeMobileSidebar}
                     className="gap-2.5 px-2 py-1.5 text-[13px]"
                   >
