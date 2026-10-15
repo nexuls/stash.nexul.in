@@ -402,7 +402,7 @@ export function DocsSidebar({ entries }: DocsSidebarProps) {
             <span className="sr-only">GitHub source repository</span>
           </a>
 
-          <ThemeToggle variant="compact" />
+          <ThemeToggle variant="compact" showSystem />
         </div>
       </SidebarFooter>
     </Sidebar>
