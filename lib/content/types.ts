@@ -120,6 +120,11 @@ export const contentEntrySchema = z.object({
   body: z.string(),
   /** Full raw content of the README.mdx file */
   rawContent: z.string(),
+  /**
+   * Whether this entry is a category's index page, authored as a `home`
+   * directory inside the category and served at the category's own path.
+   */
+  isCategoryIndex: z.boolean(),
   /** Hierarchical category path (e.g., ["react", "hooks"]) */
   categories: z.array(z.string()),
   /** Primary category name (e.g., "react", or "general" if root entry) */

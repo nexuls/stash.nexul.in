@@ -19,6 +19,16 @@ import {
 } from "./types";
 
 /**
+ * Directory name that marks a category's index page.
+ *
+ * `content/react/home/README.mdx` is the entry point for the React category and
+ * is served at `/stash/react`, not at `/stash/react/home`. It is an ordinary
+ * entry in every other respect, so it carries frontmatter, assets and MDX like
+ * any note.
+ */
+export const CATEGORY_INDEX_DIR = "home";
+
+/**
  * Returns the default absolute path to the content directory.
  */
 export function getContentDirectory(): string {
@@ -100,7 +110,17 @@ export function loadEntry(
   const relativeDir = relative(contentDir, entryDirectory).replace(/\\/g, "/");
   const slug = relativeDir;
   const slugSegments = slug ? slug.split("/") : [];
-  const permalink = `/stash/${slug}`;
+
+  // A `home` directory stands for the category that contains it, so it answers
+  // at the category's path. Its slug still names the directory on disk, which
+  // is what adjacent assets are served under.
+  const isCategoryIndex =
+    slugSegments.length > 1 &&
+    slugSegments[slugSegments.length - 1] === CATEGORY_INDEX_DIR;
+  const routeSegments = isCategoryIndex
+    ? slugSegments.slice(0, -1)
+    : slugSegments;
+  const permalink = `/stash/${routeSegments.join("/")}`;
   const filePath = relative(process.cwd(), absoluteFilePath).replace(
     /\\/g,
     "/",
@@ -109,7 +129,13 @@ export function loadEntry(
   const parsed = parseDocument(rawContent, slug);
   const assets = discoverAdjacentAssets(entryDirectory);
 
-  const categories = slugSegments.length > 1 ? slugSegments.slice(0, -1) : [];
+  // A category index belongs to the category it opens; every other entry
+  // belongs to the directories above it, and a root-level note to none.
+  const categories = isCategoryIndex
+    ? routeSegments
+    : slugSegments.length > 1
+      ? slugSegments.slice(0, -1)
+      : [];
   const primaryCategory =
     parsed.frontmatter.category || (categories[0] ?? "general");
 
@@ -125,6 +151,7 @@ export function loadEntry(
     slug,
     slugSegments,
     permalink,
+    isCategoryIndex,
     directoryPath: relativeDir,
     filePath,
     absoluteDirectoryPath: entryDirectory,
@@ -154,6 +181,12 @@ export function loadEntry(
 
 export interface EntryFilterOptions {
   includeDrafts?: boolean;
+  /**
+   * Include the `home` entries that open each category. They are excluded by
+   * default: they are the heading of a category, not a note in it, so counting
+   * or listing them beside real notes would misreport the archive.
+   */
+  includeCategoryIndexes?: boolean;
   contentDir?: string;
 }
 
@@ -173,6 +206,9 @@ export async function getAllEntries(
     const entry = loadEntry(dir, contentDir);
     if (entry) {
       if (!options.includeDrafts && entry.draft) {
+        continue;
+      }
+      if (!options.includeCategoryIndexes && entry.isCategoryIndex) {
         continue;
       }
       entries.push(entry);
@@ -204,7 +240,12 @@ export async function getEntryBySlug(
     ...normalizedSlug.split("/"),
   );
 
-  const entry = loadEntry(targetDir, contentDir);
+  // `/stash/react` is answered by `content/react/home`, so a path that is a
+  // category rather than an entry falls through to its index.
+  const entry =
+    loadEntry(targetDir, contentDir) ??
+    loadEntry(join(targetDir, CATEGORY_INDEX_DIR), contentDir);
+
   if (!entry) {
     return null;
   }
@@ -214,6 +255,26 @@ export async function getEntryBySlug(
   }
 
   return entry;
+}
+
+/**
+ * Returns the index entries that open each category, keyed by category path
+ * (e.g. `react`). Categories without a `home` directory simply have no entry.
+ */
+export async function getCategoryIndexes(
+  options: EntryFilterOptions = {},
+): Promise<Map<string, ContentEntry>> {
+  const contentDir = options.contentDir || getContentDirectory();
+  const indexes = new Map<string, ContentEntry>();
+
+  for (const dir of findEntryDirectories(contentDir)) {
+    const entry = loadEntry(dir, contentDir);
+    if (!entry?.isCategoryIndex) continue;
+    if (!options.includeDrafts && entry.draft) continue;
+    indexes.set(entry.categories.join("/"), entry);
+  }
+
+  return indexes;
 }
 
 /**
@@ -272,8 +333,16 @@ export async function getAllCategories(
 export async function getAllSlugs(
   options: EntryFilterOptions = {},
 ): Promise<string[][]> {
-  const entries = await getAllEntries(options);
-  return entries.map((entry) => entry.slugSegments);
+  // Route segments, not directory segments: a category index answers at its
+  // category's path, so that is the path which has to be generated.
+  const entries = await getAllEntries({
+    ...options,
+    includeCategoryIndexes: true,
+  });
+
+  return entries.map((entry) =>
+    entry.permalink.replace(/^\/stash\//, "").split("/"),
+  );
 }
 
 /**

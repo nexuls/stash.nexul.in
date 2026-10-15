@@ -26,6 +26,25 @@ An entry's title comes from frontmatter, or from the document's first `# Heading
 - **Category hierarchy**: Parent directories become category segments (e.g. `react/hooks/use-debounce` -> categories `["react", "hooks"]`, primary category `"react"`).
 - **Auto-discovery**: No manual route, navigation, or search registry updates are required.
 
+### Category entry points (`home`)
+
+A directory named `home` inside a category is that category's own page, served at the category's path rather than its own:
+
+```text
+content/react/
+├── home/
+│   └── README.mdx      -> /stash/react
+└── hooks/
+    └── use-debounce/
+        └── README.mdx  -> /stash/react/hooks/use-debounce
+```
+
+- It is an ordinary entry otherwise: frontmatter, adjacent assets and MDX all behave the same, and its assets are still served under `react/home`.
+- Its `title` and `description` name the category wherever the category is listed, including the cards on the landing page. Without a `home` entry a category falls back to its directory name and shows no summary.
+- The page renders the document and then lists every note in the category, grouped by directory, so the MDX body only needs to say what the category is for.
+- It is not a note: it is excluded from note listings, counts, related entries and previous/next navigation. `getAllEntries({ includeCategoryIndexes: true })` includes them when that is what you want, and `getCategoryIndexes()` returns them keyed by category path.
+- `/stash/react/home` is not a route. An entry answers at one URL only, so the directory path returns 404.
+
 ## Frontmatter specification
 
 Frontmatter is optional and minimal. Surrounding `---` YAML delimiters are parsed at build time:
