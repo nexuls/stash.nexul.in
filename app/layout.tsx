@@ -2,12 +2,14 @@
  * Root application layout for Stash.
  *
  * Configures the HTML shell, global typography fonts (Inter, Geist Sans, Geist Mono),
- * global CSS stylesheets, theme provider, and default site-wide metadata.
+ * global CSS stylesheets, theme provider, Vercel Web Analytics, and default
+ * site-wide metadata.
  *
  * Notable: Renders as a Server Component. Default title and OpenGraph metadata are
  * established here and inherited/templated across nested route segments.
  */
 
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import "./globals.css";
 import { ViewTransition } from "react";
@@ -43,6 +45,12 @@ export default function RootLayout({
         </ThemeProvider>
         {process.env.NODE_ENV === "development" && <DevHotReload />}
         <Toaster />
+        {/* Vercel Web Analytics. The `next` entry point reports the matched
+            route (`/stash/[...slug]`) rather than every resolved URL, so the
+            dashboard groups notes instead of listing each one. It carries its
+            own `"use client"` and Suspense boundary, so importing it here
+            leaves the layout a Server Component. */}
+        <Analytics />
       </body>
     </html>
   );

@@ -13,6 +13,11 @@ Confirmed deployment provider: **Vercel** (Next.js App Router with Bun). Product
 - **Install command**: `bun install`
 - **Output directory**: Default Next.js build output (`.next`)
 - **Node.js / Bun runtime**: a current LTS Node.js, or Bun
+- **Web Analytics**: `@vercel/analytics`, mounted as `<Analytics />` in
+  `app/layout.tsx` from the `@vercel/analytics/next` entry point, which reports
+  the matched route (`/stash/[...slug]`) rather than every resolved URL. It has
+  to be enabled for the project in the Vercel dashboard before the endpoint
+  exists; outside Vercel the script request simply fails and nothing is sent.
 
 ## Pre-deployment checks
 
