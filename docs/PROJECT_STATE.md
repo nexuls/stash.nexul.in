@@ -137,6 +137,57 @@ Recorded in [ADR-0008](architecture/decisions/0008-ordered-directory-prefixes.md
 - All 41 routes are byte-identical to the ones generated before the renames, which is the property the convention is built on.
 - Verification: 137 tests pass in `bun test` (the two known pre-existing failures unchanged); `bun x tsc --noEmit`, `bun run validate:content` and `bun run build` clean, with every route unchanged by the renames.
 
+### 8. Content management tool (Completed)
+
+- `bun run content` (`scripts/content/index.ts`, run by Bun) is the single entry
+  point for everything that touches `content/`: browse, create, order, move,
+  rename, copy, remove, edit frontmatter, validate. It opens an interactive app
+  with no arguments and exposes every action as a subcommand, so the same code
+  paths work from a script. Documented in
+  [docs/development/content-scripts.md](development/content-scripts.md).
+- The tool derives nothing the site already derives. `scripts/content/model.ts`
+  walks `content/` only for the directories between entries — which
+  `lib/content` has no reason to describe — and takes slugs, routes, titles,
+  frontmatter, links, ordering and validation from `lib/content` itself. Where
+  the conventions meet (which directory is a category index) the model documents
+  that it mirrors `discovery.ts`, and a test pins the agreement: all 41
+  documents' computed routes match the loader's `permalink`.
+- Modules own one concern each: `model.ts`, `fs-ops.ts` (git-aware mutations,
+  dry run, two-phase renames), `frontmatter.ts` (`yaml` document model, so an
+  edit keeps key order and block lists), `templates.ts`, `ui.ts`, `tui.ts`, and
+  `commands/{browse,create,order,manage,validate}.ts`.
+- The interactive app is built on `@clack/prompts` (added as a devDependency
+  with `picocolors`). Pickers are type-to-filter over the slug with the title as
+  a hint, Escape steps back a level, and the order arranger moves items in
+  memory and redraws, writing only when applied. Framed output is skipped when
+  the terminal reports zero columns, because clack's border arithmetic throws
+  there.
+- Every prompt has a flag, and with no terminal attached a missing flag is
+  reported rather than waited on; optional values fall back (title from the
+  slug, tags from the domain, placement last in the group). `--dry-run` prints
+  each mutation and writes nothing; `--json` covers `stats`, `routes`, `search`
+  and `validate`.
+- Safety properties: renames go through `git mv` when tracked; routes are
+  reported before anything moves, together with the documents that link to them
+  (found structurally from `entry.links`, so with line numbers) and an offer to
+  rewrite those links textually, which also catches a route inside a JSX prop;
+  renumbering parks directories under a temporary name first so swapping `01`
+  and `02` cannot collide; a removal needs the directory name typed back, or
+  `--yes` with no terminal; a slug collision is refused before any file is
+  touched, naming the directory that holds it.
+- `validate` runs a structural pass off the model (kebab-case names, duplicate
+  order prefixes, route collisions, empty categories, empty documents, a
+  misplaced `home`) and then `validateContent` in-process; `validate full` adds
+  Biome, `tsc` and tests. `STASH_CONTENT_DIR` repoints the tool, which is how
+  its tests run over a fixture.
+- Verification: 24 tests in `scripts/content/__tests__/content-tool.test.ts`
+  (model, routes, resolution, ordering and rotation, the structural rules,
+  frontmatter round-tripping, link rewriting and its route boundary, dry run).
+  `bun x tsc --noEmit` and `bun x biome check scripts/content` are clean. The
+  mutations were driven against a copy of the real archive in a scratch git
+  repository, and the app itself was driven over a pseudo-terminal, which is how
+  the clack `box` crash on a zero-width terminal was found and guarded.
+
 ## Confirmed architecture
 
 - Stash is a personal engineering archive, not a project portfolio.

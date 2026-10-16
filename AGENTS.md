@@ -47,6 +47,7 @@ bun run lint
 bun run format
 bun run test
 bun run validate:content
+bun run content
 bun run check
 bun run build
 ```
@@ -70,4 +71,5 @@ bun run build
 - [Search target](docs/architecture/search.md)
 - [Architecture decisions](docs/architecture/decisions/)
 - [Development and authoring guides](docs/development/)
+- [Managing content from the terminal](docs/development/content-scripts.md)
 - [Deployment notes](docs/operations/deployment.md)
