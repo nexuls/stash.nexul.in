@@ -2,6 +2,7 @@
 title: Patches
 description: Workarounds for OpenTUI's rough edges, with what each one costs and when it can be dropped.
 date: 2026-10-16
+updated: 2026-10-17
 tags:
   - opentui
   - patches
@@ -14,10 +15,10 @@ be dropped.
 
 ## What belongs here
 
-A patch note starts from the symptom, not the fix: what was observed, which
-versions showed it, and what the terminal was doing at the time. Then the
-narrowest change that makes it go away.
+A patch note starts from the symptom. Record what was observed, which versions
+showed it, and what the terminal was doing at the time, then the narrowest
+change that makes it go away.
 
-Every note here carries an exit condition — the upstream fix, release or
-refactor that makes the workaround dead code. Without that line a patch
-outlives its reason and nobody dares remove it.
+Every note also states its exit condition, the upstream fix or release that
+makes the workaround dead code. Without that line a patch stays in the codebase
+long after the bug it works around is gone.

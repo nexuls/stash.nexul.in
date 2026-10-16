@@ -10,10 +10,11 @@ tags:
 
 # Terminal-relative dimensions
 
-A rule that runs the width of the screen except for a two-cell gutter, a pane
-that is the terminal's height less a status line — these are ordinary layouts,
-and OpenTUI has no vocabulary for them. `width` accepts `number | "auto" | "<n>%"`,
-and a percentage resolves against the **parent**, not the screen.
+A rule that runs the width of the screen except for a two-cell gutter, or a
+pane that is the terminal's height less a status line. Both are ordinary
+layouts, and OpenTUI has no vocabulary for them. `width` accepts
+`number | "auto" | "<n>%"`, and a percentage resolves against the **parent**,
+not the screen.
 
 What is left is arithmetic at the call site. Read `useTerminalDimensions()`,
 subtract, pass the number, re-render on resize, and do it again in the next
@@ -26,9 +27,9 @@ This patch gives a negative number a meaning instead:
 <scrollbox height={-2} />  {/* terminal height - 2 */}
 ```
 
-Negative was free to claim. Upstream's `validateOptions` throws
-`Invalid width for Renderable <id>: -4` on it, so no existing layout can depend
-on what it used to do.
+Negative numbers were unused. Upstream's `validateOptions` throws
+`Invalid width for Renderable <id>: -4` on them, so no existing layout can
+depend on what they used to do.
 
 ## Two seams, because a dimension arrives two ways
 
@@ -40,26 +41,26 @@ both need handling.
     `Renderable`'s constructor calls `validateOptions(id, options)` itself,
     which **throws** on a negative before `setupYogaProperties` runs. The
     `width` setter is never involved. `validateOptions` is module-private, so
-    nothing reachable from the prototype can get in front of it: the only seam
+    nothing reachable from the prototype can get in front of it. The only seam
     is rewriting `options` before `super()`, which means re-registering the
     React catalogue as subclasses.
   </Step>
   <Step title="Updates">
     React's reconciler applies a changed prop as a plain assignment
-    (`instance.width = value`), so the `width` and `height` accessors on
-    `Renderable.prototype` are wrapped too. That path does no validation at
-    all — before this patch a negative reached yoga as undefined behaviour.
+    (`instance.width = value`), so the patch wraps the `width` and `height`
+    accessors on `Renderable.prototype` too. That path does no validation at
+    all. Before this patch a negative reached yoga as undefined behaviour.
   </Step>
 </Steps>
 
 Wrapping `Renderable.prototype.setupYogaProperties` was the first attempt. It
-is the method that actually pushes the value into yoga, and the throw beats it
-by about five lines.
+is the method that pushes the value into yoga, and the throw beats it by about
+five lines.
 
 ## Resolved again on every resize
 
-A size baked in at construction is stale after the first `SIGWINCH`, and
-re-resolving is the whole point of the feature. The raw negative is kept
+A size resolved once at construction is stale after the first `SIGWINCH`, and
+re-resolving it is the point of the feature. The patch keeps the raw negative
 alongside the renderable:
 
 ```typescript
@@ -67,10 +68,10 @@ const specs = new Map<Renderable, NegativeSpec>();
 ```
 
 A plain `Map` rather than a `WeakMap`, because the resize sweep has to iterate
-it. Entries are dropped on the renderable's `destroyed` event, so an unmounted
-page does not keep its whole subtree alive; setting a non-negative value on
-either axis drops that axis, and a renderable with neither axis left leaves the
-map entirely.
+it. `track` drops an entry on the renderable's `destroyed` event, so an
+unmounted page does not keep its whole subtree alive. Setting a non-negative
+value on either axis drops that axis, and a renderable with neither axis left
+leaves the map entirely.
 
 The sweep writes through the **original** setters it captured before patching.
 Going through the patched ones would re-enter `track` and, on the way, clear the
@@ -90,16 +91,16 @@ function reapplyAll(): void {
 ```
 
 `CliRenderer` updates its own `width` and `height` before it emits `resize`, so
-`ctx` is already current by the time the sweep reads it. The subscription is
-per-context and registered once, on the first tracked renderable.
+`ctx` is already current by the time the sweep reads it. `wireResize`
+subscribes once per context, on the first tracked renderable.
 
 ## Clamped at zero
 
 `resolve` clamps, so a terminal narrower than the requested inset yields an
-empty element rather than a negative one — which would hit the same upstream
-`Invalid width` throw from the other direction. Worth knowing that a laid-out
-renderable then reports `Math.max(layout.width, 1)`, so reading `.width` back
-gives 1 rather than 0.
+empty element rather than a negative one, which would hit the same upstream
+`Invalid width` throw from the other direction. A laid-out renderable then
+reports `Math.max(layout.width, 1)`, so reading `.width` back gives 1 rather
+than 0.
 
 ## The module
 
@@ -376,9 +377,9 @@ new BoxRenderable(ctx, { width: -4 }); // Invalid width for Renderable …
 
 The accessor seam covers it afterwards, which means `box.width = -4` works on a
 hand-built renderable. A test for this patch therefore has to mount real JSX
-through `createRoot` rather than construct renderables directly — at a 40-cell
+through `createRoot` rather than construct renderables directly. At a 40-cell
 terminal, `<box width={-4}>` lays out at 36, and the same box reports 76 after
-the terminal is resized to 80.
+a resize to 80 columns.
 
 ## Related entries
 

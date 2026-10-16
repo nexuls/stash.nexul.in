@@ -10,10 +10,10 @@ tags:
 
 # A theme that follows the terminal
 
-Two kinds of theme have to coexist in a terminal app. A named one, shipped or
-written by hand, with fixed hex values. And the terminal's own colours, which
-change under the app while it runs. A component should not know which kind is
-active.
+Two kinds of theme have to coexist in a terminal app. One is named, shipped or
+written by hand, with fixed hex values. The other is the terminal's own
+colours, which change under the app while it runs. A component should not have
+to know which kind is active.
 
 This is the provider that makes that true, on top of
 [the terminal palette hook](/stash/opentui/features/use-terminal-colors).
@@ -50,14 +50,14 @@ export interface ThemeColors {
 ```
 
 Keeping the set small is what makes a theme quick to write and a component
-quick to colour. Add a role when a component genuinely cannot express itself
-with the existing ones, which happens less often than it feels like it should.
+quick to colour. Add a role only when a component cannot express itself with
+the existing ones.
 
 User-authored themes are hex-only on purpose. A named colour like `"red"`
 resolves to whatever the terminal maps it to, which defeats the point of a
 fixed theme.
 
-## A theme carries a scheme, not a palette
+## A theme carries a scheme
 
 The first version gave a theme one flat palette and an `appearance: "dark"` tag
 beside it, which meant two separate entries for a theme that exists in both
@@ -90,7 +90,7 @@ read `scheme.light` off a mode-agnostic theme. Components read the resolved
 
 Nothing in a theme file says whether the environment is light. The terminal's
 background brightness is the only signal available, so that is where the mode
-comes from — including for static themes, which pick their variant from it:
+comes from, including for static themes, which pick their variant from it:
 
 ```typescript title="theme.ts"
 export function terminalAppearance(palette: TerminalPalette): ThemeAppearance {
@@ -100,12 +100,14 @@ export function terminalAppearance(palette: TerminalPalette): ThemeAppearance {
 }
 ```
 
-Unreported or unparseable backgrounds fall to `dark`, since most terminals are.
+Unreported or unparseable backgrounds fall back to `dark`, since most terminals
+are dark.
 
 ## Mapping the palette onto roles
 
-The terminal theme is a pure function of one palette snapshot. No I/O, no React,
-no OpenTUI import, which is what makes it testable without a renderer:
+The terminal theme is a pure function of one palette snapshot, with no I/O, no
+React and no OpenTUI import, which is what makes it testable without a
+renderer:
 
 ```typescript title="theme.ts"
 export function themeFromTerminalColors(palette: TerminalPalette): Theme {
@@ -136,7 +138,7 @@ export function themeFromTerminalColors(palette: TerminalPalette): Theme {
 ```
 
 Every role ends its `pick` chain with a literal, because any entry the terminal
-reports may be `null` and the UI is never handed an undefined colour.
+reports may be `null`, and the UI never receives an undefined colour.
 
 The result is a `{ default }` scheme rather than a pair. The snapshot already
 reflects whichever mode the terminal is in, so there is only ever one palette;
@@ -144,8 +146,8 @@ when the terminal switches, the snapshot changes and this runs again.
 
 ## The catalogue is an interface
 
-Where static themes come from is not the provider's business. It needs three
-questions answered:
+The provider does not care where static themes come from. It asks three
+questions:
 
 ```typescript title="use-theme.tsx"
 export interface ThemeCatalogue {
@@ -172,10 +174,10 @@ Three separate things keep a startup from flashing the wrong colours.
 
 The entry point pre-fetches the palette and passes it in, so the first render
 already has real colours. An unresolved palette resolves to the *empty-palette*
-terminal theme — the literal fallbacks from `themeFromTerminalColors` — rather
+terminal theme, the literal fallbacks from `themeFromTerminalColors`, rather
 than to an unrelated named theme, so `"terminal"` always reads as a terminal
-theme. And a named id that no longer resolves, a deleted user theme for
-instance, degrades to the terminal theme as well:
+theme. A named id that no longer resolves, a deleted user theme for instance,
+degrades to the terminal theme as well:
 
 ```typescript
 const theme = useMemo<Theme>(() => {
@@ -187,22 +189,22 @@ const theme = useMemo<Theme>(() => {
 ## Changes that come from outside
 
 A provider mounted above everything cannot subscribe to the app's own event
-bus, and it has no business reading a config file. Both directions are props
-instead.
+bus, and it should not read a config file. Both directions are props instead.
 
 `onThemeChange` fires when the user switches, for the caller to persist.
-`subscribeThemeId` is its mirror: the caller pushes in an id that changed
-elsewhere — another instance of the app, or a hand-edit of the config. The
-effect only sets local state and deliberately does not fire `onThemeChange`,
-because the value came *from* the persisted config and re-persisting it is a
-write loop between instances.
+`subscribeThemeId` is its mirror. The caller pushes in an id that changed
+elsewhere, either in another instance of the app or in a hand-edit of the
+config. The effect only sets local state and deliberately does not fire
+`onThemeChange`, because the value came *from* the persisted config and
+re-persisting it is a write loop between instances.
 
 <Callout type="warning">
   Whatever persists the id has to serialize its writes. It is a
   read-modify-write, and cycling themes with a key fires it faster than a round
-  trip completes; with the subscribe bridge in place, a write that lands out of
-  order feeds back and visibly snaps the theme to the previous one. One write in
-  flight at a time, newest id only, skipped when unchanged.
+  trip completes. With the subscribe bridge in place, a write that lands out of
+  order feeds back and snaps the theme on screen to the previous one. Keep one
+  write in flight at a time, send only the newest id, and skip the write when
+  the id is unchanged.
 </Callout>
 
 `subscribeCatalogue` covers the other kind of external change: a theme file
@@ -615,7 +617,7 @@ export function useTheme(): ThemeContextValue {
 
 ## Using it
 
-The entry point owns the disk side, which keeps the React tree free of it:
+The entry point owns the disk reads, which keeps them out of the React tree:
 
 ```tsx title="render-app.tsx"
 const renderer = await createCliRenderer({ screenMode: "alternate-screen" });
@@ -654,13 +656,13 @@ function StatusLine({ server }: { server: Server }) {
 
 A theme that reverts to its fallbacks the moment the terminal changes scheme is
 almost always one of the two palette-hook problems: mode 2031 never enabled, or
-the poll reading a cached palette. Both are covered in
-[the terminal colours note](/stash/opentui/features/use-terminal-colors).
+the poll reading a cached palette.
+[The terminal colours note](/stash/opentui/features/use-terminal-colors) covers
+both.
 
 A theme that snaps back to the previous one a second after switching is the
-write-ordering problem: the persist is a read-modify-write and an older write
-landed last, after which the subscribe bridge faithfully pushed the stale id
-back in.
+write-ordering problem. The persist is a read-modify-write, an older write
+landed last, and the subscribe bridge then pushed the stale id back in.
 
 Reading `theme.colors.primary` instead of `colors.primary` is a type error
 rather than a runtime surprise, which is the reason the scheme and the resolved

@@ -16,14 +16,14 @@ Release, and the click has become a selection.
 
 That is OpenTUI behaving as designed. The renderer turns a left mouse-down over
 a selectable renderable into a drag-selection, and every text-bearing
-renderable — `<text>`, `<code>`, `<markdown>`, `<input>`, `<textarea>`,
-`<ascii-font>` — ships `selectable: true`. The base `Renderable` is `false`;
-they override it.
+renderable ships `selectable: true`, including `<text>`, `<code>`,
+`<markdown>`, `<input>`, `<textarea>` and `<ascii-font>`. The base
+`Renderable` is `false`, and they override it.
 
-Selection is still wanted in places. A log view or a console pane has to be
-copyable. So the fix is to flip the default and keep the prop: a renderable
-given no `selectable` prop comes up non-selectable, one given the prop gets
-exactly what the caller asked for.
+Some places still want selection. A log view or a console pane has to be
+copyable. So the fix flips the default while keeping the prop meaningful. A
+renderable given no `selectable` prop comes up non-selectable, and one given
+the prop gets exactly what the caller asked for.
 
 ## Where the default lives
 
@@ -33,14 +33,13 @@ exactly what the caller asked for.
 this.selectable = options.selectable ?? this._defaultOptions.selectable;
 ```
 
-`_defaultOptions` is a class *field*, so it is an own property of each
-instance, written during construction. Nothing on the prototype can change it,
-and nothing outside the constructor can get in front of that line. Subclassing
-is the only seam.
+`_defaultOptions` is a class *field*, so each instance gets its own copy during
+construction. Nothing on the prototype can change it, and nothing outside the
+constructor can get in front of that line. Subclassing is the only seam.
 
 ## The dead end
 
-The obvious one-liner is to neuter the renderer:
+The obvious one-liner disables the renderer's selection entirely:
 
 ```typescript
 renderer.startSelection = () => {};
@@ -48,22 +47,22 @@ renderer.startSelection = () => {};
 
 Selection then stops everywhere, including on the `<text selectable>` that
 wants it, and the prop silently means nothing. Anyone reading the component
-later sees a `selectable` that is honoured by the type system and ignored by
-the runtime, which is worse than the original problem.
+later sees a `selectable` that the type system accepts and the runtime ignores,
+which is worse than the original problem.
 
 ## Subclassing the catalogue
 
 `@opentui/react` keeps a catalogue mapping an element name to the renderable
 class the reconciler constructs. `getComponentCatalogue()` reads it, `extend()`
-writes it, and every entry is built the same way:
+writes it, and the reconciler builds every entry the same way:
 
 ```typescript
 new Component(ctx, { id, ...props });
 ```
 
-A uniform `(ctx, options)` subclass is therefore safe for all of them. Each
-entry is wrapped in a subclass that lets the real constructor run and then
-corrects the flag:
+So a uniform `(ctx, options)` subclass is safe for all of them. The patch wraps
+each entry in a subclass that lets the real constructor run and then corrects
+the flag:
 
 ```typescript
 optIn[name] = class extends Base {
@@ -76,10 +75,10 @@ optIn[name] = class extends Base {
 };
 ```
 
-Both halves of that condition carry weight. `options?.selectable === undefined`
-is what makes this a default rather than a ban — `selectable={false}` and
+Both halves of that condition matter. `options?.selectable === undefined` is
+what makes this a default rather than a ban, so `selectable={false}` and
 `selectable` both pass straight through. `this.selectable === true` leaves
-alone everything that never opted in: `<box>`, span nodes, anything whose
+alone everything that never opted in: `<box>`, span nodes, and anything whose
 `_defaultOptions` already said `false`.
 
 <Callout type="warning">
@@ -92,8 +91,8 @@ alone everything that never opted in: `<box>`, span nodes, anything whose
 
 ## The text fields keep their own selection
 
-`<input>` and `<textarea>` are left as upstream built them. The field itself is
-a box, and the selection inside it belongs to its internal text buffer rather
+The patch leaves `<input>` and `<textarea>` as upstream built them. The field
+itself is a box, and the selection inside it belongs to its text buffer rather
 than to the renderer's drag-selection, so flipping the flag there breaks
 selecting inside a field without fixing anything. They are the default of
 `keep`, and the option exists because the right set depends on which
@@ -194,8 +193,8 @@ already holds, which matters when another patch has wrapped it first.
 
 ## Installing it
 
-The catalogue is read by the reconciler as it constructs elements, so the call
-has to land before the first render:
+The reconciler reads the catalogue as it constructs elements, so the call has
+to land before the first render:
 
 ```typescript title="render-app.ts"
 import { installSelectionOptIn } from "./selection-opt-in.ts";
@@ -208,7 +207,7 @@ export async function renderApp() {
 }
 ```
 
-After that, selection is spelled out where it is wanted:
+After that, a component asks for selection where it wants it:
 
 ```tsx
 {/* Inert: a click navigates, a drag does nothing. */}
@@ -220,11 +219,9 @@ After that, selection is spelled out where it is wanted:
 
 ## When it can go
 
-Upstream would need a way to set the default from outside the constructor — a
-renderer option, or a `selectable` that reads a context value instead of a
-class field. Either removes the need for the subclass wrapper. Until then the
-module is small enough to read in one sitting, which is the only real defence a
-monkey-patch has.
+Upstream would need a way to set the default from outside the constructor,
+either a renderer option or a `selectable` that reads a context value instead
+of a class field. Either one removes the need for the subclass wrapper.
 
 ## Related entries
 

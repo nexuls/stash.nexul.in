@@ -1,7 +1,8 @@
 ---
 title: Features
-description: "Behaviour built on top of OpenTUI: input handling, layout, rendering and the terminal realities each one has to survive."
+description: Behaviour built on top of OpenTUI, such as input handling, layout and rendering, with what each one assumes about the terminal.
 date: 2026-10-16
+updated: 2026-10-17
 tags:
   - opentui
   - features
@@ -9,13 +10,13 @@ tags:
 
 # Features
 
-Behaviour built on top of OpenTUI: input handling, layout, rendering and the
-terminal realities each one has to survive.
+Behaviour built on top of OpenTUI, such as input handling, layout and
+rendering, with what each one assumes about the terminal.
 
 ## What belongs here
 
-Anything that is behaviour rather than a component — key and mouse handling,
+Anything that is behaviour rather than a component. Key and mouse handling,
 focus and selection, scrolling, resize response, measurement, frame scheduling.
-A note says which layer owns the behaviour (`@opentui/core` or the renderer),
-and what it assumes about the terminal: size changes, reported capabilities,
-alternate screen, and how much work fits in one frame.
+A note says which layer owns the behaviour, `@opentui/core` or the renderer,
+and what it assumes about the terminal, including size changes, reported
+capabilities, the alternate screen, and how much work fits in one frame.
