@@ -12,11 +12,13 @@
  * collapse and expand groups, Enter in the filter opens the first match.
  */
 
-import { Archive, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { GitHubIcon } from "@/components/icons/github-icon";
+import { StashMark } from "@/components/icons/stash-mark";
+import { StashWordmark } from "@/components/icons/stash-wordmark";
 import { DomainSwitcher } from "@/components/navigation/domain-switcher";
 import { SidebarNavTree } from "@/components/navigation/sidebar-nav-tree";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -284,14 +286,11 @@ export function DocsSidebar({
         <div className="flex items-center justify-between gap-2 px-2">
           <Link
             href="/"
-            className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring transition-opacity hover:opacity-70"
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Archive className="size-4" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight text-foreground">
-              {siteConfig.name}
-            </span>
+            <StashMark className="h-6 w-auto shrink-0 text-foreground" />
+            <StashWordmark className="h-8 shrink-0 text-foreground" />
+            <span className="sr-only">{siteConfig.name}</span>
           </Link>
 
           <SidebarTrigger />

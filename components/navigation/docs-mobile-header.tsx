@@ -7,8 +7,9 @@
  * Hidden on desktop where breadcrumbs and sidebar are displayed in-page.
  */
 
-import { Archive } from "lucide-react";
 import Link from "next/link";
+import { StashMark } from "@/components/icons/stash-mark";
+import { StashWordmark } from "@/components/icons/stash-wordmark";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { siteConfig } from "@/lib/site-config";
@@ -24,14 +25,10 @@ export function DocsMobileHeader({ className }: { className?: string }) {
     >
       <div className="flex items-center gap-2">
         <SidebarTrigger />
-        <Link
-          href="/stash"
-          className="flex items-center gap-2 font-medium text-sm text-foreground"
-        >
-          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Archive className="size-3" />
-          </div>
-          <span>{siteConfig.name}</span>
+        <Link href="/stash" className="flex items-center gap-2 text-foreground">
+          <StashMark className="h-7 w-auto shrink-0" />
+          <StashWordmark className="h-9 shrink-0" />
+          <span className="sr-only">{siteConfig.name}</span>
         </Link>
       </div>
 

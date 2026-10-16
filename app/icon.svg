@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 16 121 88" width="121" height="88" role="img" aria-label="Stash">
+  <title>Stash</title>
+  <style>
+    .f{fill:#14100B} .m{fill:#00786F}
+    @media (prefers-color-scheme: dark) { .f{fill:#F9FBFB} .m{fill:#53B1A7} }
+  </style>
+  <path class="m" d="M21 23Q21 16 28 16L55.5 16Q59 16 61.22 18.71L65.78 24.29Q68 27 71.5 27L112 27Q121 27 121 36L121 78Q121 88 111 88L31 88Q21 88 21 78Z"/>
+  <path class="f" d="M0 39Q0 32 7 32L34.5 32Q38 32 40.22 34.71L44.78 40.29Q47 43 50.5 43L91 43Q100 43 100 52L100 94Q100 104 90 104L10 104Q0 104 0 94Z"/>
+</svg>

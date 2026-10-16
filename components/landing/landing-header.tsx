@@ -10,6 +10,8 @@
 
 import Link from "next/link";
 import { GitHubIcon } from "@/components/icons/github-icon";
+import { StashMark } from "@/components/icons/stash-mark";
+import { StashWordmark } from "@/components/icons/stash-wordmark";
 import { HeaderBackdrop } from "@/components/landing/header-backdrop";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { siteConfig } from "@/lib/site-config";
@@ -30,9 +32,11 @@ export function LandingHeader() {
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-6 sm:px-8">
         <Link
           href="/"
-          className="font-display text-base font-bold tracking-[-0.02em] text-foreground transition-colors hover:text-primary"
+          className="flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-70"
         >
-          {siteConfig.name}
+          <StashMark className="h-8 w-auto shrink-0" />
+          <StashWordmark className="h-10 shrink-0" />
+          <span className="sr-only">{siteConfig.name}</span>
         </Link>
 
         <span
