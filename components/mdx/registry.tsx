@@ -13,6 +13,7 @@
 import type { MDXComponents } from "next-mdx-remote-client/rsc";
 import { Callout } from "@/components/mdx/callout";
 import { CodeBlock, CodeFigure, Pre } from "@/components/mdx/code-block";
+import { ComponentPreview } from "@/components/mdx/component-preview";
 import { CopyButton } from "@/components/mdx/copy-button";
 import { Details } from "@/components/mdx/details";
 import { File, FileTree, Folder } from "@/components/mdx/file-tree";
@@ -35,6 +36,7 @@ export const baseMdxComponents = {
   // Code
   CodeBlock,
   CopyButton,
+  ComponentPreview,
 
   // Structure
   Tabs,

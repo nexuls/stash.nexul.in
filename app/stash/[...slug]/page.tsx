@@ -206,6 +206,8 @@ export default async function DocPage({ params }: DocPageProps) {
               source={entry.body}
               sourcePath={entry.filePath}
               assetBaseUrl={entryAssetBaseUrl(entry.slug)}
+              entryDirectory={entry.absoluteDirectoryPath}
+              entryDirectoryPath={entry.directoryPath}
             />
           </div>
 

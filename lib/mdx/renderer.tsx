@@ -20,6 +20,13 @@ export interface RenderMdxOptions {
    * against the entry rather than against the route.
    */
   assetBaseUrl?: string;
+  /**
+   * Absolute path of the entry directory. `<ComponentPreview>` is filled from
+   * it at compile time and resolves the entry's `preview.tsx` against it.
+   */
+  entryDirectory?: string;
+  /** The same directory relative to `content/`, order prefixes included. */
+  entryDirectoryPath?: string;
   components?: MDXComponents;
 }
 
@@ -35,10 +42,16 @@ export async function renderMdx({
   source,
   sourcePath,
   assetBaseUrl,
+  entryDirectory,
+  entryDirectoryPath,
   components,
 }: RenderMdxOptions): Promise<RenderMdxResult> {
   const mdxComponents = createMdxComponents(components, source);
-  const mdxOptions = getMdxOptions({ assetBaseUrl });
+  const mdxOptions = getMdxOptions({
+    assetBaseUrl,
+    entryDirectory,
+    entryDirectoryPath,
+  });
 
   try {
     const result = await evaluate({
@@ -75,12 +88,16 @@ export async function MDXRenderer({
   source,
   sourcePath,
   assetBaseUrl,
+  entryDirectory,
+  entryDirectoryPath,
   components,
 }: RenderMdxOptions) {
   const { content } = await renderMdx({
     source,
     sourcePath,
     assetBaseUrl,
+    entryDirectory,
+    entryDirectoryPath,
     components,
   });
   return content;

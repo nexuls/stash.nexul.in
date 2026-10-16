@@ -17,6 +17,25 @@ import { cn } from "@/lib/utils";
 /** Blocks longer than this open collapsed so a page stays scannable. */
 export const COLLAPSE_LINE_THRESHOLD = 28;
 
+export interface CodePanelFrame {
+  /**
+   * Rendered in place of the panel's title. The preview's Code tab puts its
+   * file tabs here so the frame keeps one bar instead of stacking a second
+   * one above the panel's own.
+   */
+  tabs?: React.ReactNode;
+}
+
+/**
+ * Set by a frame that already owns the panel's border, its height and its
+ * scrolling — the component preview's Code tab. Inside one, the panel fills
+ * the frame and scrolls instead of pushing the page down, so the collapse
+ * toggle has nothing left to do.
+ */
+export const CodePanelFrameContext = React.createContext<CodePanelFrame | null>(
+  null,
+);
+
 export interface CodePanelProps {
   /** Shiki language id, shown as the block's extension-style label. */
   language: string;
@@ -97,7 +116,9 @@ export function CodePanel({
   className,
   children,
 }: CodePanelProps) {
-  const collapsible = lineCount > COLLAPSE_LINE_THRESHOLD;
+  const frame = React.useContext(CodePanelFrameContext);
+  const framed = frame !== null;
+  const collapsible = !framed && lineCount > COLLAPSE_LINE_THRESHOLD;
   const [wrap, setWrap] = React.useState(false);
   const [collapsed, setCollapsed] = React.useState(collapsible);
   const isDiff = additions > 0 || deletions > 0;
@@ -105,7 +126,10 @@ export function CodePanel({
   return (
     <div
       className={cn(
-        "stash-code group/code my-6 overflow-hidden rounded-xl border border-code-rule bg-code",
+        "stash-code group/code overflow-hidden border-code-rule bg-code",
+        framed
+          ? "flex h-full min-h-0 flex-col"
+          : "my-6 rounded-xl border border-code-rule",
         className,
       )}
       data-wrap={wrap}
@@ -120,15 +144,16 @@ export function CodePanel({
             <Terminal className="size-3.5 shrink-0 text-primary" aria-hidden />
           ))}
 
-        {title ? (
-          <TitlePath title={title} />
-        ) : (
-          // Without a title the block still has to say what it is, so the
-          // language stands in for the filename.
-          <span className="truncate font-mono text-xs text-muted-foreground">
-            {terminal ? "shell" : language}
-          </span>
-        )}
+        {frame?.tabs ??
+          (title ? (
+            <TitlePath title={title} />
+          ) : (
+            // Without a title the block still has to say what it is, so the
+            // language stands in for the filename.
+            <span className="truncate font-mono text-xs text-muted-foreground">
+              {terminal ? "shell" : language}
+            </span>
+          ))}
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
           {isDiff ? (
@@ -156,7 +181,15 @@ export function CodePanel({
         </div>
       </div>
 
-      <div className="stash-code-viewport relative">{children}</div>
+      <div
+        className={cn(
+          "stash-code-viewport relative",
+          // The header stays put and the code moves under it.
+          framed && "min-h-0 flex-1 overflow-auto",
+        )}
+      >
+        {children}
+      </div>
 
       {collapsible && (
         <button

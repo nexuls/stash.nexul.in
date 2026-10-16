@@ -77,6 +77,8 @@ export function CategoryView({ entry, domain }: CategoryViewProps) {
               source={entry.body}
               sourcePath={entry.filePath}
               assetBaseUrl={entryAssetBaseUrl(entry.slug)}
+              entryDirectory={entry.absoluteDirectoryPath}
+              entryDirectoryPath={entry.directoryPath}
             />
           </div>
 

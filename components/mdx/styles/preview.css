@@ -1,0 +1,32 @@
+/* ==========================================================================
+   Component previews
+   ========================================================================== */
+
+/* The track is wider than the viewport the reader has dragged to, and the
+   remainder has to read as "outside the component" rather than as part of it.
+   A dot grid says that without drawing a second border around the frame. */
+.stash-preview-track {
+  --stash-preview-dot: color-mix(in oklch, var(--code-rule) 70%, transparent);
+  background-image: radial-gradient(
+    var(--stash-preview-dot) 1px,
+    transparent 1px
+  );
+  background-size: 10px 10px;
+  background-position: 0 0;
+}
+
+/* The demo is authored as a standalone component, so it must not inherit the
+   document's measure, rhythm or link styling. */
+.stash-preview-track :where(p, ul, ol, h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  max-width: none;
+}
+
+/* Dragging the thumb should not leave the preview's own text selected. */
+.stash-preview-track {
+  user-select: none;
+}
+
+.stash-preview-track > :first-child {
+  user-select: text;
+}

@@ -211,6 +211,41 @@ export type CodeBlockProps = z.infer<typeof codeBlockPropsSchema> & {
 };
 
 /**
+ * Props for the ComponentPreview showcase.
+ *
+ * `directory` and `error` are not authored: `remarkPreviewSource` writes them
+ * onto the tag at compile time, because only the pipeline knows which entry
+ * directory the document came from and whether the listed files exist.
+ */
+export const componentPreviewPropsSchema = z.object({
+  /** Export to render from the entry's `preview.tsx`. */
+  demo: z.string().optional().default("Preview"),
+  /** Entry directory relative to `content/`, order prefixes included. */
+  directory: z.string().optional(),
+  /** Label for the preview, shown above the frame. */
+  title: z.string().optional(),
+  /** Width thumb and viewport presets, for checking a layout as it narrows. */
+  resizable: z.boolean().optional().default(true),
+  /** Frame-rate readout in the header. Off by default: it costs a rAF loop. */
+  fps: z.boolean().optional().default(false),
+  /** Height of the preview viewport in pixels. */
+  height: z.number().int().positive().optional().default(440),
+  /** Tab shown first. */
+  defaultTab: z.enum(["preview", "code"]).optional().default("preview"),
+  /** Files shown in the Code tab, comma separated, written by the pipeline. */
+  files: z.string().optional(),
+  /** Compile-time diagnostic, e.g. a listed file that does not exist. */
+  error: z.string().optional(),
+  className: z.string().optional(),
+});
+
+export type ComponentPreviewProps = z.infer<
+  typeof componentPreviewPropsSchema
+> & {
+  children?: React.ReactNode;
+};
+
+/**
  * Options for MDX evaluation.
  */
 export const mdxEvaluateOptionsSchema = z.object({

@@ -1,11 +1,12 @@
 /**
  * MDX compilation and plugin options.
  *
- * The pipeline is: GitHub Flavored Markdown, `<CodeBlock>` lowering, the
- * line-number default, entry-relative asset resolution, standalone-image promotion, removal of a
- * duplicated title heading, heading slugs, Shiki highlighting, then a pass that
- * lifts code metadata onto the figure element so the React renderer never
- * inspects its own children.
+ * The pipeline is: GitHub Flavored Markdown, preview-source inlining,
+ * `<CodeBlock>` lowering, the line-number default, entry-relative asset
+ * resolution, standalone-image promotion, removal of a duplicated title
+ * heading, heading slugs, Shiki highlighting, then a pass that lifts code
+ * metadata onto the figure element so the React renderer never inspects its
+ * own children.
  */
 
 import rehypePrettyCode, {
@@ -18,6 +19,7 @@ import { remarkCodeBlockJsx } from "./plugins/remark-code-block-jsx";
 import { remarkCodeLineNumbers } from "./plugins/remark-code-line-numbers";
 import { remarkEntryAssets } from "./plugins/remark-entry-assets";
 import { remarkImageFigures } from "./plugins/remark-image-figures";
+import { remarkPreviewSource } from "./plugins/remark-preview-source";
 import { remarkStripTitleHeading } from "./plugins/remark-strip-title-heading";
 
 /**
@@ -47,6 +49,14 @@ export interface MdxOptionsConfig {
    * references. Omit it to leave relative references untouched.
    */
   assetBaseUrl?: string;
+  /**
+   * Absolute path of the entry directory, so `<ComponentPreview>` can be
+   * filled with the files it names. Omit it and the tag reports that it was
+   * compiled without an entry.
+   */
+  entryDirectory?: string;
+  /** The same directory relative to `content/`, order prefixes included. */
+  entryDirectoryPath?: string;
   rehypePrettyCodeOptions?: Partial<RehypePrettyCodeOptions>;
 }
 
@@ -62,6 +72,16 @@ export function getMdxOptions(config: MdxOptionsConfig = {}) {
   return {
     remarkPlugins: [
       remarkGfm,
+      [
+        remarkPreviewSource,
+        {
+          entryDirectory: config.entryDirectory,
+          entryDirectoryPath: config.entryDirectoryPath,
+        },
+      ] as [
+        typeof remarkPreviewSource,
+        { entryDirectory?: string; entryDirectoryPath?: string },
+      ],
       remarkCodeBlockJsx,
       remarkCodeLineNumbers,
       [remarkEntryAssets, { assetBaseUrl: config.assetBaseUrl }] as [
