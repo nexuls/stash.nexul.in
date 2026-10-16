@@ -1,0 +1,386 @@
+---
+title: Terminal-relative dimensions
+description: Giving a negative width or height the meaning "terminal size minus that many cells", re-resolved on every resize, since OpenTUI percentages resolve against the parent.
+date: 2026-10-17
+tags:
+  - opentui
+  - patches
+  - layout
+---
+
+# Terminal-relative dimensions
+
+A rule that runs the width of the screen except for a two-cell gutter, a pane
+that is the terminal's height less a status line — these are ordinary layouts,
+and OpenTUI has no vocabulary for them. `width` accepts `number | "auto" | "<n>%"`,
+and a percentage resolves against the **parent**, not the screen.
+
+What is left is arithmetic at the call site. Read `useTerminalDimensions()`,
+subtract, pass the number, re-render on resize, and do it again in the next
+component that needs the same thing.
+
+This patch gives a negative number a meaning instead:
+
+```tsx
+<box width={-4} />         {/* terminal width - 4 */}
+<scrollbox height={-2} />  {/* terminal height - 2 */}
+```
+
+Negative was free to claim. Upstream's `validateOptions` throws
+`Invalid width for Renderable <id>: -4` on it, so no existing layout can depend
+on what it used to do.
+
+## Two seams, because a dimension arrives two ways
+
+A width reaches a renderable through two code paths that share nothing, and
+both need handling.
+
+<Steps>
+  <Step title="Construction">
+    `Renderable`'s constructor calls `validateOptions(id, options)` itself,
+    which **throws** on a negative before `setupYogaProperties` runs. The
+    `width` setter is never involved. `validateOptions` is module-private, so
+    nothing reachable from the prototype can get in front of it: the only seam
+    is rewriting `options` before `super()`, which means re-registering the
+    React catalogue as subclasses.
+  </Step>
+  <Step title="Updates">
+    React's reconciler applies a changed prop as a plain assignment
+    (`instance.width = value`), so the `width` and `height` accessors on
+    `Renderable.prototype` are wrapped too. That path does no validation at
+    all — before this patch a negative reached yoga as undefined behaviour.
+  </Step>
+</Steps>
+
+Wrapping `Renderable.prototype.setupYogaProperties` was the first attempt. It
+is the method that actually pushes the value into yoga, and the throw beats it
+by about five lines.
+
+## Resolved again on every resize
+
+A size baked in at construction is stale after the first `SIGWINCH`, and
+re-resolving is the whole point of the feature. The raw negative is kept
+alongside the renderable:
+
+```typescript
+const specs = new Map<Renderable, NegativeSpec>();
+```
+
+A plain `Map` rather than a `WeakMap`, because the resize sweep has to iterate
+it. Entries are dropped on the renderable's `destroyed` event, so an unmounted
+page does not keep its whole subtree alive; setting a non-negative value on
+either axis drops that axis, and a renderable with neither axis left leaves the
+map entirely.
+
+The sweep writes through the **original** setters it captured before patching.
+Going through the patched ones would re-enter `track` and, on the way, clear the
+tracking it depends on:
+
+```typescript
+function reapplyAll(): void {
+  for (const [r, spec] of specs) {
+    if (spec.width !== undefined) {
+      originalWidthSet.call(r, resolve(r.ctx, "width", spec.width));
+    }
+    if (spec.height !== undefined) {
+      originalHeightSet.call(r, resolve(r.ctx, "height", spec.height));
+    }
+  }
+}
+```
+
+`CliRenderer` updates its own `width` and `height` before it emits `resize`, so
+`ctx` is already current by the time the sweep reads it. The subscription is
+per-context and registered once, on the first tracked renderable.
+
+## Clamped at zero
+
+`resolve` clamps, so a terminal narrower than the requested inset yields an
+empty element rather than a negative one — which would hit the same upstream
+`Invalid width` throw from the other direction. Worth knowing that a laid-out
+renderable then reports `Math.max(layout.width, 1)`, so reading `.width` back
+gives 1 rather than 0.
+
+## The module
+
+```typescript title="negative-dimension-patch.ts" showLineNumbers
+/**
+ * Give every element terminal-relative dimensions: a negative `width` or
+ * `height` means "the terminal's size minus that many cells".
+ *
+ *   <box width={-4} />           // terminal width - 4
+ *   <scrollbox height={-2} />    // terminal height - 2
+ *
+ * OpenTUI has no such notion — a percentage resolves against the parent, not
+ * the screen, and upstream's `validateOptions` throws on a negative.
+ *
+ * Install once, before the first render. Because the construction seam is the
+ * React catalogue, this covers JSX elements; a renderable built by hand
+ * (`new BoxRenderable(...)`) is unaffected on construction, only on assignment.
+ */
+
+import type { RenderContext, Renderable } from "@opentui/core";
+import { Renderable as RenderableClass } from "@opentui/core";
+import {
+  extend,
+  getComponentCatalogue,
+  type RenderableConstructor,
+} from "@opentui/react";
+
+/** The two axes this patch understands. */
+type Axis = "width" | "height";
+
+/** The raw negative values a renderable was given, per axis. */
+type NegativeSpec = Partial<Record<Axis, number>>;
+
+/** Just the constructor options this patch reads or rewrites. */
+interface DimensionOptions {
+  width?: unknown;
+  height?: unknown;
+}
+
+/**
+ * A catalogue entry seen structurally. `RenderableConstructor` resolves to the
+ * *abstract* `BaseRenderable`, which TypeScript refuses to subclass in a class
+ * expression, so the base is narrowed to what this wrapper touches.
+ */
+type DimensionConstructor = new (
+  ctx: RenderContext,
+  options: DimensionOptions,
+) => Renderable;
+
+/**
+ * Live renderables using at least one negative dimension, with the raw values
+ * they were given. A plain `Map` rather than a `WeakMap` because it must be
+ * iterated; entries are removed on the renderable's `destroyed` event.
+ */
+const specs = new Map<Renderable, NegativeSpec>();
+
+/** Contexts whose `resize` event is already wired to `reapplyAll`. */
+const wiredContexts = new WeakSet<RenderContext>();
+
+/** Original accessors, kept so the resize sweep does not re-enter the patch. */
+let originalWidthSet: (this: Renderable, value: unknown) => void;
+let originalHeightSet: (this: Renderable, value: unknown) => void;
+
+let patched = false;
+
+/** A dimension is terminal-relative when it is a finite negative number. */
+function isNegativeDimension(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value < 0;
+}
+
+/**
+ * Resolve a negative dimension against the live terminal size. Clamped at 0 —
+ * a terminal smaller than the requested inset yields an empty element rather
+ * than a negative one, which upstream rejects.
+ */
+function resolve(ctx: RenderContext, axis: Axis, raw: number): number {
+  const terminal = axis === "width" ? ctx.width : ctx.height;
+  return Math.max(0, terminal + raw);
+}
+
+/**
+ * Record (or forget) a renderable's raw negative value for one axis. Passing
+ * `undefined` clears the axis — a caller that sets a real width has opted back
+ * out of terminal-relative sizing.
+ */
+function track(r: Renderable, axis: Axis, raw: number | undefined): void {
+  const existing = specs.get(r);
+
+  if (raw === undefined) {
+    if (!existing) return;
+    delete existing[axis];
+    if (existing.width === undefined && existing.height === undefined) {
+      specs.delete(r);
+    }
+    return;
+  }
+
+  if (existing) {
+    existing[axis] = raw;
+    return;
+  }
+
+  specs.set(r, { [axis]: raw });
+  // `Renderable.destroy()` emits this; without it the map would keep the whole
+  // subtree of every unmounted page alive.
+  r.once("destroyed", () => specs.delete(r));
+  wireResize(r.ctx);
+}
+
+/**
+ * Subscribe a context's terminal-resize event once. The renderer updates its
+ * own `width`/`height` before emitting, so `ctx` is already current.
+ */
+function wireResize(ctx: RenderContext): void {
+  if (wiredContexts.has(ctx)) return;
+  wiredContexts.add(ctx);
+  ctx.on("resize", reapplyAll);
+}
+
+/** Push freshly resolved sizes into every tracked renderable. */
+function reapplyAll(): void {
+  for (const [r, spec] of specs) {
+    if (spec.width !== undefined) {
+      originalWidthSet.call(r, resolve(r.ctx, "width", spec.width));
+    }
+    if (spec.height !== undefined) {
+      originalHeightSet.call(r, resolve(r.ctx, "height", spec.height));
+    }
+  }
+}
+
+/**
+ * Replace negative `width`/`height` in a fresh renderable's options with sizes
+ * resolved against `ctx`. Returns the original object when there is nothing to
+ * do, and a copy otherwise — the reconciler keeps the props object it hands us
+ * for the next diff, so it must not be mutated.
+ */
+function resolveOptions<T extends DimensionOptions>(
+  ctx: RenderContext,
+  options: T,
+): T {
+  const negWidth = isNegativeDimension(options?.width)
+    ? options.width
+    : undefined;
+  const negHeight = isNegativeDimension(options?.height)
+    ? options.height
+    : undefined;
+
+  if (negWidth === undefined && negHeight === undefined) return options;
+
+  const resolved = { ...options };
+  if (negWidth !== undefined) resolved.width = resolve(ctx, "width", negWidth);
+  if (negHeight !== undefined) {
+    resolved.height = resolve(ctx, "height", negHeight);
+  }
+  return resolved;
+}
+
+/**
+ * Wrap the accessors so an assignment (`instance.width = -4`) is resolved and
+ * tracked the same way a construction-time prop is.
+ */
+function patchAccessors(): void {
+  const proto = RenderableClass.prototype;
+
+  for (const axis of ["width", "height"] as const) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, axis);
+    const originalSet = descriptor?.set;
+    if (!descriptor || !originalSet) {
+      throw new Error(
+        `installNegativeDimensionPatch: Renderable.prototype.${axis} has no setter — @opentui/core changed shape`,
+      );
+    }
+
+    if (axis === "width") originalWidthSet = originalSet;
+    else originalHeightSet = originalSet;
+
+    Object.defineProperty(proto, axis, {
+      ...descriptor,
+      set(this: Renderable, value: unknown) {
+        if (isNegativeDimension(value)) {
+          track(this, axis, value);
+          originalSet.call(this, resolve(this.ctx, axis, value));
+          return;
+        }
+        track(this, axis, undefined);
+        originalSet.call(this, value);
+      },
+    });
+  }
+}
+
+/**
+ * Re-register the component catalogue so a negative `width`/`height` prop is
+ * resolved before upstream's constructor validates it.
+ *
+ * Wraps whatever is currently registered rather than the pristine
+ * `baseComponents`, so this composes with other catalogue patches in either
+ * order instead of one silently replacing the other.
+ */
+function patchCatalogue(): void {
+  const wrapped: Record<string, RenderableConstructor> = {};
+
+  for (const [name, Base] of Object.entries(getComponentCatalogue()) as [
+    string,
+    DimensionConstructor,
+  ][]) {
+    wrapped[name] = class extends Base {
+      constructor(ctx: RenderContext, options: DimensionOptions) {
+        super(ctx, resolveOptions(ctx, options));
+
+        // Remember the raw request so resizes can re-resolve it. After
+        // `super()` because `this` is what gets tracked.
+        if (isNegativeDimension(options?.width)) {
+          track(this, "width", options.width);
+        }
+        if (isNegativeDimension(options?.height)) {
+          track(this, "height", options.height);
+        }
+      }
+    } as unknown as RenderableConstructor;
+  }
+
+  extend(wrapped);
+}
+
+/**
+ * Teach the TUI that a negative `width`/`height` means `terminal size - n`.
+ * Call once, before the first render; a second call is a no-op.
+ */
+export function installNegativeDimensionPatch(): void {
+  if (patched) return;
+  patched = true;
+
+  patchAccessors();
+  patchCatalogue();
+}
+```
+
+## Installing it
+
+Both halves patch shared state, so the call belongs before the first
+renderable exists:
+
+```typescript title="render-app.ts"
+import { installNegativeDimensionPatch } from "./negative-dimension-patch.ts";
+import { installSelectionOptIn } from "./selection-opt-in.ts";
+
+export async function renderApp() {
+  installSelectionOptIn();
+  installNegativeDimensionPatch();
+
+  const renderer = await createCliRenderer({ screenMode: "alternate-screen" });
+  createRoot(renderer).render(<App />);
+}
+```
+
+<Callout type="warning">
+  Both of these wrap `getComponentCatalogue()` rather than the pristine
+  `baseComponents`, which is what lets them be installed in either order. Two
+  patches that each wrapped the pristine set would have the second `extend()`
+  re-register the same names over the first's classes, deleting one patch with
+  no error anywhere. Any further catalogue patch has to follow the same rule.
+</Callout>
+
+## What it does not cover
+
+The construction seam is the React catalogue, so a renderable built by hand
+still throws on a negative constructor option:
+
+```typescript
+new BoxRenderable(ctx, { width: -4 }); // Invalid width for Renderable …
+```
+
+The accessor seam covers it afterwards, which means `box.width = -4` works on a
+hand-built renderable. A test for this patch therefore has to mount real JSX
+through `createRoot` rather than construct renderables directly — at a 40-cell
+terminal, `<box width={-4}>` lays out at 36, and the same box reports 76 after
+the terminal is resized to 80.
+
+## Related entries
+
+- [Making drag-selection opt-in](/stash/opentui/patches/selection-opt-in). The other catalogue patch, and the first use of the subclass seam.
+- [Clipping box borders](/stash/opentui/patches/box-clip-patch). Patches a prototype method instead, where the catalogue would be the wrong level.

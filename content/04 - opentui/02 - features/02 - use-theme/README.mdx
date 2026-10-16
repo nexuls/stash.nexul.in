@@ -1,0 +1,671 @@
+---
+title: A theme that follows the terminal
+description: Semantic colour roles over a static catalogue and the live terminal palette, with light and dark read from the terminal background rather than declared.
+date: 2026-10-17
+tags:
+  - opentui
+  - features
+  - theming
+---
+
+# A theme that follows the terminal
+
+Two kinds of theme have to coexist in a terminal app. A named one, shipped or
+written by hand, with fixed hex values. And the terminal's own colours, which
+change under the app while it runs. A component should not know which kind is
+active.
+
+This is the provider that makes that true, on top of
+[the terminal palette hook](/stash/opentui/features/use-terminal-colors).
+
+## Eleven roles
+
+Components never ask for a colour. They ask for a role:
+
+```typescript title="theme.ts"
+export interface ThemeColors {
+  /** Page background. */
+  background: string;
+  /** Primary body text. */
+  foreground: string;
+  /** Slightly offset background for panels that sit on `background`. */
+  surface: string;
+  /** Box borders and separators. */
+  border: string;
+  /** De-emphasised text: hints, timestamps, disabled labels. */
+  muted: string;
+  /** Main accent: focus, selection, active nav, primary actions. */
+  primary: string;
+  /** Secondary accent, used sparingly to distinguish from `primary`. */
+  secondary: string;
+  /** Positive state: running, healthy, completed. */
+  success: string;
+  /** Cautionary state: pending, degraded, needs attention. */
+  warning: string;
+  /** Failure state: stopped with error, validation failures. */
+  error: string;
+  /** Informational accent: neutral highlights, tips. */
+  info: string;
+}
+```
+
+Keeping the set small is what makes a theme quick to write and a component
+quick to colour. Add a role when a component genuinely cannot express itself
+with the existing ones, which happens less often than it feels like it should.
+
+User-authored themes are hex-only on purpose. A named colour like `"red"`
+resolves to whatever the terminal maps it to, which defeats the point of a
+fixed theme.
+
+## A theme carries a scheme, not a palette
+
+The first version gave a theme one flat palette and an `appearance: "dark"` tag
+beside it, which meant two separate entries for a theme that exists in both
+modes. A theme now holds either shape:
+
+```typescript title="theme.ts"
+export type ThemeColorScheme =
+  | { default: ThemeColors }
+  | { dark: ThemeColors; light: ThemeColors };
+
+/**
+ * Collapse a scheme to the colours to paint for `mode`. A `default`-only
+ * scheme ignores the mode; a pair returns the matching variant. Never returns
+ * undefined — the UI always gets a full palette.
+ */
+export function resolveColors(
+  scheme: ThemeColorScheme,
+  mode: ThemeAppearance,
+): ThemeColors {
+  if ("default" in scheme) return scheme.default;
+  return mode === "light" ? scheme.light : scheme.dark;
+}
+```
+
+`"default" in scheme` narrows the union in TypeScript, so a consumer cannot
+read `scheme.light` off a mode-agnostic theme. Components read the resolved
+`colors` from context rather than `theme.colors`, which is the scheme.
+
+## Light or dark is a property of the host
+
+Nothing in a theme file says whether the environment is light. The terminal's
+background brightness is the only signal available, so that is where the mode
+comes from — including for static themes, which pick their variant from it:
+
+```typescript title="theme.ts"
+export function terminalAppearance(palette: TerminalPalette): ThemeAppearance {
+  const luma = relativeLuma(palette.background);
+  if (luma === null) return "dark";
+  return luma > 0.5 ? "light" : "dark";
+}
+```
+
+Unreported or unparseable backgrounds fall to `dark`, since most terminals are.
+
+## Mapping the palette onto roles
+
+The terminal theme is a pure function of one palette snapshot. No I/O, no React,
+no OpenTUI import, which is what makes it testable without a renderer:
+
+```typescript title="theme.ts"
+export function themeFromTerminalColors(palette: TerminalPalette): Theme {
+  const a = palette.ansi;
+  const colors: ThemeColors = {
+    background: pick(palette.background, a[ANSI.black], "#000000"),
+    foreground: pick(palette.foreground, a[ANSI.white], "#c0c0c0"),
+    // A panel one step off the page: the ANSI "black" cell usually reads as a
+    // near-background surface on dark terminals; fall back to the background.
+    surface: pick(a[ANSI.black], palette.background, "#1a1a1a"),
+    border: alpha(pick(a[ANSI.brightBlack], a[ANSI.black], "#3a3a3a"), 0.6),
+    muted: pick(a[ANSI.brightBlack], a[ANSI.white], "#808080"),
+    primary: pick(a[ANSI.blue], a[ANSI.brightBlue], "#3b78ff"),
+    secondary: pick(a[ANSI.magenta], a[ANSI.brightMagenta], "#b048c0"),
+    success: pick(a[ANSI.green], "#2ea043"),
+    warning: pick(a[ANSI.yellow], "#d29922"),
+    error: pick(a[ANSI.red], "#f85149"),
+    info: pick(a[ANSI.cyan], a[ANSI.blue], "#39c5cf"),
+  };
+
+  return {
+    id: TERMINAL_THEME_ID,
+    name: "Terminal Default",
+    source: "terminal",
+    colors: { default: colors },
+  };
+}
+```
+
+Every role ends its `pick` chain with a literal, because any entry the terminal
+reports may be `null` and the UI is never handed an undefined colour.
+
+The result is a `{ default }` scheme rather than a pair. The snapshot already
+reflects whichever mode the terminal is in, so there is only ever one palette;
+when the terminal switches, the snapshot changes and this runs again.
+
+## The catalogue is an interface
+
+Where static themes come from is not the provider's business. It needs three
+questions answered:
+
+```typescript title="use-theme.tsx"
+export interface ThemeCatalogue {
+  /** Resolve a static theme by id, or `undefined` for an unknown one. */
+  get(id: string): Theme | undefined;
+  /** Every selectable theme, for a picker. */
+  list(): ThemeSummary[];
+  /** Whether this id means the live terminal palette rather than stored colours. */
+  isDynamic(id: string): boolean;
+}
+```
+
+An app that loads themes from disk implements this over its loader. An app that
+ships a fixed set passes `catalogueFromThemes([github, nord])`. The provider
+does no filesystem work either way, which is what keeps it mountable in a test
+with two themes and no disk.
+
+`"terminal"` is reserved. A catalogue lists it and stores no colours for it;
+the provider substitutes the live palette.
+
+## The terminal id never falls back to a static theme
+
+Three separate things keep a startup from flashing the wrong colours.
+
+The entry point pre-fetches the palette and passes it in, so the first render
+already has real colours. An unresolved palette resolves to the *empty-palette*
+terminal theme — the literal fallbacks from `themeFromTerminalColors` — rather
+than to an unrelated named theme, so `"terminal"` always reads as a terminal
+theme. And a named id that no longer resolves, a deleted user theme for
+instance, degrades to the terminal theme as well:
+
+```typescript
+const theme = useMemo<Theme>(() => {
+  if (catalogue.isDynamic(themeId)) return terminalTheme;
+  return catalogue.get(themeId) ?? terminalTheme;
+}, [catalogue, themeId, terminalTheme, version]);
+```
+
+## Changes that come from outside
+
+A provider mounted above everything cannot subscribe to the app's own event
+bus, and it has no business reading a config file. Both directions are props
+instead.
+
+`onThemeChange` fires when the user switches, for the caller to persist.
+`subscribeThemeId` is its mirror: the caller pushes in an id that changed
+elsewhere — another instance of the app, or a hand-edit of the config. The
+effect only sets local state and deliberately does not fire `onThemeChange`,
+because the value came *from* the persisted config and re-persisting it is a
+write loop between instances.
+
+<Callout type="warning">
+  Whatever persists the id has to serialize its writes. It is a
+  read-modify-write, and cycling themes with a key fires it faster than a round
+  trip completes; with the subscribe bridge in place, a write that lands out of
+  order feeds back and visibly snaps the theme to the previous one. One write in
+  flight at a time, newest id only, skipped when unchanged.
+</Callout>
+
+`subscribeCatalogue` covers the other kind of external change: a theme file
+added, edited or deleted. The caller reloads its own catalogue and then calls
+the `invalidate` callback, and the provider re-resolves the active theme and
+the picker list. Both props must be referentially stable, since they are effect
+dependencies.
+
+## The pure module
+
+```typescript title="theme.ts" showLineNumbers
+/**
+ * Semantic colour roles, the light/dark scheme around them, and the mapping
+ * from a host terminal palette onto both.
+ *
+ * Pure: no I/O, no React, no OpenTUI import. The palette snapshot comes from
+ * `use-terminal-colors.ts`.
+ */
+
+import type { TerminalPalette } from "./terminal-palette.ts";
+
+/** The reserved id of the dynamic terminal theme. */
+export const TERMINAL_THEME_ID = "terminal";
+
+/** Whether the host currently reads as light or dark. */
+export type ThemeAppearance = "dark" | "light";
+
+/** Provenance of a theme; drives grouping and override precedence. */
+export type ThemeSource = "builtin" | "custom" | "terminal";
+
+/** The semantic colour roles every theme must define. */
+export interface ThemeColors {
+  background: string;
+  foreground: string;
+  surface: string;
+  border: string;
+  muted: string;
+  primary: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+}
+
+/**
+ * A theme's colours, in one of two shapes: a single palette used regardless of
+ * the host mode, or two full palettes of which the matching one is painted.
+ */
+export type ThemeColorScheme =
+  | { default: ThemeColors }
+  | { dark: ThemeColors; light: ThemeColors };
+
+/** A fully resolved theme entry: identity plus its scheme. */
+export interface Theme {
+  id: string;
+  name: string;
+  colors: ThemeColorScheme;
+  source: ThemeSource;
+}
+
+/** Identity without the colours, for a picker. */
+export interface ThemeSummary {
+  id: string;
+  name: string;
+  source: ThemeSource;
+}
+
+/**
+ * Collapse a scheme to the colours to paint for `mode`. A `default`-only
+ * scheme ignores the mode; a pair returns the matching variant.
+ */
+export function resolveColors(
+  scheme: ThemeColorScheme,
+  mode: ThemeAppearance,
+): ThemeColors {
+  if ("default" in scheme) return scheme.default;
+  return mode === "light" ? scheme.light : scheme.dark;
+}
+
+// Standard ANSI palette indices, named for readability at the mapping site.
+const ANSI = {
+  black: 0,
+  red: 1,
+  green: 2,
+  yellow: 3,
+  blue: 4,
+  magenta: 5,
+  cyan: 6,
+  white: 7,
+  brightBlack: 8,
+  brightBlue: 12,
+  brightMagenta: 13,
+} as const;
+
+/** First non-null candidate, or the final literal fallback. */
+function pick(...candidates: Array<string | null | undefined>): string {
+  for (const c of candidates) {
+    if (c) return c;
+  }
+  // Unreachable in practice — callers always end the chain with a literal.
+  return "#808080";
+}
+
+/** 0..1 perceived brightness of a `#rgb`/`#rrggbb` colour, or `null`. */
+function relativeLuma(hex: string | null): number | null {
+  const body = expandHex(hex);
+  if (!body) return null;
+  const r = parseInt(body.slice(0, 2), 16) / 255;
+  const g = parseInt(body.slice(2, 4), 16) / 255;
+  const b = parseInt(body.slice(4, 6), 16) / 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+/** `#rgb` or `#rrggbb` to six hex digits, or `null` if unparseable. */
+function expandHex(hex: string | null | undefined): string | null {
+  if (!hex) return null;
+  const m = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return null;
+  const body = m[1] as string;
+  if (body.length === 6) return body.toLowerCase();
+  return body
+    .split("")
+    .map((ch) => ch + ch)
+    .join("")
+    .toLowerCase();
+}
+
+/** Attach an alpha channel to a hex colour, as `#rrggbbaa`. */
+function alpha(hex: string, a: number): string {
+  const body = expandHex(hex);
+  if (!body) return hex;
+  const clamped = Math.min(1, Math.max(0, a));
+  const channel = Math.round(clamped * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `#${body}${channel}`;
+}
+
+/**
+ * The host's current light/dark mode, from its terminal background brightness.
+ * This selects a theme's light or dark variant even for static themes, since
+ * the terminal is the only signal of whether the environment is light.
+ *
+ * Falls back to `dark` when the background is unreported or unparseable.
+ */
+export function terminalAppearance(palette: TerminalPalette): ThemeAppearance {
+  const luma = relativeLuma(palette.background);
+  if (luma === null) return "dark";
+  return luma > 0.5 ? "light" : "dark";
+}
+
+/**
+ * Map a terminal palette snapshot onto the semantic roles.
+ *
+ * The result is a `{ default }` scheme rather than a pair: the snapshot already
+ * reflects whatever mode the terminal is currently in, so there is only ever
+ * one palette. When the terminal switches, the snapshot changes and this is
+ * called again; the host mode is read separately via `terminalAppearance`.
+ */
+export function themeFromTerminalColors(palette: TerminalPalette): Theme {
+  const a = palette.ansi;
+  const colors: ThemeColors = {
+    background: pick(palette.background, a[ANSI.black], "#000000"),
+    foreground: pick(palette.foreground, a[ANSI.white], "#c0c0c0"),
+    // A panel one step off the page: the ANSI "black" cell usually reads as a
+    // near-background surface on dark terminals; fall back to the background.
+    surface: pick(a[ANSI.black], palette.background, "#1a1a1a"),
+    border: alpha(pick(a[ANSI.brightBlack], a[ANSI.black], "#3a3a3a"), 0.6),
+    muted: pick(a[ANSI.brightBlack], a[ANSI.white], "#808080"),
+    primary: pick(a[ANSI.blue], a[ANSI.brightBlue], "#3b78ff"),
+    secondary: pick(a[ANSI.magenta], a[ANSI.brightMagenta], "#b048c0"),
+    success: pick(a[ANSI.green], "#2ea043"),
+    warning: pick(a[ANSI.yellow], "#d29922"),
+    error: pick(a[ANSI.red], "#f85149"),
+    info: pick(a[ANSI.cyan], a[ANSI.blue], "#39c5cf"),
+  };
+
+  return {
+    id: TERMINAL_THEME_ID,
+    name: "Terminal Default",
+    source: "terminal",
+    colors: { default: colors },
+  };
+}
+```
+
+## The provider
+
+```tsx title="use-theme.tsx" showLineNumbers
+/**
+ * Theme context: makes the active theme available to every component and lets
+ * the app switch themes at runtime.
+ *
+ * Where the two sources meet. The static catalogue is passed in, already
+ * populated; the dynamic `"terminal"` theme is built live from
+ * `useTerminalColors`. The provider picks between them by id, so a component
+ * only ever sees one resolved theme.
+ *
+ * UI layer: it consumes the renderer through the terminal-colours hook and
+ * does no filesystem I/O. Persisting a change is surfaced through
+ * `onThemeChange`, and the reverse direction through `subscribeThemeId`.
+ */
+
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  resolveColors,
+  TERMINAL_THEME_ID,
+  terminalAppearance,
+  themeFromTerminalColors,
+  type Theme,
+  type ThemeAppearance,
+  type ThemeColors,
+  type ThemeSummary,
+} from "./theme.ts";
+import type { TerminalPalette } from "./terminal-palette.ts";
+import { useTerminalColors } from "./use-terminal-colors.ts";
+
+/** Where static themes come from, as seen by the provider. */
+export interface ThemeCatalogue {
+  /** Resolve a static theme by id, or `undefined` for an unknown one. */
+  get(id: string): Theme | undefined;
+  /** Every selectable theme, for a picker. */
+  list(): ThemeSummary[];
+  /** Whether this id means the live terminal palette rather than stored colours. */
+  isDynamic(id: string): boolean;
+}
+
+/**
+ * A catalogue over a fixed set of themes, for an app that ships its themes and
+ * loads nothing. The terminal theme is listed first — it is the out-of-box
+ * default — then the rest by name.
+ */
+export function catalogueFromThemes(themes: readonly Theme[]): ThemeCatalogue {
+  const byId = new Map(themes.map((t) => [t.id, t]));
+  byId.delete(TERMINAL_THEME_ID); // reserved: it has no stored colours
+
+  return {
+    get: (id) => byId.get(id),
+    isDynamic: (id) => id === TERMINAL_THEME_ID,
+    list: () => [
+      {
+        id: TERMINAL_THEME_ID,
+        name: "Terminal Default",
+        source: "terminal" as const,
+      },
+      ...[...byId.values()]
+        .map(({ id, name, source }) => ({ id, name, source }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    ],
+  };
+}
+
+/**
+ * The terminal theme derived from an empty palette — every role resolves to a
+ * literal fallback. Used only for the sliver of time before the real palette
+ * arrives, so the `"terminal"` id never falls back to an unrelated theme.
+ */
+const EMPTY_TERMINAL_THEME: Theme = themeFromTerminalColors({
+  foreground: null,
+  background: null,
+  ansi: [],
+});
+
+export interface ThemeContextValue {
+  /** The active theme entry: identity plus its full scheme. */
+  theme: Theme;
+  /**
+   * The colours to paint with, resolved for the current host mode. This is
+   * what components read (`colors.primary`, …).
+   */
+  colors: ThemeColors;
+  /** The host's current light/dark mode, driving which variant is in `colors`. */
+  appearance: ThemeAppearance;
+  /** The active theme's id (may be `"terminal"`). */
+  themeId: string;
+  /** Switch the active theme by id. Unknown ids fall back gracefully. */
+  setThemeId: (id: string) => void;
+  /** Every selectable theme, for a picker. */
+  themes: ThemeSummary[];
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+export interface ThemeProviderProps {
+  /** Static themes, already loaded. */
+  catalogue: ThemeCatalogue;
+  /** Initial theme id, typically from persisted config. Defaults to `"terminal"`. */
+  initialThemeId?: string;
+  /**
+   * Terminal palette fetched before mount (see `queryTerminalPalette`). Passing
+   * it means the first render already has terminal colours.
+   */
+  initialPalette?: TerminalPalette | null;
+  /** Notified when the active theme changes, for the caller to persist. */
+  onThemeChange?: (id: string) => void;
+  /**
+   * Bridge for theme changes made outside this provider — another instance of
+   * the app, or a hand-edit of the config. Called once on mount with an
+   * `apply` callback; return an unsubscribe. Must be referentially stable.
+   */
+  subscribeThemeId?: (apply: (id: string) => void) => () => void;
+  /**
+   * Bridge for changes to the theme *catalogue* — a theme file added, edited
+   * or deleted. Called once on mount with an `invalidate` callback the caller
+   * fires after it has reloaded its own catalogue. Must be referentially
+   * stable.
+   */
+  subscribeCatalogue?: (invalidate: () => void) => () => void;
+  children: React.ReactNode;
+}
+
+/**
+ * Provide the theme context. Resolves the active theme every render from the
+ * current id: the live terminal palette for `"terminal"`, otherwise the
+ * catalogue. An id that resolves to nothing falls back to the terminal theme,
+ * so the UI is never left without colours.
+ */
+export function ThemeProvider({
+  catalogue,
+  initialThemeId = TERMINAL_THEME_ID,
+  initialPalette = null,
+  onThemeChange,
+  subscribeThemeId,
+  subscribeCatalogue,
+  children,
+}: ThemeProviderProps) {
+  const [themeId, setThemeIdState] = useState(initialThemeId);
+  // A catalogue may be reloaded in place, so nothing about its identity
+  // changes when its contents do. This counter is the only signal that the
+  // memos below have to be recomputed.
+  const [version, setVersion] = useState(0);
+  const { palette } = useTerminalColors(initialPalette);
+
+  // Follow the persisted theme id when it changes underneath us. Only local
+  // state is updated: `onThemeChange` is deliberately NOT fired, since the
+  // value came from the persisted config and re-persisting it would be a write
+  // loop between instances.
+  useEffect(() => {
+    if (!subscribeThemeId) return;
+    return subscribeThemeId((id) => setThemeIdState(id));
+  }, [subscribeThemeId]);
+
+  // Follow the theme catalogue. The caller reloads it and then calls back,
+  // which is what makes a hand-edited theme file apply live.
+  useEffect(() => {
+    if (!subscribeCatalogue) return;
+    return subscribeCatalogue(() => setVersion((n) => n + 1));
+  }, [subscribeCatalogue]);
+
+  // The host's current mode, read from the terminal background. This drives
+  // which variant of any active theme is painted, static themes included.
+  const appearance = useMemo<ThemeAppearance>(
+    () => (palette ? terminalAppearance(palette) : "dark"),
+    [palette],
+  );
+
+  // The dynamic terminal theme, rebuilt whenever the host palette changes.
+  const terminalTheme = useMemo<Theme>(
+    () => (palette ? themeFromTerminalColors(palette) : EMPTY_TERMINAL_THEME),
+    [palette],
+  );
+
+  // `version` is not read in the body on purpose: it is the invalidation
+  // signal for the catalogue's mutable contents, which nothing else observes.
+  const theme = useMemo<Theme>(() => {
+    if (catalogue.isDynamic(themeId)) return terminalTheme;
+    // A named theme that no longer resolves degrades to the terminal theme
+    // rather than an unrelated static default.
+    return catalogue.get(themeId) ?? terminalTheme;
+  }, [catalogue, themeId, terminalTheme, version]);
+
+  // Collapse the active theme's scheme to the concrete palette for the current
+  // mode. A `default`-only theme ignores `appearance`.
+  const colors = useMemo<ThemeColors>(
+    () => resolveColors(theme.colors, appearance),
+    [theme, appearance],
+  );
+
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      theme,
+      colors,
+      appearance,
+      themeId,
+      themes: catalogue.list(),
+      setThemeId: (id: string) => {
+        setThemeIdState(id);
+        onThemeChange?.(id);
+      },
+    }),
+    [theme, colors, appearance, themeId, catalogue, onThemeChange, version],
+  );
+
+  return <ThemeContext value={value}>{children}</ThemeContext>;
+}
+
+/**
+ * Read the active theme and theme controls. Throws when used outside a
+ * `<ThemeProvider>` — a programming error worth failing loudly on.
+ */
+export function useTheme(): ThemeContextValue {
+  const ctx = useContext(ThemeContext);
+  if (ctx === null) {
+    throw new Error("useTheme must be used within a <ThemeProvider>");
+  }
+  return ctx;
+}
+```
+
+## Using it
+
+The entry point owns the disk side, which keeps the React tree free of it:
+
+```tsx title="render-app.tsx"
+const renderer = await createCliRenderer({ screenMode: "alternate-screen" });
+const initialPalette = await queryTerminalPalette(renderer);
+const catalogue = catalogueFromThemes([github, nord]);
+
+createRoot(renderer).render(
+  <ThemeProvider
+    catalogue={catalogue}
+    initialThemeId={config.theme}
+    initialPalette={initialPalette}
+    onThemeChange={(theme) => persistTheme(theme)}
+  >
+    <App />
+  </ThemeProvider>,
+);
+```
+
+A component colours itself by role, and a terminal theme switch repaints it
+with no further work:
+
+```tsx
+function StatusLine({ server }: { server: Server }) {
+  const { colors } = useTheme();
+  return (
+    <box border borderColor={colors.border} backgroundColor={colors.surface}>
+      <text fg={server.running ? colors.success : colors.muted}>
+        {server.name}
+      </text>
+    </box>
+  );
+}
+```
+
+## What to check when it misbehaves
+
+A theme that reverts to its fallbacks the moment the terminal changes scheme is
+almost always one of the two palette-hook problems: mode 2031 never enabled, or
+the poll reading a cached palette. Both are covered in
+[the terminal colours note](/stash/opentui/features/use-terminal-colors).
+
+A theme that snaps back to the previous one a second after switching is the
+write-ordering problem: the persist is a read-modify-write and an older write
+landed last, after which the subscribe bridge faithfully pushed the stale id
+back in.
+
+Reading `theme.colors.primary` instead of `colors.primary` is a type error
+rather than a runtime surprise, which is the reason the scheme and the resolved
+palette are separate fields on the context.
+
+## Related entries
+
+- [Reading the host terminal's colours](/stash/opentui/features/use-terminal-colors). Produces the palette snapshot this maps onto roles.

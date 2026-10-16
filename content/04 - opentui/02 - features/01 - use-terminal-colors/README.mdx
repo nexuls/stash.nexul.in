@@ -1,0 +1,333 @@
+---
+title: Reading the host terminal's colours
+description: Subscribing to the terminal's own palette from React, including the DEC mode OpenTUI never enables and the cache that makes the poll fallback lie.
+date: 2026-10-17
+tags:
+  - opentui
+  - features
+  - colour
+---
+
+# Reading the host terminal's colours
+
+A terminal app that picks its own colours sits badly inside someone's carefully
+chosen scheme. The alternative is to paint with the colours the terminal
+already reports: its default foreground and background, plus the sixteen ANSI
+entries.
+
+OpenTUI does the protocol work. `renderer.getPalette()` queries the terminal
+with OSC 10 and 11 for the foreground and background and OSC 4 for the palette,
+and the renderer emits a `palette` event when the colours change. What is
+missing is a React adapter, a neutral shape to hand the rest of the app, and
+three details that decide whether a live theme switch is ever noticed.
+
+## The shape
+
+Everything downstream reads this rather than OpenTUI's `TerminalColors`, so the
+colour-to-role mapping stays free of any renderer import:
+
+```typescript title="terminal-palette.ts"
+export interface TerminalPalette {
+  /** Default foreground (text) colour, or `null` if unreported. */
+  foreground: string | null;
+  /** Default background colour, or `null` if unreported. */
+  background: string | null;
+  /**
+   * The 16 ANSI colours in standard order (0 black, 1 red, 2 green, 3 yellow,
+   * 4 blue, 5 magenta, 6 cyan, 7 white, then 8–15 the bright variants). Any
+   * entry may be `null` when the terminal did not report it.
+   */
+  ansi: ReadonlyArray<string | null>;
+}
+```
+
+Any entry can be `null`. A terminal answers what it wants to answer, and a
+consumer that assumes eighteen colours will find out the hard way.
+
+## Mode 2031 has to be enabled by the app
+
+This is the one that cost an afternoon. OpenTUI *reacts* to the terminal's
+colour-scheme-change notification and never turns the notification on. DEC
+private mode 2031 is what asks for it:
+
+```typescript
+const ENABLE_COLOR_SCHEME_UPDATES = "\x1b[?2031h";
+const DISABLE_COLOR_SCHEME_UPDATES = "\x1b[?2031l";
+```
+
+Without the write, a modern terminal never reports a change, the `palette`
+event never fires, and the app holds its startup colours until it is restarted.
+With it, switching the terminal's theme repaints within a frame.
+
+Write to `process.stdout`. OpenTUI's output backend is the same stream the
+renderer drives, and `renderer.stdout` is private. The disable goes in the
+effect cleanup, because leaving a mode set in someone's terminal after exit is
+not ours to do.
+
+## The cache that makes the poll lie
+
+Terminals without 2031 need polling, and `getPalette()` caches. Re-querying
+without clearing the cache returns the colours from startup forever, which
+reads exactly like a terminal that does not support live changes:
+
+```typescript
+const poll = setInterval(() => {
+  renderer.clearPaletteCache();
+  renderer
+    .getPalette({ timeout: QUERY_TIMEOUT_MS })
+    .then(update)
+    .catch(() => {});
+}, POLL_INTERVAL_MS);
+```
+
+An earlier version stopped the poll once a live event had proved the terminal
+reports changes. That was a bug: the first `palette` event can arrive for
+reasons unrelated to 2031 support, and a terminal that then stops reporting
+leaves the app with no mechanism at all. Polling once a second with a cache
+clear costs one escape-sequence round trip, and `update` drops anything that
+matches the last fingerprint, so React state is not touched between real
+changes.
+
+## A terminal mid-switch answers nothing
+
+During a theme switch a terminal can briefly reply with every colour `null`.
+Treating that as a palette flashes the UI to its empty-palette fallbacks for a
+frame, so `hasColour` rejects it and the last good palette stands:
+
+```typescript
+function hasColour(colors: TerminalColors): boolean {
+  return (
+    colors.defaultBackground != null ||
+    colors.defaultForeground != null ||
+    colors.palette.some((c) => c != null)
+  );
+}
+```
+
+## Colours before the first paint
+
+A hook cannot help with frame one, because its effect runs after it. The export
+for that is a one-shot query the entry point can await before it mounts
+anything:
+
+```typescript
+export async function queryTerminalPalette(
+  renderer: CliRenderer,
+  timeoutMs = QUERY_TIMEOUT_MS,
+): Promise<TerminalPalette | null> {
+  try {
+    const colors = await renderer.getPalette({ timeout: timeoutMs });
+    return hasColour(colors) ? toPalette(colors) : null;
+  } catch {
+    return null;
+  }
+}
+```
+
+On a real TTY, OpenTUI has usually already detected the palette during
+`createCliRenderer`, so this returns from cache immediately. The 200 ms timeout
+is for the terminal that goes quiet; `null` means the hook will fill it in
+shortly and the caller renders its fallback until then.
+
+## The module
+
+```typescript title="use-terminal-colors.ts" showLineNumbers
+/**
+ * Reactively expose the host terminal's own colour scheme.
+ *
+ * OpenTUI does the protocol work: it queries the terminal (OSC 10/11 for
+ * fg/bg, OSC 4 for the 16-colour palette) and emits a `palette` event when the
+ * colours change. This is the React adapter over that, normalising OpenTUI's
+ * `TerminalColors` into a UI-neutral `TerminalPalette`.
+ *
+ * Two things are load-bearing and easy to miss, both of which cause a theme
+ * that never follows the terminal:
+ *
+ *  1. DEC private mode 2031 has to be enabled by us (`CSI ? 2031 h`). OpenTUI
+ *     reacts to the terminal's "colour scheme changed" notification but never
+ *     turns it on, so without this write the `palette` event never fires.
+ *     Disabled again on cleanup, to leave the terminal as we found it.
+ *  2. The poll fallback must clear OpenTUI's palette cache first. `getPalette()`
+ *     returns a cached result, so re-querying without `clearPaletteCache()`
+ *     returns the old colours forever.
+ */
+
+import type { CliRenderer, TerminalColors } from "@opentui/core";
+import { useRenderer } from "@opentui/react";
+import { useEffect, useState } from "react";
+import type { TerminalPalette } from "./terminal-palette.ts";
+
+// DEC private mode 2031: ask the terminal to emit a notification whenever its
+// colour scheme changes. OpenTUI listens for it but does not enable it.
+const ENABLE_COLOR_SCHEME_UPDATES = "\x1b[?2031h";
+const DISABLE_COLOR_SCHEME_UPDATES = "\x1b[?2031l";
+
+/** How often to re-query on terminals without live change reporting. */
+const POLL_INTERVAL_MS = 1000;
+
+/** Bounded per-query timeout, so a silent terminal never hangs the poll. */
+const QUERY_TIMEOUT_MS = 200;
+
+/** The palette snapshot and whether it has resolved yet. */
+export interface TerminalColorState {
+  /** Latest terminal palette, or `null` until the first query resolves. */
+  palette: TerminalPalette | null;
+  /** True once the first palette query has resolved. */
+  ready: boolean;
+}
+
+/** Adapt OpenTUI's `TerminalColors` (16-entry palette + specials) to our shape. */
+function toPalette(colors: TerminalColors): TerminalPalette {
+  return {
+    foreground: colors.defaultForeground,
+    background: colors.defaultBackground,
+    // OpenTUI reports the palette in standard ANSI order; keep the first 16.
+    ansi: colors.palette.slice(0, 16),
+  };
+}
+
+/** Order-sensitive fingerprint of the terminal colours, to skip no-op updates. */
+function signature(colors: TerminalColors): string {
+  return [
+    colors.defaultForeground,
+    colors.defaultBackground,
+    ...colors.palette,
+  ].join("|");
+}
+
+/**
+ * Whether a query result carries any real colour. During a terminal theme
+ * switch the terminal can briefly answer with everything `null`; treating that
+ * as a valid palette would flash the UI to empty defaults for a frame, so it
+ * is ignored and the last good palette kept.
+ */
+function hasColour(colors: TerminalColors): boolean {
+  return (
+    colors.defaultBackground != null ||
+    colors.defaultForeground != null ||
+    colors.palette.some((c) => c != null)
+  );
+}
+
+/**
+ * One-shot palette query, for fetching colours before the first paint so the
+ * UI never renders a frame without them. Resolves `null` if the terminal does
+ * not answer within `timeoutMs` (a non-TTY, for instance) — the caller falls
+ * back.
+ */
+export async function queryTerminalPalette(
+  renderer: CliRenderer,
+  timeoutMs = QUERY_TIMEOUT_MS,
+): Promise<TerminalPalette | null> {
+  try {
+    const colors = await renderer.getPalette({ timeout: timeoutMs });
+    return hasColour(colors) ? toPalette(colors) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Subscribe to the host terminal's colours. Re-renders the caller whenever the
+ * terminal's palette changes — live via mode 2031, or within
+ * `POLL_INTERVAL_MS` on terminals that do not support it.
+ *
+ * @param initial Palette fetched before mount (see `queryTerminalPalette`),
+ *   used as the starting value so the first render already has real colours.
+ */
+export function useTerminalColors(
+  initial: TerminalPalette | null = null,
+): TerminalColorState {
+  const renderer = useRenderer();
+  const [palette, setPalette] = useState<TerminalPalette | null>(initial);
+  const [ready, setReady] = useState(initial !== null);
+
+  useEffect(() => {
+    let alive = true;
+    let lastSignature: string | null = null;
+
+    const update = (colors: TerminalColors) => {
+      if (!alive) return;
+      // A transient all-null answer during a theme switch is not a real
+      // change — hold the last good palette rather than flashing empty.
+      if (!hasColour(colors)) return;
+      setReady(true);
+      const sig = signature(colors);
+      if (sig === lastSignature) return; // unchanged — don't thrash React state
+      lastSignature = sig;
+      setPalette(toPalette(colors));
+    };
+
+    // Turn on live change notifications. OpenTUI's output backend is
+    // process.stdout, so writing the control sequence there reaches the same
+    // terminal the renderer drives.
+    process.stdout.write(ENABLE_COLOR_SCHEME_UPDATES);
+
+    // Initial fetch, then subscribe to live changes.
+    renderer
+      .getPalette({ timeout: QUERY_TIMEOUT_MS })
+      .then(update)
+      .catch(() => {});
+    renderer.on("palette", update);
+
+    // Fallback poll for terminals without mode 2031. The cache clear is
+    // mandatory: without it `getPalette()` returns the stale cached palette
+    // and a theme change is never observed.
+    const poll = setInterval(() => {
+      renderer.clearPaletteCache();
+      renderer
+        .getPalette({ timeout: QUERY_TIMEOUT_MS })
+        .then(update)
+        .catch(() => {});
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      alive = false;
+      clearInterval(poll);
+      renderer.off("palette", update);
+      // Restore the terminal to how we found it.
+      process.stdout.write(DISABLE_COLOR_SCHEME_UPDATES);
+    };
+  }, [renderer]);
+
+  return { palette, ready };
+}
+```
+
+## Using it
+
+The entry point pre-fetches and hands the result down; the hook keeps it
+current from there:
+
+```tsx title="render-app.tsx"
+const renderer = await createCliRenderer({ screenMode: "alternate-screen" });
+const initialPalette = await queryTerminalPalette(renderer);
+
+createRoot(renderer).render(
+  <ThemeProvider initialPalette={initialPalette}>
+    <App />
+  </ThemeProvider>,
+);
+```
+
+One subscriber is enough for a whole app. Put the hook in the provider that
+owns colour and let components read the resolved palette from context, rather
+than calling it in several places and paying for several polls.
+
+## What a pipe cannot tell you
+
+A non-TTY cannot answer an OSC query, and OpenTUI swallows `process.stdout`
+writes when it is not driving a terminal. Live palette detection therefore
+cannot be verified headlessly — a test can cover `toPalette`, `hasColour` and
+the fingerprint, and the rest needs a real terminal and a theme switch while
+the app is running.
+
+Do not reach for `renderer.setBackgroundColor()` to apply the colours. It emits
+OSC 11 to change the terminal's actual background, which races the terminal's
+own transition and flashes a stale colour for a frame on every change. Paint a
+full-screen box at the app root instead; it draws into the render buffer and
+leaves the terminal alone.
+
+## Related entries
+
+- [A theme that follows the terminal](/stash/opentui/features/use-theme). Maps this palette onto semantic colour roles, and decides light or dark from the background.

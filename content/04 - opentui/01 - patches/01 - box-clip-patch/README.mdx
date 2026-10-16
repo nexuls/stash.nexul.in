@@ -1,0 +1,374 @@
+---
+title: Clipping box borders
+description: OpenTUI's native box draw ignores the scissor stack, so a bordered box paints its border over everything around its scroll container. The patch keeps native rendering.
+date: 2026-10-17
+tags:
+  - opentui
+  - patches
+  - rendering
+---
+
+# Clipping box borders
+
+Put a bordered `<box>` inside a `<scrollbox>` and scroll it. The box's text
+clips to the viewport the way you expect. Its border keeps drawing — straight
+over the top bar, the nav rail, the hint strip, whatever happens to sit around
+the scroll container.
+
+```tsx
+<scrollbox>
+  {rows.map((row) => (
+    <box key={row.id} border title={row.name}>
+      <text>{row.detail}</text>
+    </box>
+  ))}
+</scrollbox>
+```
+
+Reproduced on `@opentui/core` 0.4.5 and still there in 0.5.3. It has nothing to
+do with scrollboxes in particular: a plain `<box overflow="hidden">` leaks its
+children's borders the same way.
+
+## Why the text clips and the border does not
+
+Clipping in OpenTUI is a scissor-rect stack on the buffer. `Renderable.updateLayout`
+pushes a rect for every ancestor whose `overflow` is not `"visible"`, and the
+native draw calls intersect against the top of that stack before they touch a
+cell.
+
+Every native draw call except one. `BoxRenderable.renderSelf` paints through
+`bufferDrawBox`, and `bufferDrawBox` never reads the stack — `drawText`,
+`drawTextBuffer`, `fillRect` and `drawFrameBuffer` all do. So a box's children
+clip, its background fill clips, and its border glyphs go wherever the geometry
+says.
+
+<Callout type="note" compact>
+  This is a `@opentui/core` bug, not a layout mistake. Nothing in the public
+  API lets a caller ask for the border to be clipped.
+</Callout>
+
+## Draw somewhere else, then blit
+
+The tempting fix is to reimplement the border: walk the box's edges, work out
+which sides are on, place the title, and write the glyphs through `drawText`,
+which respects the scissor. That means owning the border-style table, the
+partial-side logic, both title alignments and the focus colour swap, and it
+means re-owning them every time upstream changes one.
+
+So the border is still drawn by upstream. `drawFrameBuffer` honours the scissor
+stack, so a partially clipped box can let the *original* `renderSelf` draw into
+a scratch buffer at the origin and then blit that buffer into place:
+
+```typescript
+const target = ensureScratch(this._ctx.widthMethod, width, height);
+this._screenX = 0;
+this._screenY = 0;
+try {
+  original.call(this, target, deltaTime);
+} finally {
+  this._screenX = screenX;
+  this._screenY = screenY;
+}
+buffer.drawFrameBuffer(screenX, screenY, target, 0, 0, width, height);
+```
+
+Moving `_screenX`/`_screenY` to zero for the duration is what makes the scratch
+draw land at the buffer's origin; the `finally` puts them back before anything
+else reads them. The scratch buffer is created with `respectAlpha` and cleared
+to a fully transparent cell, so the cells the box does not paint leave the
+destination alone instead of punching a hole in it.
+
+One buffer serves the whole process. Renderables draw sequentially inside a
+single pass, and the contents are consumed by the `drawFrameBuffer` call on the
+next line, so there is nothing to keep between boxes.
+
+## The detour is the slow path
+
+Most boxes are nowhere near a clip edge, and they should keep the single native
+call they had before. `ancestorClip` walks up from the box and intersects the
+scissor rect of every clipping ancestor:
+
+```typescript
+function ancestorClip(node: Renderable): Rect | null {
+  let clip: Rect | null = null;
+  let current = (node as unknown as { parent: Renderable | null }).parent;
+
+  while (current) {
+    const internals = current as unknown as {
+      buffered: boolean;
+      overflow: string;
+      getScissorRect(): Rect;
+      parent: Renderable | null;
+    };
+    if (internals.buffered) return clip;
+
+    if (
+      internals.overflow !== "visible" &&
+      current.width > 0 &&
+      current.height > 0
+    ) {
+      const rect = internals.getScissorRect();
+      clip = clip ? intersect(clip, rect) : rect;
+      if (clip.width <= 0 || clip.height <= 0) return clip;
+    }
+    current = internals.parent;
+  }
+  return clip;
+}
+```
+
+Three outcomes decide what happens next. No clipping ancestor, or a clip that
+contains the box whole, takes the untouched native path. A clip the box misses
+entirely skips the draw, because the blit would write nothing. Only a box
+straddling an edge pays for the scratch buffer.
+
+A `buffered` ancestor stops the walk. Its scissor rect is expressed in
+frame-buffer-local coordinates, and comparing those against screen coordinates
+would clip against the wrong origin, so the walk returns what it has and the
+box falls back to the native path — wrong in the old way rather than wrong in a
+new one.
+
+`parent`, `overflow` and `getScissorRect` are all `protected` on `Renderable`.
+The casts are deliberate: this module reaches into internals on purpose, and
+keeping the casts narrow and local is what makes that visible.
+
+## The module
+
+```typescript title="box-clip-patch.ts" showLineNumbers
+/**
+ * Clip box borders against ancestor scissor rects.
+ *
+ * `BoxRenderable.renderSelf` draws through the native `bufferDrawBox`, and that
+ * call — alone among the native draw paths — ignores the buffer's scissor-rect
+ * stack. Install once, before the first render. Delete the module and its call
+ * site when upstream clips `bufferDrawBox`.
+ */
+
+import {
+  BoxRenderable,
+  OptimizedBuffer,
+  RGBA,
+  type Renderable,
+} from "@opentui/core";
+
+/** Rect in screen cells. */
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * One process-wide scratch buffer, resized to whichever box currently needs it.
+ * Sharing is safe: renderables are drawn sequentially within a single render
+ * pass, and the contents are consumed by the `drawFrameBuffer` call that
+ * immediately follows the draw into it.
+ */
+let scratch: OptimizedBuffer | null = null;
+let patched = false;
+
+/** Cells the box does not paint must not overwrite the destination. */
+const TRANSPARENT = RGBA.fromValues(0, 0, 0, 0);
+
+function ensureScratch(
+  widthMethod: "wcwidth" | "unicode",
+  width: number,
+  height: number,
+): OptimizedBuffer {
+  if (!scratch) {
+    scratch = OptimizedBuffer.create(width, height, widthMethod, {
+      respectAlpha: true,
+    });
+  } else {
+    // A no-op inside OptimizedBuffer when the dimensions already match.
+    scratch.resize(width, height);
+  }
+  scratch.clear(TRANSPARENT);
+  return scratch;
+}
+
+/**
+ * Intersection of every clipping ancestor's scissor rect, or `null` when
+ * nothing above this renderable clips.
+ *
+ * Mirrors what `Renderable.updateLayout` pushes onto the native scissor stack.
+ * A `buffered` ancestor is a stop: its rect is in frame-buffer-local
+ * coordinates, so clipping against it would use the wrong origin.
+ */
+function ancestorClip(node: Renderable): Rect | null {
+  let clip: Rect | null = null;
+  // `parent`, `overflow` and `getScissorRect` are protected on Renderable;
+  // this module reaches into internals deliberately.
+  let current = (node as unknown as { parent: Renderable | null }).parent;
+
+  while (current) {
+    const internals = current as unknown as {
+      buffered: boolean;
+      overflow: string;
+      getScissorRect(): Rect;
+      parent: Renderable | null;
+    };
+    if (internals.buffered) return clip;
+
+    if (
+      internals.overflow !== "visible" &&
+      current.width > 0 &&
+      current.height > 0
+    ) {
+      const rect = internals.getScissorRect();
+      clip = clip ? intersect(clip, rect) : rect;
+      if (clip.width <= 0 || clip.height <= 0) return clip;
+    }
+    current = internals.parent;
+  }
+  return clip;
+}
+
+function intersect(a: Rect, b: Rect): Rect {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  return {
+    x,
+    y,
+    width: Math.min(a.x + a.width, b.x + b.width) - x,
+    height: Math.min(a.y + a.height, b.y + b.height) - y,
+  };
+}
+
+function contains(outer: Rect, inner: Rect): boolean {
+  return (
+    inner.x >= outer.x &&
+    inner.y >= outer.y &&
+    inner.x + inner.width <= outer.x + outer.width &&
+    inner.y + inner.height <= outer.y + outer.height
+  );
+}
+
+function overlaps(a: Rect, b: Rect): boolean {
+  return (
+    a.x < b.x + b.width &&
+    b.x < a.x + a.width &&
+    a.y < b.y + b.height &&
+    b.y < a.y + a.height
+  );
+}
+
+/**
+ * Patch `BoxRenderable.prototype.renderSelf` so box borders respect ancestor
+ * clipping. Idempotent; call once before the first render.
+ *
+ * A subclass that overrides `renderSelf` and calls `super.renderSelf(buffer)`
+ * goes through the patch too, since the patch lives on the prototype it
+ * delegates to.
+ *
+ * Caveat: the scratch draw does not see the destination buffer's opacity stack,
+ * so a partially clipped box under an `opacity < 1` ancestor renders at full
+ * opacity.
+ */
+export function installBoxClipPatch(): void {
+  if (patched) return;
+  patched = true;
+
+  type BoxInternals = {
+    _screenX: number;
+    _screenY: number;
+    _ctx: { widthMethod: "wcwidth" | "unicode" };
+    width: number;
+    height: number;
+  };
+  const prototype = BoxRenderable.prototype as unknown as {
+    renderSelf(buffer: OptimizedBuffer, deltaTime: number): void;
+  };
+  const original = prototype.renderSelf;
+
+  prototype.renderSelf = function patchedRenderSelf(
+    this: BoxRenderable & BoxInternals,
+    buffer: OptimizedBuffer,
+    deltaTime: number,
+  ): void {
+    const width = this.width;
+    const height = this.height;
+    if (width <= 0 || height <= 0) return;
+
+    const clip = ancestorClip(this);
+    if (!clip) {
+      original.call(this, buffer, deltaTime);
+      return;
+    }
+
+    const screenX = this._screenX;
+    const screenY = this._screenY;
+    const bounds: Rect = { x: screenX, y: screenY, width, height };
+
+    // Fully visible: keep the native single-call fast path.
+    if (contains(clip, bounds)) {
+      original.call(this, buffer, deltaTime);
+      return;
+    }
+    // Fully clipped: the blit would draw nothing.
+    if (!overlaps(clip, bounds)) return;
+
+    // Straddling a clip edge — draw at the origin of a scratch buffer and blit.
+    const target = ensureScratch(this._ctx.widthMethod, width, height);
+    this._screenX = 0;
+    this._screenY = 0;
+    try {
+      original.call(this, target, deltaTime);
+    } finally {
+      this._screenX = screenX;
+      this._screenY = screenY;
+    }
+    buffer.drawFrameBuffer(screenX, screenY, target, 0, 0, width, height);
+  };
+}
+```
+
+## Installing it
+
+The patch is on a prototype, so it only has to be in place before the first
+box is drawn. One call at the top of whatever creates the renderer:
+
+```typescript title="render-app.ts"
+import { installBoxClipPatch } from "./box-clip-patch.ts";
+
+export async function renderApp() {
+  installBoxClipPatch();
+
+  const renderer = await createCliRenderer({ screenMode: "alternate-screen" });
+  createRoot(renderer).render(<App />);
+}
+```
+
+It patches `BoxRenderable.prototype`, so every subclass that delegates with
+`super.renderSelf(buffer)` is covered — inputs, scrollbox internals, anything
+built on a box.
+
+## Two dead ends
+
+Setting `buffered: true` on the offending box looks like a free fix, since a
+buffered renderable composites through `drawFrameBuffer` already. Inside a clip
+it renders at the wrong offset and produces garbage.
+
+The other one cost more time. A test written outside the project resolved
+`@opentui/core` to a second copy of the package — Bun's install cache source
+tree — so patching one copy's prototype left the other untouched, and a
+verification script in a scratch directory reported the patch as a no-op. Keep
+the tests in the same project that owns the dependency.
+
+Two properties are worth pinning down once the test is in the right place.
+Fidelity: with nothing clipping it, a patched box renders the same glyphs and
+the same colours as the unpatched native path, across border styles, partial
+sides and both title alignments. Clipping: a bordered box inside a scrollbox
+paints nothing outside the viewport at any scroll offset.
+
+## When it can go
+
+Delete the module and the one call site as soon as `bufferDrawBox` intersects
+the scissor stack upstream. There is no behaviour here worth keeping beyond
+that point — every visual decision already belongs to `renderSelf`.
+
+## Related entries
+
+- [Making drag-selection opt-in](/stash/opentui/patches/selection-opt-in). The other patch installed beside this one, through a different seam.
+- [Terminal-relative dimensions](/stash/opentui/patches/negative-dimension-patch). Patches the `Renderable` prototype as well, for the accessor half of its job.
