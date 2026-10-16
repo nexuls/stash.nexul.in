@@ -41,12 +41,15 @@ import {
   getNavDomains,
 } from "@/lib/content/nav-tree";
 import type { ContentEntry } from "@/lib/content/types";
+import type { DomainIcons } from "@/lib/icons/domain-icon-svg";
 import { siteConfig } from "@/lib/site-config";
 
 interface DocsSidebarProps {
   entries: ContentEntry[];
   /** Category paths that have an index page, e.g. `["react"]` */
   categoryIndexPaths: string[];
+  /** Domain glyphs resolved on the server; see `lib/icons/domain-icon-svg.ts` */
+  domainIcons?: DomainIcons;
 }
 
 /** Moves focus between visible tree rows, wrapping at both ends. */
@@ -74,7 +77,11 @@ function moveRowFocus(
   rows[next]?.focus();
 }
 
-export function DocsSidebar({ entries, categoryIndexPaths }: DocsSidebarProps) {
+export function DocsSidebar({
+  entries,
+  categoryIndexPaths,
+  domainIcons,
+}: DocsSidebarProps) {
   const pathname = usePathname() ?? "";
   const { isMobile, setOpen, setOpenMobile } = useSidebar();
 
@@ -291,7 +298,11 @@ export function DocsSidebar({ entries, categoryIndexPaths }: DocsSidebarProps) {
         </div>
 
         {activeDomain && (
-          <DomainSwitcher domains={domains} activeDomain={activeDomain} />
+          <DomainSwitcher
+            domains={domains}
+            activeDomain={activeDomain}
+            domainIcons={domainIcons}
+          />
         )}
 
         <div>

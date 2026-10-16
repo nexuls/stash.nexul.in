@@ -94,6 +94,7 @@ Recorded in [ADR-0005](architecture/decisions/0005-file-type-icons.md).
 - `components/mdx/file-icon.tsx` is a Server Component that inlines the SVG, so no icon data reaches the client bundle.
 - Wired into code panel headers, `<FileTree>` rows and the companion-files list. The code panel's language pill was replaced by icon-then-name, the way an editor tab reads.
 - Shiki's language ids are translated to VS Code's (`tsx` → `typescriptreact`, `sh` → `shellscript`); that mapping is covered by `lib/__tests__/file-icons.test.ts`.
+- The sidebar's domain switcher uses the same theme for the domains that name a technology with a mark a reader knows: `lib/icons/domain-icons.ts` maps a domain loosely to a Material icon id (`react`, `typescript`, and `mdx` for `authoring`) and keeps the Lucide fallback for every other domain. Because the sidebar is a Client Component, `lib/icons/domain-icon-svg.ts` resolves the markup in `app/stash/layout.tsx` and it is handed down as the `domainIcons` prop, so the theme's icon files still never reach the client bundle. A theme glyph is not recoloured; a Lucide one still takes the row's text colour. Covered by `lib/__tests__/domain-icons.test.ts`.
 
 ### Known failing test
 

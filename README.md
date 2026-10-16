@@ -263,9 +263,13 @@ This is a fork-and-edit template. In rough order:
 4. **Fonts** — `app/fonts.ts`. Exo 2 for display, Inter for running text,
    JetBrains Mono Nerd Font (vendored in `public/assets/fonts/`) for code. Swap
    the imports and the `--font-*` variables follow.
-5. **Domain icons** — `lib/icons/domain-icons.ts` maps a top-level directory name
-   to a Lucide icon for the sidebar switcher. Add a case for each domain of
-   yours; unmatched names fall back to a folder.
+5. **Domain icons** — `lib/icons/domain-icons.ts` maps a top-level directory
+   name to the mark the sidebar switcher shows: a Material Icon Theme glyph where
+   the theme has one for the domain (`react`, `typescript`, `mdx` for
+   `authoring`), or a Lucide icon,
+   falling back to a folder. Add a case for each domain of yours; a glyph is
+   resolved on the server by `lib/icons/domain-icon-svg.ts`, so only the id
+   belongs in the map.
 6. **Remote images** — `next.config.ts` allows one Cloudinary account for the
    photographs a couple of layout notes need. Point it at yours, or remove the
    `remotePatterns` block and commit images beside their notes instead.
