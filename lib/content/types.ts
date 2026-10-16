@@ -100,6 +100,13 @@ export const contentEntrySchema = z.object({
   slug: z.string().min(1),
   /** Slug path segments (e.g., ["react", "hooks", "use-debounce"]) */
   slugSegments: z.array(z.string()),
+  /** Directory segments as they exist on disk, order prefixes included */
+  rawSlugSegments: z.array(z.string()),
+  /**
+   * Sort position among siblings, from the entry directory's order prefix and
+   * falling back to frontmatter `order`. Null when neither names one.
+   */
+  order: z.number().nullable(),
   /** Full web route permalink (e.g., "/stash/react/hooks/use-debounce") */
   permalink: z.string().min(1),
   /** Directory path relative to content root (e.g., "react/hooks/use-debounce") */
@@ -127,6 +134,8 @@ export const contentEntrySchema = z.object({
   isCategoryIndex: z.boolean(),
   /** Hierarchical category path (e.g., ["react", "hooks"]) */
   categories: z.array(z.string()),
+  /** Sort position of each category directory, aligned with `categories` */
+  categoryOrders: z.array(z.number().nullable()),
   /** Primary category name (e.g., "react", or "general" if root entry) */
   category: z.string().min(1),
   /** Assigned tags */
@@ -154,6 +163,8 @@ export const contentCategorySchema = z.object({
   slug: z.string().min(1),
   /** Hierarchy path segments */
   path: z.array(z.string()),
+  /** Sort position from the directory's order prefix, null when it has none */
+  order: z.number().nullable(),
   /** Number of entries in this category */
   count: z.number().int().nonnegative(),
   /** Entries directly or hierarchically under this category */

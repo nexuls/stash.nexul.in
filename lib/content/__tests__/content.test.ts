@@ -21,6 +21,13 @@ import {
   getPrevNextEntries,
   getRelatedEntries,
 } from "../discovery";
+import { buildNavTree, type NavGroupNode } from "../nav-tree";
+import {
+  compareOrder,
+  parseOrderedSegment,
+  stripOrderPrefix,
+  stripOrderPrefixes,
+} from "../ordering";
 import {
   classifyLink,
   deriveDescriptionFromBody,
@@ -39,6 +46,116 @@ import {
   suggestKebabCase,
   validateContent,
 } from "../validator";
+
+describe("Directory order prefixes", () => {
+  it("parses a numbered segment into its order and name", () => {
+    expect(parseOrderedSegment("01 - hooks")).toEqual({
+      raw: "01 - hooks",
+      name: "hooks",
+      order: 1,
+    });
+    expect(parseOrderedSegment("10 patterns").order).toBe(10);
+    expect(parseOrderedSegment("2- state-management").name).toBe(
+      "state-management",
+    );
+  });
+
+  it("leaves a name that merely starts with digits alone", () => {
+    expect(parseOrderedSegment("2025-review")).toEqual({
+      raw: "2025-review",
+      name: "2025-review",
+      order: null,
+    });
+    expect(parseOrderedSegment("v2-migration").order).toBe(null);
+    expect(parseOrderedSegment("01 - ").order).toBe(null);
+  });
+
+  it("strips prefixes from a segment and from a whole path", () => {
+    expect(stripOrderPrefix("03 - code")).toBe("code");
+    expect(stripOrderPrefixes("01 - react/02 - hooks/use-debounce")).toBe(
+      "react/hooks/use-debounce",
+    );
+  });
+
+  it("sorts numbered values first and ascending", () => {
+    expect([null, 2, null, 1].sort(compareOrder)).toEqual([1, 2, null, null]);
+  });
+
+  it("keeps numbers out of slugs, routes and titles, and orders siblings", async () => {
+    const tempDir = join(getContentDirectory(), "../.temp-test-content-order");
+    rmSync(tempDir, { recursive: true, force: true });
+
+    const write = (directory: string, body: string) => {
+      mkdirSync(join(tempDir, directory), { recursive: true });
+      writeFileSync(join(tempDir, directory, "README.mdx"), body);
+    };
+
+    write("02 - guides/01 - second", "# Second\n\nOrdered second.\n");
+    write("02 - guides/02 - first", "# First\n\nOrdered first.\n");
+    write("02 - guides/alpha", "# Alpha\n\nUnnumbered.\n");
+    write("01 - start/home", "# Start\n\nThe first domain.\n");
+    write("01 - start/only", "# Only\n\nOne note.\n");
+
+    const entries = await getAllEntries({ contentDir: tempDir });
+
+    // The number orders the directory and leaves no trace in the slug, the
+    // route, or the derived title.
+    expect(entries.map((entry) => entry.slug)).toEqual([
+      "start/only",
+      "guides/second",
+      "guides/first",
+      "guides/alpha",
+    ]);
+    expect(entries[1]?.permalink).toBe("/stash/guides/second");
+    expect(entries[1]?.title).toBe("Second");
+    expect(entries[1]?.order).toBe(1);
+    expect(entries[1]?.categoryOrders).toEqual([2]);
+    expect(entries[3]?.order).toBe(null);
+
+    // A numbered directory is reached by its name alone.
+    const entry = await getEntryBySlug("guides/first", {
+      contentDir: tempDir,
+    });
+    expect(entry?.title).toBe("First");
+
+    // The category index still answers at its category's path.
+    const index = await getEntryBySlug("start", { contentDir: tempDir });
+    expect(index?.isCategoryIndex).toBe(true);
+
+    // The sidebar follows the same order, and labels drop the numbers.
+    const tree = buildNavTree(entries);
+    const groups = tree.filter(
+      (node): node is NavGroupNode => node.kind === "group",
+    );
+    expect(groups.map((group) => group.label)).toEqual(["Start", "Guides"]);
+
+    const validation = await validateContent(tempDir);
+    expect(validation.valid).toBe(true);
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("warns when two directories in one place claim the same number", async () => {
+    const tempDir = join(
+      getContentDirectory(),
+      "../.temp-test-content-order-clash",
+    );
+    rmSync(tempDir, { recursive: true, force: true });
+    mkdirSync(join(tempDir, "01 - one"), { recursive: true });
+    mkdirSync(join(tempDir, "01 - two"), { recursive: true });
+    writeFileSync(join(tempDir, "01 - one", "README.mdx"), "# One\n");
+    writeFileSync(join(tempDir, "01 - two", "README.mdx"), "# Two\n");
+
+    const result = await validateContent(tempDir);
+    expect(
+      result.issues.some((issue) => issue.rule === "duplicate-order"),
+    ).toBe(true);
+    // A clash is only a warning: the pages still build.
+    expect(result.valid).toBe(true);
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+});
 
 describe("Markdown & Parser Utilities", () => {
   it("slugifyHeading generates clean, url-safe heading slugs", () => {

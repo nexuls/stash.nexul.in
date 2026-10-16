@@ -73,7 +73,29 @@ export async function GET(
 ) {
   const { path } = await context.params;
   const contentDirectory = getContentDirectory();
-  const requested = normalize(join(contentDirectory, ...path));
+
+  // The URL carries an entry's slug, which omits the order prefixes its
+  // directories may carry on disk, so the entry directory is resolved before
+  // the asset's own path is appended to it.
+  const entries = await getAllEntries({
+    includeDrafts: true,
+    includeCategoryIndexes: true,
+  });
+  // The deepest matching entry owns the asset: a nested entry's slug extends
+  // its parent's, so the longest prefix is the directory the file sits in.
+  const entry = entries
+    .filter((candidate) =>
+      candidate.slugSegments.every((segment, index) => path[index] === segment),
+    )
+    .sort((a, b) => b.slugSegments.length - a.slugSegments.length)[0];
+
+  if (!entry) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const requested = normalize(
+    join(entry.absoluteDirectoryPath, ...path.slice(entry.slugSegments.length)),
+  );
 
   // `dynamicParams = false` already restricts this route to enumerated assets;
   // the prefix check keeps a malformed build manifest from reaching outside

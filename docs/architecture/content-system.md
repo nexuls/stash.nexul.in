@@ -9,13 +9,13 @@ Proposed design; not implemented.
 Each entry will be a directory beneath `content/` with one primary `README.mdx` document and any supporting files beside it.
 
 ```text
-content/react/components/command-menu/
+content/01 - react/03 - components/03 - command-menu/
 ├── README.mdx
 ├── command-menu.tsx
 └── screenshot.png
 ```
 
-Directory segments become category segments and the directory path becomes the URL after `/stash/`. The document title can be supplied by minimal frontmatter or derived from its first heading/path according to documented loader rules. Metadata must remain optional unless it is required for an unambiguous page.
+Directory segments become category segments and the directory path becomes the URL after `/stash/`. A segment may carry a leading order prefix (`01 - hooks`) which fixes its place among its siblings and is stripped from slugs, routes and labels; unnumbered siblings follow the numbered ones alphabetically. The document title can be supplied by minimal frontmatter or derived from its first heading/path according to documented loader rules. Metadata must remain optional unless it is required for an unambiguous page.
 
 ## Target loader responsibilities
 

@@ -123,6 +123,20 @@ Recorded in [ADR-0006](architecture/decisions/0006-landing-page-as-archive-index
 - Known gap: the sidebar's domain switcher still opens a category's first note rather than its new category page.
 - Verification: 21 tests in `lib/content/__tests__/archive-index.test.ts` covering the model, the filter and the category-index convention; `bun x tsc --noEmit` and `bun run validate:content` clean; `bun run build` prerenders `/`, every category and every note. The category-first default, search, the live field, the reduced-motion still frame, route resolution and the absence of horizontal overflow were driven and checked in a real browser.
 
+### 7. Content ordering (Completed)
+
+Recorded in [ADR-0008](architecture/decisions/0008-ordered-directory-prefixes.md).
+
+- A directory name may open with a number (`content/authoring/01 - markdown/`) which fixes its place among its siblings and is stripped from slugs, routes, categories, labels and derived titles. Numbering a directory cannot change a URL.
+- `lib/content/ordering.ts` holds the convention: `parseOrderedSegment`, `stripOrderPrefix(es)`, `compareOrder`. A prefix is only a prefix when whitespace separates the number from the name, so `2025-review` stays a name.
+- `lib/content/discovery.ts` builds slugs from the stripped segments, records `order`, `categoryOrders` and `rawSlugSegments` on every entry, resolves a slug to its directory through `resolveEntryDirectory` (directory names no longer match slugs), and returns entries in content order via `compareEntriesByContentOrder` — numbered first, then directories by name and notes by title, level by level.
+- One order, read everywhere: `lib/content/nav-tree.ts` sorts numbered siblings ahead of the groups-then-entries default, `lib/content/archive-index.ts` keeps the order `getAllEntries` reports and places numbered domains and directories first, and previous/next now follows the sidebar instead of publication date.
+- `app/content-assets/[...path]/route.ts` resolves the owning entry by the longest matching slug prefix and serves the file from that entry's directory, since the URL's slug is no longer a path on disk.
+- The validator checks the stripped name for kebab-case and warns (`duplicate-order`) when two directories in one place claim the same number. Colliding stripped names remain a `duplicate-slug` error.
+- Applied to the whole archive. Domains read `01 - react`, `02 - typescript`, `03 - authoring`; `react` reads hooks → patterns → components → state management → performance → testing, and `authoring` reads markdown → code → components → assets. Entries inside each directory are numbered from the common case toward the specialised one. The `home` entry points keep plain names, since they are not listed among notes.
+- All 41 routes are byte-identical to the ones generated before the renames, which is the property the convention is built on.
+- Verification: 137 tests pass in `bun test` (the two known pre-existing failures unchanged); `bun x tsc --noEmit`, `bun run validate:content` and `bun run build` clean, with every route unchanged by the renames.
+
 ## Confirmed architecture
 
 - Stash is a personal engineering archive, not a project portfolio.

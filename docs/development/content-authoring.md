@@ -15,11 +15,13 @@ there first.
 Every content entry in Stash is a directory under `content/` with a primary `README.mdx` document and optional adjacent code and media files:
 
 ```text
-content/react/hooks/use-debounce/
+content/01 - react/01 - hooks/01 - use-debounce/
 ├── README.mdx
 ├── debounce-diagram.svg
 └── use-debounce.ts
 ```
+
+The numbers in those directory names order them and nothing else; the entry above is served at `/stash/react/hooks/use-debounce`. See [Ordering](#ordering-01---name).
 
 ### The opening heading
 
@@ -32,20 +34,43 @@ An entry's title comes from frontmatter, or from the document's first `# Heading
 - **Category hierarchy**: Parent directories become category segments (e.g. `react/hooks/use-debounce` -> categories `["react", "hooks"]`, primary category `"react"`).
 - **Auto-discovery**: No manual route, navigation, or search registry updates are required.
 
+### Ordering (`01 - name`)
+
+A directory may open its name with a number to fix its place among its siblings. The number is sorting information only: it is stripped before the segment becomes a slug, a route, or a title.
+
+```text
+content/03 - authoring/
+├── home/
+├── 01 - markdown/
+│   ├── 01 - typography/   -> /stash/authoring/markdown/typography
+│   └── 02 - lists/        -> /stash/authoring/markdown/lists
+└── 02 - code/
+```
+
+- **Where it applies**: Any directory level — a domain, a category, or an entry. Every directory in the archive is numbered today, apart from the `home` entry points, which are not listed among notes.
+- **What is ordered**: Everything listing content reads the same order: the sidebar, the landing page index, the category pages, and previous/next links.
+- **Unnumbered directories**: Follow the numbered ones, alphabetically — directories by name, notes by title. Numbering some siblings and not others is fine.
+- **Gaps and widths**: Numbers only have to sort. `01`, `02`, `10` and `1`, `2`, `10` behave identically, and gaps are free: leave room to insert.
+- **Separator**: `01 - name`, `01 -name`, `01- name` and `01 name` are all read as number 1. What makes a prefix a prefix is the whitespace, so a name such as `2025-review` or `v2-migration` is left alone.
+- **Clashes**: Two directories in the same place claiming the same number is a validation warning; the pages still build, but their relative order is left to the filesystem.
+- **Renaming is safe**: Adding or changing a number does not change a URL, so nothing linking to the entry breaks. Changing the name after the number does.
+- **Frontmatter `order`**: Still honoured for an entry whose directory carries no number. The directory wins when both say something.
+
 ### Category entry points (`home`)
 
 A directory named `home` inside a category is that category's own page, served at the category's path rather than its own:
 
 ```text
-content/react/
+content/01 - react/
 ├── home/
 │   └── README.mdx      -> /stash/react
-└── hooks/
-    └── use-debounce/
+└── 01 - hooks/
+    └── 01 - use-debounce/
         └── README.mdx  -> /stash/react/hooks/use-debounce
 ```
 
 - It is an ordinary entry otherwise: frontmatter, adjacent assets and MDX all behave the same, and its assets are still served under `react/home`.
+- It needs no number: it is not listed among the category's notes, so it has nothing to be ordered against.
 - Its `title` and `description` name the category wherever the category is listed, including the cards on the landing page. Without a `home` entry a category falls back to its directory name and shows no summary.
 - The page renders the document and then lists every note in the category, grouped by directory, so the MDX body only needs to say what the category is for.
 - It is not a note: it is excluded from note listings, counts, related entries and previous/next navigation. `getAllEntries({ includeCategoryIndexes: true })` includes them when that is what you want, and `getCategoryIndexes()` returns them keyed by category path.
@@ -83,7 +108,7 @@ order: 1
 | `draft` | `boolean` | Optional | Defaults to `false`. When `true`, excluded from default entry listings. |
 | `deprecated` | `boolean \| string` | Optional | Defaults to `false`. Can be boolean or a deprecation notice string. |
 | `category` | `string` | Optional | Explicit category override if different from primary parent directory. |
-| `order` | `number` | Optional | Optional manual ordering weight for navigation. |
+| `order` | `number` | Optional | Sort position among siblings, for an entry whose directory carries no `01 - ` prefix. The directory prefix wins when both are present. |
 
 ## Code blocks and presentation
 

@@ -5,8 +5,12 @@
  * from each entry's `categories` path rather than a hand-maintained registry.
  * Supports arbitrary nesting depth, label formatting, filtering, and resolution
  * of the open "trail" of groups leading to the active entry.
+ *
+ * Order comes from the directory names: a numbered directory keeps its place,
+ * and the unnumbered ones follow alphabetically.
  */
 
+import { compareOrder, stripOrderPrefix } from "@/lib/content/ordering";
 import type { ContentEntry } from "@/lib/content/types";
 
 export interface NavEntryNode {
@@ -26,6 +30,8 @@ export interface NavGroupNode {
   segment: string;
   /** Human-readable segment, e.g. "Hooks" */
   label: string;
+  /** Sort position from the directory's order prefix, null without one */
+  order: number | null;
   /** Depth in the tree, 0 for top-level domains */
   depth: number;
   /** Total entries contained in this group, including nested groups */
@@ -56,9 +62,14 @@ const WORD_CASING: Record<string, string> = {
   ux: "UX",
 };
 
-/** Converts a kebab-case directory segment into a human-readable label. */
+/**
+ * Converts a kebab-case directory segment into a human-readable label.
+ *
+ * An order prefix is sorting information, so it is dropped before the segment
+ * is read: `01 - hooks` is labelled "Hooks".
+ */
 export function formatSegmentLabel(segment: string): string {
-  return segment
+  return stripOrderPrefix(segment)
     .split("-")
     .filter(Boolean)
     .map(
@@ -69,30 +80,27 @@ export function formatSegmentLabel(segment: string): string {
     .join(" ");
 }
 
-function compareEntries(a: ContentEntry, b: ContentEntry): number {
-  const orderA =
-    typeof a.frontmatter.order === "number" ? a.frontmatter.order : null;
-  const orderB =
-    typeof b.frontmatter.order === "number" ? b.frontmatter.order : null;
-
-  if (orderA !== null && orderB !== null && orderA !== orderB) {
-    return orderA - orderB;
-  }
-  if (orderA !== null && orderB === null) return -1;
-  if (orderA === null && orderB !== null) return 1;
-
-  return a.title.localeCompare(b.title);
+/** The sort position a node asks for, from its directory or its frontmatter. */
+function nodeOrder(node: NavNode): number | null {
+  return node.kind === "group" ? node.order : node.entry.order;
 }
 
-/** Groups are listed before entries, each alphabetically, at every level. */
+/**
+ * Numbered siblings come first in their numbered order, whether they are groups
+ * or entries. The rest keep the archive's default shape: groups before entries,
+ * each alphabetically.
+ */
 function sortNodes(nodes: NavNode[]): NavNode[] {
   return [...nodes].sort((a, b) => {
+    const byOrder = compareOrder(nodeOrder(a), nodeOrder(b));
+    if (byOrder !== 0) return byOrder;
+
     if (a.kind !== b.kind) return a.kind === "group" ? -1 : 1;
     if (a.kind === "group" && b.kind === "group") {
       return a.segment.localeCompare(b.segment);
     }
     if (a.kind === "entry" && b.kind === "entry") {
-      return compareEntries(a.entry, b.entry);
+      return a.entry.title.localeCompare(b.entry.title);
     }
     return 0;
   });
@@ -130,6 +138,7 @@ export function buildNavTree(entries: ContentEntry[]): NavNode[] {
           id: path,
           segment,
           label: formatSegmentLabel(segment),
+          order: entry.categoryOrders[index] ?? null,
           depth: index,
           entryCount: 0,
           children: [],

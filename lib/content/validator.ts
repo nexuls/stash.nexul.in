@@ -1,8 +1,9 @@
 /**
  * Build-time content validation suite.
  *
- * Enforces kebab-case directory naming, detects duplicate slugs, verifies YAML frontmatter schemas,
- * confirms physical existence of referenced assets, and validates internal Stash links and heading anchors.
+ * Enforces kebab-case directory naming, detects duplicate slugs and clashing order prefixes,
+ * verifies YAML frontmatter schemas, confirms physical existence of referenced assets, and
+ * validates internal Stash links and heading anchors.
  *
  * Notable: Strictly driven by Zod schemas (`kebabCaseSegmentSchema`, `contentFrontmatterSchema`, `validationResultSchema`).
  */
@@ -12,6 +13,7 @@ import { join, normalize, relative } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { getContentDirectory, loadEntry } from "./discovery";
+import { parseOrderedSegment, stripOrderPrefixes } from "./ordering";
 import { extractFrontmatter } from "./parser";
 import {
   type ContentEntry,
@@ -84,25 +86,48 @@ function scanContentTree(
     }
   }
 
-  // Validate segment naming via Zod schema
+  // Validate segment naming via Zod schema. A leading order prefix is sorting
+  // information rather than part of the name, so the name is checked without it.
   const relDir = relative(contentDir, baseDir).replace(/\\/g, "/");
   if (relDir && relDir !== ".") {
     const segments = relDir.split("/");
     for (const segment of segments) {
-      const parseResult = kebabCaseSegmentSchema.safeParse(segment);
+      const { name, order } = parseOrderedSegment(segment);
+      const parseResult = kebabCaseSegmentSchema.safeParse(name);
       if (!parseResult.success) {
-        const suggestion = suggestKebabCase(segment);
+        const suggestion = suggestKebabCase(name);
+        const numbered = order === null ? "" : `${order} - `;
         issues.push({
           severity: "error",
           file: relDir,
           rule: "path-kebab-case",
-          message: `Directory segment "${segment}" must be lowercase kebab-case.`,
+          message: `Directory segment "${name}" must be lowercase kebab-case.`,
           suggestion: suggestion
-            ? `Rename "${segment}" to "${suggestion}"`
+            ? `Rename "${segment}" to "${numbered}${suggestion}"`
             : "Use lowercase letters, numbers, and hyphens only",
         });
       }
     }
+  }
+
+  // Two siblings asking for the same place leaves their order to the filesystem.
+  const numbered = new Map<number, string>();
+  for (const subdir of subdirs) {
+    const { order } = parseOrderedSegment(subdir);
+    if (order === null) continue;
+    const existing = numbered.get(order);
+    if (existing) {
+      issues.push({
+        severity: "warning",
+        file: join(relDir || "content", subdir),
+        rule: "duplicate-order",
+        message: `Order ${order} is already taken by "${existing}" in the same directory.`,
+        suggestion:
+          "Give each numbered directory in a directory its own number.",
+      });
+      continue;
+    }
+    numbered.set(order, subdir);
   }
 
   const hasReadme = files.some((file) => file.toLowerCase() === "readme.mdx");
@@ -272,10 +297,12 @@ function validateInternalLinks(
     ) {
       // Resolve relative path to entry slug
       const cleanPath = link.targetPath.replace(/\.mdx?$/i, "");
+      // Relative links may name directories with or without their order
+      // prefixes; slugs carry none, so the resolved path is stripped to match.
       const resolvedDir = normalize(
         join(entry.directoryPath, cleanPath),
       ).replace(/\\/g, "/");
-      targetSlug = resolvedDir;
+      targetSlug = stripOrderPrefixes(resolvedDir);
     }
 
     if (!targetSlug) {

@@ -48,13 +48,36 @@ describe("buildArchiveIndex", () => {
     ).toBe(true);
   });
 
-  it("leads with the domain holding the most notes", () => {
-    const counts = index.domains.map((domain) => domain.noteCount);
+  it("leads with the domains in their numbered order", () => {
+    expect(index.domains.map((domain) => domain.slug)).toEqual([
+      "react",
+      "typescript",
+      "authoring",
+    ]);
+  });
+
+  it("falls back to the domain holding the most notes when none is numbered", () => {
+    const stripped = entries.map((entry) => ({
+      ...entry,
+      categoryOrders: entry.categoryOrders.map(() => null),
+      order: null,
+    }));
+
+    const counts = buildArchiveIndex(stripped, categoryIndexes).domains.map(
+      (domain) => domain.noteCount,
+    );
     expect(counts).toEqual([...counts].sort((a, b) => b - a));
   });
 
-  it("orders directories and notes alphabetically", () => {
+  it("orders unnumbered directories and notes alphabetically", () => {
     for (const domain of index.domains) {
+      const numbered = entries.some(
+        (entry) =>
+          entry.categories[0] === domain.slug &&
+          entry.categoryOrders.some((order) => order !== null),
+      );
+      if (numbered) continue;
+
       const labelled = domain.groups
         .map((group) => group.label)
         .filter((label): label is string => label !== null);
@@ -67,6 +90,28 @@ describe("buildArchiveIndex", () => {
         expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b)));
       }
     }
+  });
+
+  it("gives a numbered directory the place its number asks for", () => {
+    const authoring = index.domains.find(
+      (domain) => domain.slug === "authoring",
+    );
+    expect(authoring?.groups.map((group) => group.label)).toEqual([
+      "Markdown",
+      "Code",
+      "Components",
+      "Assets",
+    ]);
+
+    const markdown = authoring?.groups.find(
+      (group) => group.path === "authoring/markdown",
+    );
+    expect(markdown?.notes.map((note) => note.title)).toEqual([
+      "Typography",
+      "Lists",
+      "Tables",
+      "Links",
+    ]);
   });
 
   it("applies known casing to domain labels", () => {
@@ -85,6 +130,7 @@ describe("buildArchiveIndex", () => {
       description: "Reading the journal without a pager fight.",
       permalink: "/stash/linux/journalctl",
       categories: ["linux"],
+      categoryOrders: [null],
       category: "linux",
       tags: [],
       date: "2026-10-16",

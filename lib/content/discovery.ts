@@ -4,12 +4,20 @@
  * Traverses the `content/` hierarchy to load entries, derive slugs, categories, permalinks,
  * and provide lookup helpers (`getAllEntries`, `getEntryBySlug`, `getAllCategories`).
  *
+ * Directory names may open with an order prefix (`01 - hooks`). The prefix is
+ * sorting information: it never reaches a slug, a route or a title.
+ *
  * Notable: Strictly validated via Zod (`contentEntrySchema` and `contentCategorySchema`).
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { discoverAdjacentAssets } from "./assets";
+import {
+  compareOrder,
+  parseOrderedSegment,
+  stripOrderPrefix,
+} from "./ordering";
 import { parseDocument } from "./parser";
 import {
   type ContentCategory,
@@ -85,6 +93,44 @@ export function findEntryDirectories(baseDir: string): string[] {
 }
 
 /**
+ * Resolves slug segments to the directory that holds them.
+ *
+ * Directory names may carry an order prefix the slug does not, so segments are
+ * matched against stripped names. Returns null when a segment names nothing.
+ */
+export function resolveEntryDirectory(
+  segments: string[],
+  contentDir: string = getContentDirectory(),
+): string | null {
+  let current = contentDir;
+
+  for (const segment of segments) {
+    let names: string[];
+    try {
+      names = readdirSync(current).sort();
+    } catch {
+      return null;
+    }
+
+    const match = names.find((name) => {
+      if (name.startsWith(".") || stripOrderPrefix(name) !== segment) {
+        return false;
+      }
+      try {
+        return statSync(join(current, name)).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (!match) return null;
+    current = join(/*turbopackIgnore: true*/ current, match);
+  }
+
+  return current;
+}
+
+/**
  * Loads and constructs a ContentEntry from an entry directory path.
  */
 export function loadEntry(
@@ -108,8 +154,12 @@ export function loadEntry(
   const rawContent = readFileSync(absoluteFilePath, "utf-8");
 
   const relativeDir = relative(contentDir, entryDirectory).replace(/\\/g, "/");
-  const slug = relativeDir;
-  const slugSegments = slug ? slug.split("/") : [];
+  const rawSlugSegments = relativeDir ? relativeDir.split("/") : [];
+  // A directory may be numbered to fix its place among its siblings. The number
+  // orders it and nothing else, so the slug is built from the names alone.
+  const parsedSegments = rawSlugSegments.map(parseOrderedSegment);
+  const slugSegments = parsedSegments.map((segment) => segment.name);
+  const slug = slugSegments.join("/");
 
   // A `home` directory stands for the category that contains it, so it answers
   // at the category's path. Its slug still names the directory on disk, which
@@ -136,6 +186,9 @@ export function loadEntry(
     : slugSegments.length > 1
       ? slugSegments.slice(0, -1)
       : [];
+  const categoryOrders = parsedSegments
+    .slice(0, -1)
+    .map((segment) => segment.order);
   const primaryCategory =
     parsed.frontmatter.category || (categories[0] ?? "general");
 
@@ -147,9 +200,20 @@ export function loadEntry(
         .filter(Boolean)
     : [];
 
+  // The directory's own number places the entry among its siblings; an entry
+  // that is not numbered on disk can still say so in frontmatter.
+  const directoryOrder =
+    parsedSegments[parsedSegments.length - 1]?.order ?? null;
+  const frontmatterOrder =
+    typeof parsed.frontmatter.order === "number"
+      ? parsed.frontmatter.order
+      : null;
+
   const rawEntry = {
     slug,
     slugSegments,
+    rawSlugSegments,
+    order: directoryOrder ?? frontmatterOrder,
     permalink,
     isCategoryIndex,
     directoryPath: relativeDir,
@@ -162,6 +226,7 @@ export function loadEntry(
     body: parsed.body,
     rawContent,
     categories,
+    categoryOrders,
     category: primaryCategory,
     tags,
     headings: parsed.headings,
@@ -215,15 +280,64 @@ export async function getAllEntries(
     }
   }
 
-  // Sort by date (descending) if present, then alphabetical by title
-  return entries.sort((a, b) => {
-    if (a.date && b.date) {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    }
-    if (a.date) return -1;
-    if (b.date) return 1;
-    return a.title.localeCompare(b.title);
-  });
+  return entries.sort(compareEntriesByContentOrder);
+}
+
+/**
+ * Orders entries the way the content directory reads: numbered directories
+ * first in their numbered order, the rest alphabetically after them, level by
+ * level down the path.
+ *
+ * Every surface that lists entries — the sidebar, the archive index, previous
+ * and next links — derives its order from this one, so the archive cannot
+ * disagree with itself about what follows what.
+ */
+export function compareEntriesByContentOrder(
+  a: ContentEntry,
+  b: ContentEntry,
+): number {
+  const depth = Math.max(a.slugSegments.length, b.slugSegments.length);
+
+  for (let index = 0; index < depth; index++) {
+    const left = a.slugSegments[index];
+    const right = b.slugSegments[index];
+
+    // A shorter path is a parent of the longer one and comes first.
+    if (left === undefined) return -1;
+    if (right === undefined) return 1;
+    if (left === right) continue;
+
+    const byOrder = compareOrder(
+      segmentOrder(a, index),
+      segmentOrder(b, index),
+    );
+    if (byOrder !== 0) return byOrder;
+
+    // Unnumbered siblings read alphabetically: directories by their name, and
+    // notes by their title, which is the name a reader actually sees.
+    return segmentKey(a, index).localeCompare(segmentKey(b, index));
+  }
+
+  return 0;
+}
+
+/** Whether the path segment at `index` is a directory above the entry. */
+function isCategorySegment(entry: ContentEntry, index: number): boolean {
+  return index < entry.categoryOrders.length;
+}
+
+/** The order of an entry's path segment: a category's, or the entry's own. */
+function segmentOrder(entry: ContentEntry, index: number): number | null {
+  return isCategorySegment(entry, index)
+    ? entry.categoryOrders[index]
+    : entry.order;
+}
+
+/** The text an unnumbered path segment sorts by. */
+function segmentKey(entry: ContentEntry, index: number): string {
+  return isCategorySegment(entry, index)
+    ? entry.slugSegments[index]
+    : entry.title;
 }
 
 /**
@@ -235,16 +349,21 @@ export async function getEntryBySlug(
 ): Promise<ContentEntry | null> {
   const normalizedSlug = Array.isArray(slug) ? slug.join("/") : slug;
   const contentDir = options.contentDir || getContentDirectory();
-  const targetDir = join(
-    /*turbopackIgnore: true*/ contentDir,
-    ...normalizedSlug.split("/"),
+  const segments = normalizedSlug.split("/").filter(Boolean);
+
+  // A slug names directories by their names, not by the numbers in front of
+  // them, so each segment is matched against the stripped directory names.
+  const targetDir = resolveEntryDirectory(segments, contentDir);
+  const indexDir = resolveEntryDirectory(
+    [...segments, CATEGORY_INDEX_DIR],
+    contentDir,
   );
 
   // `/stash/react` is answered by `content/react/home`, so a path that is a
   // category rather than an entry falls through to its index.
   const entry =
-    loadEntry(targetDir, contentDir) ??
-    loadEntry(join(targetDir, CATEGORY_INDEX_DIR), contentDir);
+    (targetDir ? loadEntry(targetDir, contentDir) : null) ??
+    (indexDir ? loadEntry(indexDir, contentDir) : null);
 
   if (!entry) {
     return null;
@@ -305,6 +424,8 @@ export async function getAllCategories(
   }
 
   const result: ContentCategory[] = [];
+  const sortKeys = new Map<string, string>();
+
   for (const [slug, categoryEntries] of categoryMap.entries()) {
     const path = slug.split("/");
     const name = path[path.length - 1]
@@ -312,11 +433,18 @@ export async function getAllCategories(
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
+    // The directory's number is recorded by the entries inside it, so any of
+    // them can report the category's place among its siblings.
+    const orders = categoryEntries[0]?.categoryOrders ?? [];
+    const order = orders[path.length - 1] ?? null;
+    sortKeys.set(slug, categorySortKey(path, orders));
+
     // Strictly validate category object through Zod schema
     const category = contentCategorySchema.parse({
       name,
       slug,
       path,
+      order,
       count: categoryEntries.length,
       entries: categoryEntries,
     });
@@ -324,7 +452,27 @@ export async function getAllCategories(
     result.push(category);
   }
 
-  return result.sort((a, b) => a.slug.localeCompare(b.slug));
+  return result.sort((a, b) =>
+    (sortKeys.get(a.slug) ?? a.slug).localeCompare(
+      sortKeys.get(b.slug) ?? b.slug,
+    ),
+  );
+}
+
+/**
+ * Sort key placing a category path in content order.
+ *
+ * Each level contributes its number, zero padded so 2 sorts before 10, or a
+ * marker that sorts after every number when the directory has none.
+ */
+function categorySortKey(path: string[], orders: (number | null)[]): string {
+  return path
+    .map((segment, index) => {
+      const order = orders[index] ?? null;
+      const prefix = order === null ? "~" : String(order).padStart(6, "0");
+      return `${prefix}${segment}`;
+    })
+    .join("/");
 }
 
 /**

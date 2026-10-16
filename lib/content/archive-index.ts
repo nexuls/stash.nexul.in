@@ -9,6 +9,7 @@
  */
 
 import { formatSegmentLabel } from "@/lib/content/nav-tree";
+import { compareOrder } from "@/lib/content/ordering";
 import type { ContentEntry } from "@/lib/content/types";
 
 export interface ArchiveNote {
@@ -91,21 +92,32 @@ function entryTimestamp(entry: ContentEntry): number | null {
  * by category path; a category without a `home` entry keeps the label derived
  * from its directory name and has no summary.
  *
- * Domains are ordered by how much they hold, so the deepest part of the archive
- * leads. Within a domain, directories and notes are alphabetical: the index is
- * read to find a known thing, and alphabetical order is the only order a reader
- * can predict.
+ * A numbered directory keeps the place its number asks for. Beyond that,
+ * domains are ordered by how much they hold, so the deepest part of the archive
+ * leads, and directories and notes keep the order `getAllEntries` reports:
+ * numbered first, then alphabetical.
  */
 export function buildArchiveIndex(
   entries: ContentEntry[],
   categoryIndexes: Map<string, ContentEntry> = new Map(),
 ): ArchiveIndex {
   const domains = new Map<string, Map<string, ArchiveNote[]>>();
+  // Order prefixes, recorded as the directories are first met.
+  const domainOrders = new Map<string, number | null>();
+  const groupOrders = new Map<string, number | null>();
   let lastTimestamp: number | null = null;
 
   for (const entry of entries) {
     const domainSlug = entry.categories[0] ?? entry.category;
     const groupSlug = entry.categories[1] ?? ROOT_GROUP;
+
+    if (!domainOrders.has(domainSlug)) {
+      domainOrders.set(domainSlug, entry.categoryOrders[0] ?? null);
+    }
+    const groupKey = `${domainSlug}/${groupSlug}`;
+    if (!groupOrders.has(groupKey)) {
+      groupOrders.set(groupKey, entry.categoryOrders[1] ?? null);
+    }
 
     const groups = domains.get(domainSlug) ?? new Map<string, ArchiveNote[]>();
     const notes = groups.get(groupSlug) ?? [];
@@ -132,14 +144,21 @@ export function buildArchiveIndex(
         label: groupSlug === ROOT_GROUP ? null : formatSegmentLabel(groupSlug),
         path:
           groupSlug === ROOT_GROUP ? domainSlug : `${domainSlug}/${groupSlug}`,
-        notes: notes.sort((a, b) => a.title.localeCompare(b.title)),
+        // `entries` arrives in content order, so the notes are already in it.
+        notes,
       });
     }
 
     resolvedGroups.sort((a, b) => {
+      // Notes sitting directly in the domain open it, above its directories.
       if (a.label === null) return -1;
       if (b.label === null) return 1;
-      return a.label.localeCompare(b.label);
+      return (
+        compareOrder(
+          groupOrders.get(a.path) ?? null,
+          groupOrders.get(b.path) ?? null,
+        ) || a.label.localeCompare(b.label)
+      );
     });
 
     const index = categoryIndexes.get(domainSlug);
@@ -158,7 +177,13 @@ export function buildArchiveIndex(
   }
 
   resolved.sort(
-    (a, b) => b.noteCount - a.noteCount || a.label.localeCompare(b.label),
+    (a, b) =>
+      compareOrder(
+        domainOrders.get(a.slug) ?? null,
+        domainOrders.get(b.slug) ?? null,
+      ) ||
+      b.noteCount - a.noteCount ||
+      a.label.localeCompare(b.label),
   );
 
   return {
