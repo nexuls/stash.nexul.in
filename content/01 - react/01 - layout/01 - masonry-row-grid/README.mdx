@@ -1,0 +1,263 @@
+---
+title: Masonry Row Grid Layout
+description: A row-first masonry grid that keeps photographs at a readable height and both edges of every row flush, solved with dynamic programming.
+date: 2026-10-16
+tags:
+  - layouts
+  - masonry-grid
+  - performance
+  - responsive-design
+---
+
+# Masonry Row Grid Layout
+
+Column-first masonry, the CSS `columns` kind, reads top to bottom. That is
+wrong for a photo grid, because the eye reads left to right and the second
+image in the DOM lands halfway down the page. This is the row-first
+arrangement instead. The component fills each row to the container's width and
+scales it to a height near the target, so neighbouring photographs end up the
+same height and both edges of the row stay flush.
+
+Drag the thumb to see what the layout does as the container narrows.
+
+<ComponentPreview
+  demo="Preview"
+  files="masonry-row-grid.tsx, calculate-masonry-row-grid.ts"
+  height={520}
+  fps
+/>
+
+## Choosing the rows
+
+The greedy arrangement is the obvious one: keep adding images until the row
+overflows, then scale the row down to fit. It is one pass and it is fast, but
+it never reconsiders. One tall portrait early on pushes a short row, and the
+last row is whatever happens to be left.
+
+The justified arrangement treats it as a shortest-path problem. Every break
+point costs the squared distance between the row's height and the target, a
+row with a single item costs an extra penalty, and `dp[i]` is the cheapest way
+to arrange the first `i` images. Backtracking through `parent[]` gives the
+rows. It is O(n²) in the worst case, and the inner loop stops as soon as the
+row gets shorter than the minimum, so it only examines the items that could
+share one row.
+
+The difference is easiest to see side by side. Here are the same twenty
+photographs in the greedy arrangement.
+
+<ComponentPreview demo="Naive" height={520} />
+
+## Measuring, not laying out
+
+`MasonryRowGrid` never reads a DOM node to decide anything. The items carry
+their intrinsic width and height, the only measurement is the container's own
+width from a `ResizeObserver`, and the component computes every position from
+those two numbers. That is why a drag holds its frame rate. Resizing re-runs
+the arithmetic instead of reading styles back out of the browser.
+
+The observer's callback coalesces into a `requestAnimationFrame`, so a drag
+that fires a hundred resize notifications still produces one layout per frame.
+
+## Using it
+
+The component decides position and size. `renderItem` decides what goes
+inside each item container.
+
+```tsx title="page.tsx"
+import { MasonryRowGrid } from "@/components/ui/masonry-row-grid";
+
+// Intrinsic dimensions, not display ones. Only the ratio matters.
+const items = [
+  { width: 2500, height: 1667, src: "/photos/01.jpg" },
+  { width: 2448, height: 3264, src: "/photos/02.jpg" },
+  // ...
+];
+
+export default function Page() {
+  return (
+    <MasonryRowGrid
+      items={items}
+      targetHeight={270}
+      layout="justified"
+      renderItem={(item, index, measures) => (
+        <img
+          src={item.src as string}
+          alt={`Photograph ${index + 1}`}
+          width={measures.width}
+          height={measures.height}
+          className="size-full rounded-md object-cover"
+        />
+      )}
+    />
+  );
+}
+```
+
+## Layout modes
+
+<Callout type="tip" title="Which mode">
+  Use `justified` for a finite set, where the component solves the whole
+  arrangement once and can balance the rows against each other. Use `naive`
+  for infinite scroll or anything that loads in, where a later item must not
+  move an earlier row.
+</Callout>
+
+`naive` fills each row until it overflows the container, then scales that row
+down to fit. It never revisits a row, so a row is final once it closes, and
+appending items cannot move what is already on screen. The cost is the last
+row, which holds whatever was left over and is often short.
+
+`justified` solves all the rows together, so every row is flush and heights
+stay near the target. Adding an item re-solves the whole arrangement, so rows
+that were already placed can shift.
+
+## Structure
+
+The component positions every item absolutely inside one relative container,
+so the container needs the computed total height. The gap is padding inside
+each item rather than a margin between items, which keeps the row arithmetic
+in whole container widths.
+
+```text noLineNumbers
+Root container (div)
+ │  └─ position: relative; height: <totalHeight>px
+ │
+ ├─ Item container (div)
+ │   │  └─ position: absolute; top/left/width/height from measures;
+ │   │     padding: <gap>px, halved on any edge shared with a neighbour
+ │   └─ renderItem(item, index, measures)
+ │
+ ├─ Item container (div)
+ │   └─ ...
+ └─ ...
+```
+
+## Props
+
+<Tabs items={["Props", "GridItemProps", "Measures"]}>
+  <Tab value="Props">
+    <PropsTable
+      of="<MasonryRowGrid />"
+      rows={[
+        {
+          name: "items",
+          type: "GridItemProps[]",
+          default: "[]",
+          description: "The items to arrange. Each one carries its intrinsic width and height.",
+        },
+        {
+          name: "renderItem",
+          type: "(item, index, measures) => React.ReactNode",
+          description: "Renders the contents of one item container. Return null to leave it empty.",
+        },
+        {
+          name: "layout",
+          type: '"naive" | "justified"',
+          default: '"naive"',
+          description: "Which arrangement to solve for. See Layout modes above.",
+        },
+        {
+          name: "targetHeight",
+          type: "number",
+          default: "300",
+          description: "The row height to aim for, in pixels.",
+        },
+        {
+          name: "scaleFactor",
+          type: "number",
+          default: "0.1",
+          description: "Tolerance around targetHeight, as a fraction. At 0.1 a row may be a tenth shorter or taller than the target.",
+        },
+        {
+          name: "gap",
+          type: "number",
+          default: "8",
+          description: "Gutter in pixels, applied as padding inside each item container.",
+        },
+        {
+          name: "containerProps",
+          type: "React.HTMLAttributes<HTMLDivElement>",
+          description: "Forwarded to the root container. Its className and style merge with the computed ones.",
+        },
+        {
+          name: "itemProps",
+          type: "React.HTMLAttributes<HTMLDivElement>",
+          description: "Forwarded to every item container, under the same merge.",
+        },
+      ]}
+    />
+  </Tab>
+  <Tab value="GridItemProps">
+    <PropsTable
+      of="GridItemProps"
+      rows={[
+        {
+          name: "width",
+          type: "number",
+          required: true,
+          description: "Intrinsic width. Only the ratio against height matters, so any consistent unit works.",
+        },
+        {
+          name: "height",
+          type: "number",
+          required: true,
+          description: "Intrinsic height.",
+        },
+        {
+          name: "[key: string]",
+          type: "unknown",
+          description: "Anything else the item carries, such as a source or an id. It reaches renderItem untouched.",
+        },
+      ]}
+    />
+  </Tab>
+  <Tab value="Measures">
+    <PropsTable
+      of="Measures"
+      rows={[
+        {
+          name: "width",
+          type: "number",
+          required: true,
+          description: "Solved width of the item container, in pixels.",
+        },
+        {
+          name: "height",
+          type: "number",
+          required: true,
+          description: "Solved height, shared by every item in the row.",
+        },
+        {
+          name: "top",
+          type: "number",
+          required: true,
+          description: "Offset from the top of the root container.",
+        },
+        {
+          name: "left",
+          type: "number",
+          required: true,
+          description: "Offset from the left of the root container.",
+        },
+        {
+          name: "index",
+          type: "number",
+          required: true,
+          description: "Position within the row, from zero. Zero is the row's left edge.",
+        },
+        {
+          name: "rowNo",
+          type: "number",
+          required: true,
+          description: "Row number, from one.",
+        },
+        {
+          name: "totalItemsInRow",
+          type: "number",
+          required: true,
+          description: "How many items share the row, so an item can tell it is the last one.",
+        },
+      ]}
+    />
+  </Tab>
+</Tabs>

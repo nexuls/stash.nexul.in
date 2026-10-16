@@ -12,6 +12,18 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   allowedDevOrigins: ["arch-main"],
+  images: {
+    // Entry previews that need photographs pull them from the author's
+    // Cloudinary account rather than committing megabytes of JPEG beside a
+    // note about layout.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/djoo8ogmp/image/upload/**",
+      },
+    ],
+  },
   async redirects() {
     return [
       {
