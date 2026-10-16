@@ -57,8 +57,8 @@ Frontmatter is optional and minimal. Surrounding `---` YAML delimiters are parse
 
 ```yaml
 ---
-title: useDebounce Hook
-description: A production-ready custom hook to debounce rapidly updating values.
+title: useDebounce hook
+description: Debounce a rapidly updating value without dropping the last change.
 date: 2026-10-02
 tags:
   - react
@@ -117,7 +117,7 @@ export function add(a: number, b: number) {
 ```
 ````
 
-Opt out with `showLineNumbers=false`, or the shorter `noLineNumbers`, when the numbers would be noise — a one-line shell command, or a block of prose-like output:
+Opt out with `showLineNumbers=false`, or the shorter `noLineNumbers`, when the numbers would be noise, such as a one-line shell command or a block of prose-like output:
 
 ````markdown
 ```bash noLineNumbers
@@ -299,7 +299,7 @@ A numbered procedure. Use it when the order is part of the content; a plain orde
 
 A directory listing with selectable names, rather than ASCII art in a code fence. `Folder` takes `defaultOpen`; both nodes take `highlight` to mark the subject of the surrounding prose, and `comment` for a short trailing note.
 
-Each row picks its own icon from the name you give it — the same Material Icon Theme glyphs VS Code shows — so `use-debounce.ts` and `README.mdx` are distinguishable at a glance. There is nothing to configure; see [ADR-0005](../architecture/decisions/0005-file-type-icons.md).
+Each row picks its own icon from the name you give it, using the same Material Icon Theme glyphs VS Code shows, so `use-debounce.ts` and `README.mdx` are distinguishable at a glance. There is nothing to configure; see [ADR-0005](../architecture/decisions/0005-file-type-icons.md).
 
 ```mdx
 <FileTree>
@@ -368,7 +368,7 @@ Place code examples, schemas, and diagrams directly in the entry directory besid
 
 The content validation system checks all internal references at build time:
 
-- **Internal entry links**: Use canonical `/stash/...` routes (e.g., `[Command Menu](/stash/react/components/command-menu)`).
+- **Internal entry links**: Use canonical `/stash/...` routes (e.g., `[Accessible command menu](/stash/react/components/command-menu)`).
 - **Heading anchors**: Link to specific sections (e.g., `[Keyboard Navigation](/stash/react/components/command-menu#keyboard-navigation)` or local anchor `[Overview](#overview)`). Target anchors are verified against target heading slugs.
 - **Relative links**: Relative markdown paths (e.g. `../command-menu`) are resolved and validated.
 - **Asset references**: Checked against physical existence on disk.

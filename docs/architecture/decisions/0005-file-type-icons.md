@@ -19,8 +19,8 @@ nothing in the document should depend on JavaScript to render.
 
 ## Decision
 
-Use the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)
-— the icon set most VS Code users actually see — as a build-time asset.
+Use the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme),
+the icon set most VS Code users see, as a build-time asset.
 
 **One module owns the lookup.** `lib/icons/file-icons.ts` reads the theme's own
 manifest (`dist/material-icons.json`), which is the same set of tables the
@@ -41,16 +41,16 @@ directly. No icon data reaches the client bundle, there is no sprite request, an
 the glyph is in the HTML before any script runs. The icons keep their own fills:
 hue is half of what makes them recognisable, so they are not tinted to the theme.
 
-**The glyphs are decorative.** Every icon sits beside the name it illustrates —
-a panel header that already says `components/counter.tsx`, a tree row that
-already says `README.mdx`. They are `aria-hidden`, because announcing them would
+**The glyphs are decorative.** Every icon sits beside the name it illustrates,
+such as a panel header that already says `components/counter.tsx` or a tree row
+that already says `README.mdx`. They are `aria-hidden`, because announcing them would
 repeat what the adjacent text already says.
 
 ## Consequences
 
 Code panels, `<FileTree>` and the companion-files list on an entry page all show
 the same glyph for the same type, so a reader learns one vocabulary. The panel
-header now reads as an editor tab — icon, then path — and the language pill is
+header now reads as an editor tab, icon then path, and the language pill is
 gone; a block with no `title=` shows its language as plain text instead.
 
 The theme ships 1251 SVGs (about 5 MB) as a dependency. None of it is served:

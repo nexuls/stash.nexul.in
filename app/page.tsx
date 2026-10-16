@@ -21,7 +21,7 @@ import { getAllEntries, getCategoryIndexes } from "@/lib/content/discovery";
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name} — Personal Engineering Archive`,
+  title: `${siteConfig.name}, a personal engineering archive`,
   description: siteConfig.description,
 };
 

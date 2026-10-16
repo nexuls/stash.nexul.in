@@ -1,6 +1,6 @@
 ---
-title: useDebounce Hook
-description: A production-ready custom hook to debounce rapidly updating values such as search inputs and auto-saving forms.
+title: useDebounce hook
+description: Debounce a rapidly updating value, such as a search input or an auto-saving form, without dropping the last change.
 date: 2026-10-02
 tags:
   - react
@@ -8,21 +8,19 @@ tags:
   - performance
 ---
 
-# useDebounce Hook
+# useDebounce hook
 
-Debouncing delays invoking a function or updating a state value until after a designated duration has elapsed since the last time the value changed.
-
-This is essential for real-time search queries, window resize listeners, and continuous auto-save routines.
+Debouncing delays a call or a state update until a set time has passed since the value last changed. Search inputs, window resize handlers and auto-save routines all need it.
 
 ## Overview
 
-When a user types into a search input, triggering an API call on every keystroke overwhelms the network and UI. `useDebounce` guarantees that execution only occurs once the typing burst settles.
+A search input that calls the API on every keystroke sends one request per character. `useDebounce` updates the value once the typing burst stops, so only the last value reaches the network.
 
-![Debounce Timing Diagram](./debounce-diagram.svg)
+![Debounce timing diagram](./debounce-diagram.svg)
 
 ## Implementation
 
-The implementation is located right beside this guide in [`use-debounce.ts`](./use-debounce.ts):
+The implementation sits beside this guide in [`use-debounce.ts`](./use-debounce.ts):
 
 ```typescript
 import { useEffect, useState } from "react";
@@ -44,9 +42,9 @@ export function useDebounce<T>(value: T, delayMs: number): T {
 }
 ```
 
-## Usage Example
+## Usage example
 
-Integrate `useDebounce` into a filter or search component:
+In a filter or search component:
 
 ```tsx
 import { useState } from "react";
@@ -67,8 +65,8 @@ export function SearchFilter() {
 }
 ```
 
-## Related Entries
+## Related entries
 
-- [Command Menu Component](/stash/react/components/command-menu) — Pair with debounced search for fast palette filtering.
-- [Command Menu Keyboard Controls](/stash/react/components/command-menu#keyboard-navigation) — Keyboard-driven actions for command palettes.
-- [Type-Safe Result Pattern](/stash/typescript/patterns/result-type) — Handle async fetch errors cleanly.
+- [Accessible command menu](/stash/react/components/command-menu). Debounced search keeps palette filtering fast.
+- [Keyboard navigation in the command menu](/stash/react/components/command-menu#keyboard-navigation). Keyboard-driven actions for a palette.
+- [Type-safe result pattern](/stash/typescript/patterns/result-type). Handles errors from an async fetch without throwing.

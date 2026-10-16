@@ -1,6 +1,6 @@
 ---
-title: useMediaQuery Hook
-description: Subscribe to a CSS media query from React without layout thrashing or resize listeners.
+title: useMediaQuery hook
+description: Subscribe to a CSS media query from React, without a resize listener or a layout read.
 date: 2026-10-05
 tags:
   - react
@@ -8,13 +8,13 @@ tags:
   - responsive
 ---
 
-# useMediaQuery Hook
+# useMediaQuery hook
 
-Reads a CSS media query as reactive state using `window.matchMedia`, avoiding the cost of a `resize` listener that fires on every pixel.
+Reads a CSS media query as reactive state through `window.matchMedia`, instead of a `resize` listener that fires on every pixel.
 
 ## Overview
 
-Media query lists expose a `matches` boolean and a change event. Subscribing to that event is dramatically cheaper than measuring the viewport on every resize frame.
+A media query list exposes a `matches` boolean and a change event. The event fires only when the answer changes, while a resize listener measures the viewport on every frame of a drag.
 
 ## Implementation
 
@@ -40,7 +40,7 @@ export function useMediaQuery(query: string): boolean {
 }
 ```
 
-## Usage Example
+## Usage example
 
 ```tsx
 export function Navigation() {
@@ -50,11 +50,11 @@ export function Navigation() {
 }
 ```
 
-## Server Rendering
+## Server rendering
 
-The hook starts as `false` on the server and corrects itself after hydration. When the first paint matters, prefer a CSS-only solution and keep the hook for behavioral differences such as swapping a drawer for a sidebar.
+The hook starts as `false` on the server and corrects itself after hydration. When the first paint matters, write the rule in CSS and keep the hook for behavioral differences, such as swapping a drawer for a sidebar.
 
-## Related Entries
+## Related entries
 
-- [useEventListener Hook](/stash/react/hooks/use-event-listener) — Generic event subscription with stable handler identity.
-- [Split Pane Component](/stash/react/components/split-pane) — Collapses to a stacked layout on narrow viewports.
+- [useEventListener hook](/stash/react/hooks/use-event-listener). Event subscription with a stable handler identity.
+- [Resizable split pane](/stash/react/components/split-pane). Collapses to a stacked layout on a narrow viewport.

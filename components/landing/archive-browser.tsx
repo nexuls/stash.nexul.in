@@ -174,7 +174,7 @@ export function ArchiveBrowser({ index }: ArchiveBrowserProps) {
       ) : results.length === 0 ? (
         <div className="py-20">
           <p className="text-foreground">
-            Nothing in the archive matches “{query.trim()}”.
+            Nothing in the archive matches "{query.trim()}".
           </p>
           <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             Try a shorter word, or the name of a directory such as{" "}

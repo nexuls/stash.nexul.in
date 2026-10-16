@@ -40,7 +40,7 @@ export function DocsPager({
 
   return (
     <div className={cn("mt-12 space-y-10", className)}>
-      {/* Restrained "See Also" / Related entries */}
+      {/* Related entries */}
       {related.length > 0 && (
         <section aria-labelledby="see-also-heading" className="space-y-4">
           <Separator />
@@ -50,7 +50,7 @@ export function DocsPager({
               id="see-also-heading"
               className="text-sm font-semibold tracking-tight text-foreground"
             >
-              See Also & Related Notes
+              Related entries
             </h3>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

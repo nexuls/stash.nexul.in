@@ -1,6 +1,6 @@
 ---
-title: Type-Safe Result Pattern
-description: Idiomatic error handling in TypeScript using discriminated unions instead of throwing exceptions.
+title: Type-safe result pattern
+description: Error handling in TypeScript through a discriminated union instead of a thrown exception.
 date: 2026-10-02
 tags:
   - typescript
@@ -8,15 +8,15 @@ tags:
   - error-handling
 ---
 
-# Type-Safe Result Pattern
+# Type-safe result pattern
 
-In TypeScript, thrown exceptions are not represented in function signatures. Callers frequently forget to handle failure cases, leading to unhandled runtime errors.
+A TypeScript signature says nothing about what a function throws, so a caller can skip the failure case and find out at runtime.
 
-The `Result<T, E>` pattern models operations that may succeed with a value `T` or fail with an error `E` using a discriminated union.
+`Result<T, E>` models an operation that either succeeds with a value `T` or fails with an error `E`, as a discriminated union.
 
 ## Motivation
 
-When functions return `Result<T, E>`, TypeScript forces the caller to check `.ok` before accessing `.value` or `.error`:
+When a function returns `Result<T, E>`, TypeScript makes the caller check `.ok` before reading `.value` or `.error`:
 
 ```typescript
 function parseConfig(raw: string): Result<Config, ConfigError> {
@@ -31,7 +31,7 @@ function parseConfig(raw: string): Result<Config, ConfigError> {
 
 ## Implementation
 
-The full TypeScript implementation is located in [`result.ts`](./result.ts):
+The full implementation is in [`result.ts`](./result.ts):
 
 ```typescript
 export type Ok<T> = { readonly ok: true; readonly value: T };
@@ -47,7 +47,7 @@ export function err<E>(error: E): Err<E> {
 }
 ```
 
-## Related Entries
+## Related entries
 
-- [useDebounce Hook](/stash/react/hooks/use-debounce) — Debounce async operations returning Results.
-- [Accessible Command Menu](/stash/react/components/command-menu) — Execute actions with typed error recovery.
+- [useDebounce hook](/stash/react/hooks/use-debounce). Debounce an async call that returns a `Result`.
+- [Accessible command menu](/stash/react/components/command-menu). Runs a command and recovers from a typed error.

@@ -8,8 +8,8 @@ replace the ones it records.
 
 ## Context
 
-The entry page is the product. Everything else in Stash — discovery, navigation,
-search — exists to deliver a reader to one document. Reviewing the rendered
+The entry page is the product. Everything else in Stash, meaning discovery,
+navigation and search, exists to deliver a reader to one document. Reviewing the rendered
 result against the implementation surfaced four classes of problem.
 
 **Rules that never matched.** `app/globals.css` styled highlighted lines and
@@ -24,7 +24,7 @@ inert.
 dependency, so no element inherited anything from them. The document's spacing
 came from a `space-y-4` wrapper fighting each component's own margins, and
 `font-exo` was applied to `<html>` although no `--font-exo` entry existed in the
-Tailwind theme — the display face was loaded on every request and never used.
+Tailwind theme, so the display face was loaded on every request and never used.
 
 **Entry assets could not be fetched.** An entry is a directory, so authors write
 `![diagram](./diagram.svg)`. The browser resolves that against the route
@@ -101,9 +101,9 @@ numbering is information), `FileTree` (content hierarchy is directory paths),
 `PropsTable`, `LinkCard` and `CardGrid`, and `Kbd`.
 
 Removed because they were decoration: the macOS traffic lights on every code
-block. The code panel header now reports what a reader can act on — language,
-path, line count or diff shape — plus soft wrap, copy, and a collapse control
-for blocks over 28 lines.
+block. The code panel header now reports what a reader can act on, meaning the
+language, path, line count or diff shape, plus soft wrap, copy, and a collapse
+control for blocks over 28 lines.
 
 `Tabs` instances sharing a `group` stay in sync, so choosing a package manager
 once applies to the rest of the document.

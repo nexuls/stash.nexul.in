@@ -11,9 +11,9 @@ tags:
 # Props table
 
 The reference block at the end of a component note. Despite the name it is not a
-table: it is a definition list, because a props reference is read one entry at a
-time — a reader arrives looking for `defaultOpen`, not comparing four columns —
-and a four-column grid is the first thing to collapse badly on a phone.
+table but a definition list. A reader arrives looking for one prop, such as
+`defaultOpen`, rather than comparing four columns, and a four-column grid is the
+first thing to break on a phone.
 
 <PropsTable
   of="<Callout />"
@@ -69,8 +69,8 @@ prints it. Between them a reader can tell what they must pass from what they may
 
 ## Writing the rows
 
-Row text is plain text, not Markdown: a description is one sentence about what
-the prop does, and the name and type are already rendered as code. If a prop
+Row text is plain text rather than Markdown. A description is one sentence about
+what the prop does, and the name and type already render as code. If a prop
 needs a paragraph, an example or a caveat, that belongs in the prose above,
 where it can have a heading and a code block.
 

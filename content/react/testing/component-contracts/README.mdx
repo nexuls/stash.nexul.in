@@ -1,6 +1,6 @@
 ---
-title: Component Contracts
-description: Define the behavioral guarantees worth testing for a component, and the implementation details that are not.
+title: Component contracts
+description: The behavior worth testing for a component, and the implementation details that are not.
 date: 2026-10-10
 tags:
   - react
@@ -8,26 +8,26 @@ tags:
   - accessibility
 ---
 
-# Component Contracts
+# Component contracts
 
-A component's contract is what callers and users can rely on. Tests should cover exactly that, and nothing below it.
+A component's contract is what callers and users can rely on. A test should cover that and nothing below it.
 
-## In The Contract
+## In the contract
 
-- Rendered accessible roles, names, and states.
-- Keyboard interactions and resulting focus position.
-- Callbacks invoked, with their arguments.
-- Behavior at the boundaries: empty, single item, loading, error.
+- The accessible roles, names and states it renders.
+- The keyboard interactions, and where focus lands after each.
+- The callbacks it calls, and their arguments.
+- Its behavior at the boundaries: empty, one item, loading, error.
 
-## Not In The Contract
+## Not in the contract
 
 - Class names and inline styles.
-- Internal state shape and hook call order.
-- Child component identity, or how many times anything rendered.
+- The shape of internal state and the order of hook calls.
+- Which child components render, or how many times anything rendered.
 
-## Querying By Role
+## Querying by role
 
-Role queries assert accessibility and behavior in one line, which is why they are the default:
+A role query asserts accessibility and behavior in one line, which is why it is the default:
 
 ```typescript
 const trigger = screen.getByRole("button", { name: "Open Palette (⌘K)" });
@@ -37,13 +37,13 @@ const dialog = screen.getByRole("dialog", { name: "Command menu" });
 expect(dialog).toHaveFocus();
 ```
 
-If a role query cannot find the element, that is usually a genuine accessibility defect rather than a reason to fall back to a test id.
+When a role query cannot find the element, that is usually an accessibility defect, not a reason to fall back to a test id.
 
-## Focus Assertions
+## Focus assertions
 
-Every dialog, menu, and popover test should assert where focus lands on open and where it returns on close. Focus restoration is the single most commonly broken part of these components.
+A test for a dialog, menu or popover should assert where focus lands on open and where it returns on close. Focus restoration is the part of these components that breaks most often.
 
-## Related Entries
+## Related entries
 
-- [Accessible Command Menu](/stash/react/components/command-menu) — The contract exercised above.
-- [Testing Custom Hooks](/stash/react/testing/testing-hooks) — The equivalent approach for logic without markup.
+- [Accessible command menu](/stash/react/components/command-menu). The contract the test above exercises.
+- [Testing custom hooks](/stash/react/testing/testing-hooks). The same approach for logic with no markup.

@@ -1,6 +1,6 @@
 ---
-title: useEventListener Hook
-description: Attach DOM event listeners with a stable subscription and an always-current handler.
+title: useEventListener hook
+description: Attach a DOM event listener once and keep the handler current, so a changing callback never detaches the listener.
 date: 2026-10-07
 tags:
   - react
@@ -8,13 +8,13 @@ tags:
   - events
 ---
 
-# useEventListener Hook
+# useEventListener hook
 
-Subscribes to a DOM event once and keeps the handler fresh through a ref, so changing callbacks never cause a detach/reattach cycle.
+Subscribes to a DOM event once and keeps the handler current through a ref, so a new callback identity never detaches and reattaches the listener.
 
 ## Overview
 
-Passing an inline handler into a `useEffect` dependency array re-subscribes on every render. Storing the handler in a ref decouples subscription lifetime from handler identity.
+An inline handler in a `useEffect` dependency array re-subscribes on every render. A ref holds the handler instead, which separates how long the subscription lives from which function it calls.
 
 ## Implementation
 
@@ -43,7 +43,7 @@ export function useEventListener<K extends keyof WindowEventMap>(
 }
 ```
 
-## Usage Example
+## Usage example
 
 ```tsx
 useEventListener("keydown", (event) => {
@@ -54,7 +54,7 @@ useEventListener("keydown", (event) => {
 });
 ```
 
-## Related Entries
+## Related entries
 
-- [Accessible Command Menu](/stash/react/components/command-menu) — Uses a global key listener for its `Cmd+K` trigger.
-- [useMediaQuery Hook](/stash/react/hooks/use-media-query) — The same subscription shape applied to a media query list.
+- [Accessible command menu](/stash/react/components/command-menu). Uses a global key listener for its `Cmd+K` trigger.
+- [useMediaQuery hook](/stash/react/hooks/use-media-query). The same subscription shape over a media query list.

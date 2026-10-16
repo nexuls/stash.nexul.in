@@ -1,15 +1,15 @@
 ---
-title: usePrevious Hook
-description: Retain the value a prop or state held during the previous render for transition-aware logic.
+title: usePrevious hook
+description: Keep the value a prop or state held in the previous render, for logic that compares across renders.
 date: 2026-10-06
 tags:
   - react
   - hooks
 ---
 
-# usePrevious Hook
+# usePrevious hook
 
-Stores the previous render's value in a ref so a component can compare across renders without triggering one.
+Stores the previous render's value in a ref, so a component can compare across renders without causing one.
 
 ## Implementation
 
@@ -27,19 +27,19 @@ export function usePrevious<T>(value: T): T | undefined {
 }
 ```
 
-## Usage Example
+## Usage example
 
-Useful for animating only when a value actually changed direction:
+Animate only when a value changed direction:
 
 ```tsx
 const previousStep = usePrevious(step);
 const direction = previousStep !== undefined && step > previousStep ? "forward" : "back";
 ```
 
-## When Not To Use It
+## When not to use it
 
-If the comparison drives rendering rather than an effect, derive the value during render and store it with `useState` instead. Reading a ref that an effect writes always lags by one commit, which is wrong for render-time decisions.
+If the comparison drives rendering rather than an effect, derive the value during the render and hold it in `useState`. A ref that an effect writes always lags one commit behind, which is the wrong answer for a render-time decision.
 
-## Related Entries
+## Related entries
 
-- [Memoization Rules](/stash/react/performance/memoization-rules) — Why deriving beats caching in most cases.
+- [Memoization rules](/stash/react/performance/memoization-rules). Why deriving a value beats caching it in most cases.

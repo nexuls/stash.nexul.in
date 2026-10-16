@@ -39,8 +39,8 @@ eventually find, in a sitemap or a search result.
 **It is not a note.** `getAllEntries` excludes category indexes by default, so
 they never appear in listings, counts, related entries or previous/next
 navigation: a category's heading is not one of the things inside it. The
-exclusion is opt-out rather than opt-in — `includeCategoryIndexes: true` — so a
-caller that forgets about them gets the right answer, and `getAllSlugs` opts in
+exclusion is opt-out rather than opt-in, through `includeCategoryIndexes: true`,
+so a caller that forgets about them gets the right answer, and `getAllSlugs` opts in
 deliberately because every route still has to be generated.
 
 **Its title and description name the category everywhere.** The landing page

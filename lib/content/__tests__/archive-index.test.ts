@@ -137,7 +137,7 @@ describe("filterArchive", () => {
   it("matches a note by its path", () => {
     const result = filterArchive(index.domains, "react/hooks/use-debounce");
     expect(result).toHaveLength(1);
-    expect(result[0]?.groups[0]?.notes[0]?.title).toBe("useDebounce Hook");
+    expect(result[0]?.groups[0]?.notes[0]?.title).toBe("useDebounce hook");
   });
 
   it("requires every term to match, in any order", () => {
@@ -152,7 +152,7 @@ describe("filterArchive", () => {
     const result = filterArchive(index.domains, "notifications");
     expect(result).toHaveLength(1);
     expect(result[0]?.groups[0]?.notes[0]?.title).toBe(
-      "Toast Notification Stack",
+      "Toast notification stack",
     );
   });
 

@@ -19,18 +19,18 @@ export default function StashNotFound() {
       </span>
 
       <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-        Documentation Entry Not Found
+        Entry not found
       </h1>
 
       <p className="mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-        The documentation path or technical note you requested does not exist in
-        the archive. It may have been moved, renamed, or deleted.
+        No entry answers at this path. It may have been moved, renamed or
+        deleted.
       </p>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Button render={<Link href="/stash" />}>
           <ArrowLeft className="size-4 mr-2" />
-          <span>Browse Archive</span>
+          <span>Browse the archive</span>
         </Button>
 
         <Button variant="outline" render={<Link href="/" />}>

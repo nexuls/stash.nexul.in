@@ -18,21 +18,21 @@ export default function NotFound() {
       </span>
 
       <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-        Page Not Found
+        Page not found
       </h1>
 
       <p className="mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-        The page you are looking for doesn't exist or has been moved.
+        This page does not exist, or it has moved.
       </p>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Button render={<Link href="/stash" />}>
           <ArrowLeft className="size-4 mr-2" />
-          <span>Go to Documentation</span>
+          <span>Go to the archive</span>
         </Button>
 
         <Button variant="outline" render={<Link href="/" />}>
-          <span>Return Home</span>
+          <span>Return home</span>
         </Button>
       </div>
     </div>

@@ -26,7 +26,8 @@ right. Numbers belong on the right, where their digits line up.
 | Steps | `<Steps />` | list | 96 |
 | FileTree | `<FileTree />` | `tree` | 171 |
 
-Cells take inline formatting — code, links, emphasis — but not block content. A
+Cells take inline formatting, such as code, links and emphasis, but not block
+content. A
 cell that wants a list or a code block is a sign the table should be a set of
 headings, or a [props table](/stash/authoring/components/props-table).
 
@@ -40,8 +41,8 @@ scrolls sideways as a whole.
 | :--- | :--- | :--- | :--- | :--- |
 | `title` | `string` | no | first `# Heading` | Falls back to the formatted directory name. |
 | `description` | `string` | no | first paragraph | Truncated at a word boundary near 180 characters. |
-| `date` | `string` | no | — | ISO `YYYY-MM-DD`. |
-| `updated` | `string` | no | — | ISO `YYYY-MM-DD`; shown in place of `date` when present. |
+| `date` | `string` | no | none | ISO `YYYY-MM-DD`. |
+| `updated` | `string` | no | none | ISO `YYYY-MM-DD`, shown in place of `date` when present. |
 | `tags` | `string[]` | no | `[]` | Indexed for search, not printed as chips. |
 | `draft` | `boolean` | no | `false` | Hidden from listings while true. |
 

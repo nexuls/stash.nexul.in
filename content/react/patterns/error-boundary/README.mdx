@@ -1,6 +1,6 @@
 ---
-title: Error Boundaries
-description: Contain render-time failures to a subtree and recover without a full page reload.
+title: Error boundaries
+description: Keep a render-time failure inside one subtree, and recover from it without a full page reload.
 date: 2026-10-08
 tags:
   - react
@@ -8,9 +8,9 @@ tags:
   - error-handling
 ---
 
-# Error Boundaries
+# Error boundaries
 
-A boundary catches errors thrown during rendering in its subtree and swaps in a fallback instead of unmounting the entire application.
+A boundary catches an error thrown while its subtree renders and shows a fallback, instead of unmounting the whole application.
 
 ## Implementation
 
@@ -50,17 +50,17 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 ```
 
-## What Boundaries Do Not Catch
+## What boundaries do not catch
 
-- Errors thrown in event handlers — those propagate to `window.onerror`.
-- Rejected promises outside of a `use`/Suspense read.
-- Errors during server rendering, which fall to the framework's own handling.
+- An error thrown in an event handler. That reaches `window.onerror` instead.
+- A rejected promise outside a `use` or Suspense read.
+- An error during server rendering, which the framework handles itself.
 
 ## Placement
 
-One boundary at the root produces a useless whole-page fallback. Place boundaries at the seams that already have meaning in the UI: around each panel, each route segment, each independently loaded widget.
+One boundary at the root gives a whole-page fallback, which tells the reader nothing and loses the rest of the page. Put a boundary on each seam the UI already has: a panel, a route segment, a widget that loads on its own.
 
-## Related Entries
+## Related entries
 
-- [Type-Safe Result Pattern](/stash/typescript/patterns/result-type) — Prefer explicit error values over throwing for expected failures.
-- [Toast Notification Stack](/stash/react/components/toast-stack) — Surface recoverable errors without destroying the subtree.
+- [Type-safe result pattern](/stash/typescript/patterns/result-type). Return an error value instead of throwing, for a failure you expect.
+- [Toast notification stack](/stash/react/components/toast-stack). Reports a recoverable error without unmounting the subtree.

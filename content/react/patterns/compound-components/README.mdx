@@ -1,6 +1,6 @@
 ---
-title: Compound Components
-description: Expose a component's internals as named subcomponents sharing implicit state through context.
+title: Compound components
+description: Expose a component's internals as named subcomponents that share state through a private context.
 date: 2026-10-03
 tags:
   - react
@@ -8,15 +8,15 @@ tags:
   - composition
 ---
 
-# Compound Components
+# Compound components
 
-Instead of a single component with twenty configuration props, expose a small family of subcomponents that coordinate through context.
+Instead of one component with twenty configuration props, expose a small family of subcomponents that coordinate through context.
 
-## The Problem With Prop Explosion
+## The problem with prop explosion
 
-A configurable accordion grows props like `headerClassName`, `renderIcon`, `iconPosition`, and `hideDivider`. Each one is a guess about a caller's layout, and none of them compose.
+A configurable accordion grows props like `headerClassName`, `renderIcon`, `iconPosition` and `hideDivider`. Each one guesses at a caller's layout, and none of them compose.
 
-## The Pattern
+## The pattern
 
 ```tsx
 <Accordion defaultOpen="billing">
@@ -31,11 +31,11 @@ A configurable accordion grows props like `headerClassName`, `renderIcon`, `icon
 </Accordion>
 ```
 
-The parent owns the open state; subcomponents read it from a private context.
+The parent owns the open state, and each subcomponent reads it from a private context.
 
-## Guarding The Context
+## Guarding the context
 
-Always fail loudly when a subcomponent is used outside its parent:
+Throw when a subcomponent renders outside its parent:
 
 ```typescript
 const AccordionContext = createContext<AccordionState | null>(null);
@@ -49,15 +49,15 @@ function useAccordionContext(component: string) {
 }
 ```
 
-A thrown error during development is far cheaper than a component that silently renders nothing.
+An error during development costs one stack trace. A component that renders nothing costs an afternoon.
 
-## Trade-Offs
+## Trade-offs
 
-- Callers can reorder and wrap parts freely, which is the whole point.
-- Callers can also produce invalid structures, so the context guard is mandatory.
-- Attaching subcomponents as static properties hurts tree-shaking; export them individually as well.
+- A caller can reorder and wrap the parts, which is the point of the pattern.
+- A caller can also build an invalid structure, so the context guard is not optional.
+- Static properties on the parent defeat tree-shaking. Export each subcomponent on its own as well.
 
-## Related Entries
+## Related entries
 
-- [Render Props](/stash/react/patterns/render-props) — The alternative when consumers need the state value itself.
-- [Headless Data Table](/stash/react/components/data-table) — Built from this pattern.
+- [Render props](/stash/react/patterns/render-props). The alternative when a caller needs the state value itself.
+- [Headless data table](/stash/react/components/data-table). Built from this pattern.

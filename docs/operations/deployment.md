@@ -12,7 +12,7 @@ Confirmed deployment provider: **Vercel** (Next.js App Router with Bun). Product
 - **Build command**: `bun run build` (or Next.js default `next build`)
 - **Install command**: `bun install`
 - **Output directory**: Default Next.js build output (`.next`)
-- **Node.js / Bun runtime**: Modern LTS / Bun runtime
+- **Node.js / Bun runtime**: a current LTS Node.js, or Bun
 
 ## Pre-deployment checks
 

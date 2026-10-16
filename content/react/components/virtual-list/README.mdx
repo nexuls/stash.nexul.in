@@ -1,6 +1,6 @@
 ---
-title: Virtual List
-description: Render only the visible slice of a long list using fixed-height windowing and an absolute spacer.
+title: Virtual list
+description: Render only the visible slice of a long list, using fixed-height windowing and an absolute spacer.
 date: 2026-10-07
 tags:
   - react
@@ -9,13 +9,13 @@ tags:
   - virtualization
 ---
 
-# Virtual List
+# Virtual list
 
-Renders a window of rows around the scroll position and reserves the remaining height with a spacer, keeping DOM node count constant regardless of dataset size.
+Renders a window of rows around the scroll position and reserves the rest of the height with a spacer. The number of DOM nodes stays the same whatever the dataset size.
 
 ## Overview
 
-A list of ten thousand rows costs tens of thousands of DOM nodes, which stalls layout and inflates memory. Windowing renders the two dozen rows actually on screen.
+Ten thousand rows cost tens of thousands of DOM nodes, which stalls layout and holds memory. Windowing renders the two dozen rows on screen.
 
 ## Implementation
 
@@ -67,15 +67,15 @@ export function VirtualList<T>({
 }
 ```
 
-## Variable Row Heights
+## Variable row heights
 
-Fixed heights keep the math trivial. Variable heights require measuring rows and maintaining a cumulative offset index, which is considerably more code — reach for a library before writing it by hand.
+Fixed heights keep the arithmetic to one multiplication. Variable heights need row measurement and a cumulative offset index, which is far more code. Reach for a library before writing that by hand.
 
 ## Accessibility
 
-Windowing breaks the implicit relationship between visible rows and total count. Set `aria-setsize` to the full length and `aria-posinset` to the absolute index on each row.
+Windowing hides the count of rows from assistive technology. Set `aria-setsize` to the full length and `aria-posinset` to the absolute index on each row.
 
-## Related Entries
+## Related entries
 
-- [Headless Data Table](/stash/react/components/data-table) — Supplies the row model this list renders.
-- [List Virtualization](/stash/react/performance/list-virtualization) — The measurement work that justifies reaching for this component.
+- [Headless data table](/stash/react/components/data-table). Supplies the row model this list renders.
+- [List virtualization budget](/stash/react/performance/list-virtualization). The measurements that decide whether this component is worth it.

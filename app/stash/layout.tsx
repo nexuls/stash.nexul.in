@@ -18,11 +18,11 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: {
-    default: "Documentation Archive",
+    default: "Documentation archive",
     template: "%s | Stash",
   },
   description:
-    "Curated technical reference, architectural patterns, and reusable code implementations.",
+    "Technical reference, architecture notes and reusable code, kept as plain files on disk.",
 };
 
 export default async function StashLayout({

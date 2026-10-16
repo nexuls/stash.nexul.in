@@ -191,7 +191,7 @@ describe("Content Discovery", () => {
   it("getEntryBySlug retrieves entry by slug string or array", async () => {
     const entry1 = await getEntryBySlug("react/hooks/use-debounce");
     expect(entry1).not.toBeNull();
-    expect(entry1?.title).toBe("useDebounce Hook");
+    expect(entry1?.title).toBe("useDebounce hook");
     expect(entry1?.category).toBe("react");
     expect(entry1?.categories).toEqual(["react", "hooks"]);
 

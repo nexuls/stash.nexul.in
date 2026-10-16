@@ -1,6 +1,6 @@
 ---
-title: Accessible Command Menu
-description: A composable, keyboard-first modal dialog for palette navigation and instant action execution.
+title: Accessible command menu
+description: A composable, keyboard-first modal dialog for palette navigation and running an action without leaving the keyboard.
 date: 2026-10-02
 tags:
   - react
@@ -9,28 +9,28 @@ tags:
   - keyboard
 ---
 
-# Accessible Command Menu
+# Accessible command menu
 
-A command menu (often invoked with `Cmd+K` or `Ctrl+K`) provides instant, keyboard-driven access to commands, documentation entries, and settings.
+A command menu opens on `Cmd+K` or `Ctrl+K` and gives the keyboard direct access to commands, documentation entries and settings.
 
 ## Overview
 
-This implementation focuses on accessibility, predictable focus management, and minimal client overhead.
+The implementation keeps focus management predictable, follows the dialog and listbox roles, and ships little client code.
 
-![Command Menu Preview](./command-menu-preview.svg)
+![Command menu preview](./command-menu-preview.svg)
 
-## Keyboard Navigation
+## Keyboard navigation
 
-Keyboard interactions must strictly follow WAI-ARIA guidelines for modal dialogs and listboxes:
+The keys follow the WAI-ARIA patterns for a modal dialog and a listbox:
 
-- `ArrowDown`: Moves active selection to the next item, wrapping at the bottom.
-- `ArrowUp`: Moves active selection to the previous item, wrapping to the end.
-- `Enter`: Executes the active command and closes the dialog.
-- `Escape`: Cancels and closes the menu, returning focus to the trigger.
+- `ArrowDown` moves the active item down, and wraps at the bottom.
+- `ArrowUp` moves the active item up, and wraps to the end.
+- `Enter` runs the active command and closes the dialog.
+- `Escape` closes the menu and returns focus to the trigger.
 
-## Component Code
+## Component code
 
-The complete component implementation is located in [`command-menu.tsx`](./command-menu.tsx):
+The whole component is in [`command-menu.tsx`](./command-menu.tsx):
 
 ```tsx
 import { CommandMenu } from "./command-menu";
@@ -54,8 +54,8 @@ export function AppHeader() {
 }
 ```
 
-## Related Entries
+## Related entries
 
-- [useDebounce Hook](/stash/react/hooks/use-debounce) — Debounce search input inside the command menu to optimize fuzzy match performance.
-- [Debounce Implementation](/stash/react/hooks/use-debounce#implementation) — Source implementation for value debouncing.
-- [Type-Safe Result Pattern](/stash/typescript/patterns/result-type) — Handle command execution results with explicit success and error variants.
+- [useDebounce hook](/stash/react/hooks/use-debounce). Debounce the search input so fuzzy matching runs once per typing burst.
+- [The useDebounce implementation](/stash/react/hooks/use-debounce#implementation). The source for debouncing a value.
+- [Type-safe result pattern](/stash/typescript/patterns/result-type). Returns success and error variants from a command instead of throwing.

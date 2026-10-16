@@ -10,10 +10,10 @@ tags:
 
 # Tabs
 
-Tabs are for genuine alternatives: the same instruction expressed for a
+Tabs are for genuine alternatives, meaning the same instruction written for a
 different tool, runtime or language. The reader needs exactly one of the panels,
-so showing all of them as stacked code blocks makes them read three snippets to
-find theirs.
+so stacking all of them as code blocks makes them read three snippets to find
+theirs.
 
 They are the wrong shape for sequential content. A panel a reader has to open to
 know they need it is hidden content, not organised content.
@@ -45,8 +45,8 @@ know they need it is hidden content, not organised content.
 
 A `group` key ties every tab set in the document to the same selection. A reader
 who picks pnpm at the top of a long guide sees pnpm in every block after it,
-which is the difference between a tab set and a trap. The block above and the
-one below share the `package-manager` group — change one and watch the other.
+instead of picking it again at each one. The block above and the one below share
+the `package-manager` group. Change one and the other follows.
 
 <Tabs items={["Bun", "pnpm", "npm", "yarn"]} group="package-manager">
   <Tab value="Bun">
@@ -73,8 +73,8 @@ one below share the `package-manager` group — change one and watch the other.
 
 ## Rich panels
 
-A panel holds whatever a document holds — prose, lists, nested components — not
-only code:
+A panel holds whatever a document holds, including prose, lists and nested
+components, not only code:
 
 <Tabs items={["Architecture", "Prerequisites"]}>
   <Tab value="Architecture">

@@ -1,4 +1,4 @@
-# ADR-0003: MDX Engine and Code Presentation
+# ADR-0003: MDX engine and code presentation
 
 ## Status
 
@@ -7,7 +7,7 @@ Accepted
 ## Context
 
 Stash is Arif Sardar's personal engineering library. High-quality code presentation and expressive documentation markup are core requirements:
-- Next.js 16 (React 19) and React Server Components (RSC) require modern MDX tooling.
+- Next.js 16 (React 19) and React Server Components need MDX tooling that supports them.
 - The previously specified `next-mdx-remote` package has been deprecated and archived by HashiCorp, making it unsuitable for React 19 / RSC.
 - Code blocks must support dual themes (light and dark mode matching system/user preference), language labels, filename headers, line highlighting, line numbers, terminal blocks, diff blocks, mobile-safe horizontal scrolling, and accessible one-click copying.
 - Content authoring errors (malformed props, unregistered component tags, unclosed JSX) should not crash the entire application; instead, they should deliver actionable author-facing diagnostics directly in the rendered page.

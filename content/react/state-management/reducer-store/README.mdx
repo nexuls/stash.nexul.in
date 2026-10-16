@@ -1,6 +1,6 @@
 ---
-title: Reducer Store
-description: A dependency-free store built from useReducer, context splitting, and useSyncExternalStore.
+title: Reducer store
+description: A store with no dependencies, built from useReducer, split contexts and useSyncExternalStore.
 date: 2026-10-11
 tags:
   - react
@@ -8,11 +8,11 @@ tags:
   - context
 ---
 
-# Reducer Store
+# Reducer store
 
-Most applications reaching for a state library need three things: a typed reducer, a stable dispatch, and subscriptions that do not re-render every consumer. React provides all three.
+An application reaching for a state library usually needs a typed reducer, a stable dispatch, and subscriptions that do not re-render every consumer. React already has all three.
 
-## Typed Reducer
+## Typed reducer
 
 ```typescript
 type Action =
@@ -42,11 +42,11 @@ export function reduce(state: State, action: Action): State {
 }
 ```
 
-An exhaustive `switch` over a discriminated union means a new action type is a type error until it is handled.
+An exhaustive `switch` over a discriminated union makes a new action type a type error until something handles it.
 
-## Splitting Context
+## Splitting the context
 
-Put state and dispatch in separate contexts. Components that only dispatch then never re-render when state changes:
+Put state and dispatch in separate contexts. A component that only dispatches then never re-renders when the state changes:
 
 ```tsx
 <StateContext.Provider value={state}>
@@ -54,11 +54,11 @@ Put state and dispatch in separate contexts. Components that only dispatch then 
 </StateContext.Provider>
 ```
 
-`dispatch` is referentially stable across renders, so its context never invalidates.
+`dispatch` keeps the same reference across renders, so its context never invalidates.
 
-## Selector Subscriptions
+## Selector subscriptions
 
-Context delivers the whole value to every consumer. When that becomes the bottleneck, move the state into an external store and subscribe with selectors:
+Context hands the whole value to every consumer. When that becomes the bottleneck, move the state into an external store and subscribe through selectors:
 
 ```typescript
 const filter = useSyncExternalStore(
@@ -68,14 +68,14 @@ const filter = useSyncExternalStore(
 );
 ```
 
-The third argument is the server snapshot; omitting it breaks hydration.
+The third argument is the server snapshot. Leave it out and hydration breaks.
 
-## When To Reach For A Library
+## When to reach for a library
 
-Adopt a library when you need middleware, devtools time-travel, or cross-tab persistence out of the box. Do not adopt one to avoid writing a reducer.
+Adopt one when you need middleware, devtools time-travel or cross-tab persistence without writing it. Do not adopt one to avoid writing a reducer.
 
-## Related Entries
+## Related entries
 
-- [Headless Data Table](/stash/react/components/data-table) — Consumes the filter and selection slices above.
-- [Toast Notification Stack](/stash/react/components/toast-stack) — A second reducer over the same store shape.
-- [Type-Safe Result Pattern](/stash/typescript/patterns/result-type) — Model async action outcomes explicitly.
+- [Headless data table](/stash/react/components/data-table). Consumes the filter and selection slices above.
+- [Toast notification stack](/stash/react/components/toast-stack). A second reducer over the same store shape.
+- [Type-safe result pattern](/stash/typescript/patterns/result-type). Models the outcome of an async action.

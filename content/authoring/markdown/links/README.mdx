@@ -10,20 +10,20 @@ tags:
 
 # Links
 
-An archive is worth keeping only if its cross-references stay true, so every
-link an entry writes is resolved at build time. A link to a route, an anchor or
-an adjacent file that does not exist fails the build with the file and the line
-rather than rotting quietly.
+An archive is worth keeping only if its cross-references stay true, so the
+build resolves every link an entry writes. A link to a route, an anchor or an
+adjacent file that does not exist fails the build and names the file and the
+line, instead of breaking silently for a reader a year later.
 
 ## The four kinds
 
-- **Internal route** — a canonical path under `/stash/`, routed client-side:
+- **Internal route.** A canonical path under `/stash/`, routed client-side:
   [useDebounce](/stash/react/hooks/use-debounce).
-- **Heading anchor** — a section of another entry, checked against that
+- **Heading anchor.** A section of another entry, checked against that
   document's heading slugs:
   [Command menu keyboard navigation](/stash/react/components/command-menu#keyboard-navigation).
-- **In-document anchor** — a section of this page: [the four kinds](#the-four-kinds).
-- **External** — anything off the site, which opens in a new tab with the usual
+- **In-document anchor.** A section of this page: [the four kinds](#the-four-kinds).
+- **External.** Anything off the site, which opens in a new tab with the usual
   `rel` guards: [MDN](https://developer.mozilla.org).
 
 ## Relative paths
@@ -36,7 +36,7 @@ is compiled, and validated like any other internal link.
 ## Adjacent files
 
 A path beginning `./` points at a file in the entry's own directory, which is
-served as-is rather than rendered — a link whose target is `./use-debounce.ts`
+served as-is rather than rendered. A link whose target is `./use-debounce.ts`
 resolves to the file beside the document. Such a link only works from that one
 document, so a file worth referring to from elsewhere is quoted rather than
 linked. See [Adjacent files](/stash/authoring/assets/adjacent-files).

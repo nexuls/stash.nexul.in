@@ -31,9 +31,9 @@ export type SiteConfig = z.infer<typeof siteConfigSchema>;
 
 export const siteConfig = siteConfigSchema.parse({
   name: "Stash",
-  title: "Stash — Personal Engineering Archive",
+  title: "Stash, a personal engineering archive",
   description:
-    "Arif Sardar's personal, searchable archive of reusable engineering work, code patterns, architecture notes, and solutions.",
+    "Arif Sardar's searchable archive of reusable engineering work: code patterns, architecture notes and problems already solved once.",
   url: "https://stash.nexul.in",
   author: {
     name: "Arif Sardar",

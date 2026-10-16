@@ -122,7 +122,7 @@ describe("Documentation Pager (DocsPager)", () => {
       />,
     );
 
-    expect(html).toContain("See Also &amp; Related Notes");
+    expect(html).toContain("Related entries");
     for (const rel of otherEntries.slice(0, 2)) {
       expect(html).toContain(rel.title);
     }

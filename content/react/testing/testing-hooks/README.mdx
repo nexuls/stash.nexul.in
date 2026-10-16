@@ -1,6 +1,6 @@
 ---
-title: Testing Custom Hooks
-description: Test hook behavior through a host component and real timers rather than asserting on internals.
+title: Testing custom hooks
+description: Test a hook through a host component and controlled timers rather than asserting on its internals.
 date: 2026-10-10
 tags:
   - react
@@ -8,11 +8,11 @@ tags:
   - hooks
 ---
 
-# Testing Custom Hooks
+# Testing custom hooks
 
-A hook has no public surface of its own, so tests exercise it through a component and assert on what that component renders or calls.
+A hook has no interface of its own, so a test drives it through a component and asserts on what that component renders or calls.
 
-## Minimal Host Component
+## A minimal host component
 
 ```tsx
 import { render, screen } from "@testing-library/react";
@@ -24,9 +24,9 @@ function Host({ value }: { value: string }) {
 }
 ```
 
-## Controlling Time
+## Controlling time
 
-Fake timers keep debounce and throttle tests fast and deterministic:
+Fake timers keep a debounce or throttle test fast and deterministic:
 
 ```typescript
 it("holds the previous value until the delay elapses", async () => {
@@ -41,13 +41,13 @@ it("holds the previous value until the delay elapses", async () => {
 });
 ```
 
-Always restore real timers in an `afterEach`; a leaked fake clock turns unrelated async tests into silent timeouts.
+Restore real timers in an `afterEach`. A leaked fake clock turns an unrelated async test into a timeout with no explanation.
 
-## What Not To Assert
+## What not to assert
 
-Do not assert on effect call counts or render counts. Both change when React's scheduling changes, which makes the test a maintenance liability rather than a safety net.
+Do not assert on effect call counts or render counts. Both change when React changes its scheduling, so the test fails on an upgrade that broke nothing.
 
-## Related Entries
+## Related entries
 
-- [useDebounce Hook](/stash/react/hooks/use-debounce) — The hook under test above.
-- [Component Contracts](/stash/react/testing/component-contracts) — Choosing what a component test should guarantee.
+- [useDebounce hook](/stash/react/hooks/use-debounce). The hook under test above.
+- [Component contracts](/stash/react/testing/component-contracts). Choosing what a component test should guarantee.

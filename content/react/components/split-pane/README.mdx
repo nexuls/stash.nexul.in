@@ -1,6 +1,6 @@
 ---
-title: Resizable Split Pane
-description: A two-pane layout with a keyboard-accessible drag separator and persisted pane sizes.
+title: Resizable split pane
+description: A two-pane layout with a drag separator that works from the keyboard, and pane sizes that persist.
 date: 2026-10-08
 tags:
   - react
@@ -9,13 +9,13 @@ tags:
   - accessibility
 ---
 
-# Resizable Split Pane
+# Resizable split pane
 
-Two panes divided by a draggable separator that is fully operable from the keyboard and remembers its position between sessions.
+Two panes divided by a draggable separator. The separator works from the keyboard and remembers its position between sessions.
 
-## Separator Semantics
+## Separator semantics
 
-The separator is a `separator` role with the window-splitter pattern's required attributes:
+The separator takes the `separator` role and the attributes the window-splitter pattern requires:
 
 ```tsx
 <div
@@ -30,16 +30,16 @@ The separator is a `separator` role with the window-splitter pattern's required 
 />
 ```
 
-## Keyboard Controls
+## Keyboard controls
 
-- `ArrowLeft` / `ArrowRight`: Move the separator by one step.
-- `Shift` + arrow: Move by a coarse step.
-- `Home` / `End`: Jump to the configured minimum or maximum.
-- `Enter`: Collapse the leading pane, or restore it if already collapsed.
+- `ArrowLeft` and `ArrowRight` move the separator by one step.
+- `Shift` with an arrow moves it by a coarse step.
+- `Home` and `End` jump to the configured minimum or maximum.
+- `Enter` collapses the leading pane, or restores it if it is already collapsed.
 
-## Pointer Dragging
+## Pointer dragging
 
-Use pointer capture rather than document-level listeners so the drag survives the cursor leaving the element:
+Use pointer capture rather than document-level listeners, so the drag continues when the cursor leaves the element:
 
 ```typescript
 function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -47,9 +47,9 @@ function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
 }
 ```
 
-Write the resulting size to a CSS custom property instead of React state during the drag; re-rendering both panes on every pointer move is what makes hand-rolled splitters feel sluggish.
+During the drag, write the size to a CSS custom property rather than React state. React state re-renders both panes on every pointer move, which drops frames.
 
-## Related Entries
+## Related entries
 
-- [useLocalStorage Hook](/stash/react/hooks/use-local-storage) — Persists the separator position.
-- [useMediaQuery Hook](/stash/react/hooks/use-media-query) — Collapse to a single stacked column on narrow viewports.
+- [useLocalStorage hook](/stash/react/hooks/use-local-storage). Persists the separator position.
+- [useMediaQuery hook](/stash/react/hooks/use-media-query). Collapses the panes into one stacked column on a narrow viewport.

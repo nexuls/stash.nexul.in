@@ -259,7 +259,7 @@ export async function getEntryBySlug(
 
 /**
  * Returns the index entries that open each category, keyed by category path
- * (e.g. `react`). Categories without a `home` directory simply have no entry.
+ * (e.g. `react`). A category without a `home` directory has no entry page.
  */
 export async function getCategoryIndexes(
   options: EntryFilterOptions = {},

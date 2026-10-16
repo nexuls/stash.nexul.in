@@ -56,8 +56,8 @@ export async function generateMetadata({
 
   if (!entry) {
     return {
-      title: "Entry Not Found",
-      description: "The requested documentation entry could not be found.",
+      title: "Entry not found",
+      description: "No entry answers at this path.",
     };
   }
 

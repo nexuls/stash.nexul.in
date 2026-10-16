@@ -344,7 +344,7 @@ export function DocsSidebar({ entries, categoryIndexPaths }: DocsSidebarProps) {
                 <p className="text-xs text-muted-foreground">
                   Nothing in{" "}
                   <span className="font-mono">{activeDomain?.slug}</span>{" "}
-                  matches “{query.trim()}”.
+                  matches "{query.trim()}".
                 </p>
 
                 {otherDomainMatches.length > 0 && (

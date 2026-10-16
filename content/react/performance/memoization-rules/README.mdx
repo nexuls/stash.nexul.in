@@ -1,6 +1,6 @@
 ---
-title: Memoization Rules
-description: A decision procedure for memo, useMemo, and useCallback that avoids caching for its own sake.
+title: Memoization rules
+description: A decision procedure for memo, useMemo and useCallback that avoids caching for its own sake.
 date: 2026-10-09
 tags:
   - react
@@ -8,32 +8,32 @@ tags:
   - memoization
 ---
 
-# Memoization Rules
+# Memoization rules
 
 Memoization is a cache, and every cache costs memory plus a comparison on each render. These rules decide when that trade is worth making.
 
-## Measure First
+## Measure first
 
-Open the React Profiler and confirm three things before adding a `memo`: the component actually re-renders, the re-render is actually slow, and the slowness is actually visible. Most suspected re-render problems are a single expensive child, not a broad cascade.
+Open the React Profiler and confirm three things before adding a `memo`. The component re-renders, the re-render is slow, and the slowness shows on screen. Most suspected re-render problems turn out to be one expensive child rather than a cascade.
 
-## The Rules
+## The rules
 
-1. **Restructure before you memoize.** Moving state down or lifting content up removes re-renders outright instead of making them cheaper.
-2. **`useMemo` is for expensive computation or referential stability**, not for arithmetic. Memoizing `a + b` costs more than recomputing it.
-3. **`useCallback` only matters when the consumer compares.** Passing a handler to a plain DOM element gains nothing.
-4. **`memo` requires stable props.** A memoized component receiving a fresh object literal re-renders every time and now also pays for the comparison.
-5. **Memoize the whole subtree or none of it.** A memo boundary with an unstable prop somewhere inside is pure overhead.
+1. **Restructure before you memoize.** Moving state down or lifting content up removes the re-render instead of making it cheaper.
+2. **`useMemo` is for expensive computation or a stable reference**, not for arithmetic. Memoizing `a + b` costs more than recomputing it.
+3. **`useCallback` matters only when the consumer compares.** A handler passed to a plain DOM element gains nothing.
+4. **`memo` needs stable props.** A memoized component handed a fresh object literal re-renders every time, and now pays for the comparison too.
+5. **Memoize the whole subtree or none of it.** A memo boundary with one unstable prop inside it is overhead and nothing else.
 
-## Common Anti-Pattern
+## A common mistake
 
 ```tsx
-// Pointless: the object literal defeats the memo on every render.
+// The object literal is new on every render, so the memo never matches.
 <ExpensiveChart config={{ height: 320 }} data={rows} />
 ```
 
-Hoist the config to a module constant, or memoize it alongside whatever produced `rows`.
+Hoist the config to a module constant, or memoize it beside whatever produced `rows`.
 
-## Related Entries
+## Related entries
 
-- [List Virtualization](/stash/react/performance/list-virtualization) — When the fix is rendering less, not caching more.
-- [Render Props](/stash/react/patterns/render-props) — Inline function children and memo boundaries interact badly.
+- [List virtualization budget](/stash/react/performance/list-virtualization). For when the fix is rendering less rather than caching more.
+- [Render props](/stash/react/patterns/render-props). An inline function child defeats a memo boundary.

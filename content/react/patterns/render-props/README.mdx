@@ -1,6 +1,6 @@
 ---
-title: Render Props
-description: Pass rendering control to the caller through a function child, and when a hook is the better answer.
+title: Render props
+description: Hand rendering control to the caller through a function child, and when a hook is the better answer.
 date: 2026-10-03
 tags:
   - react
@@ -8,11 +8,11 @@ tags:
   - composition
 ---
 
-# Render Props
+# Render props
 
-A component accepts a function and calls it with its internal state, letting the caller decide what to render.
+A component takes a function and calls it with its internal state, so the caller decides what to render.
 
-## The Pattern
+## The pattern
 
 ```tsx
 <Toggle>
@@ -24,21 +24,21 @@ A component accepts a function and calls it with its internal state, letting the
 </Toggle>
 ```
 
-## When A Hook Is Better
+## When a hook is better
 
-For pure state logic with no markup of its own, a hook is simpler and avoids the nesting that render props accumulate:
+For state logic with no markup of its own, a hook is shorter and avoids the nesting that render props pile up:
 
 ```tsx
 const { on, toggle } = useToggle();
 ```
 
-Render props remain the right answer when the component must render something itself — a measurement wrapper, a virtualized container, a portal boundary — and only delegates part of the output.
+Render props are still the right answer when the component renders something itself, such as a measurement wrapper, a virtualized container or a portal boundary, and delegates only part of the output.
 
-## Avoiding Needless Re-Renders
+## Avoiding needless re-renders
 
-An inline function child is a new reference on every render, so the wrapper cannot be memoized against it. If the wrapper is expensive, hoist the function or move to a hook.
+An inline function child is a new reference on every render, so `memo` on the wrapper never matches. If the wrapper is expensive, hoist the function out or move to a hook.
 
-## Related Entries
+## Related entries
 
-- [Compound Components](/stash/react/patterns/compound-components) — Preferable when the caller needs structure rather than values.
-- [Virtual List](/stash/react/components/virtual-list) — A legitimate render-prop use: the container measures, the caller renders rows.
+- [Compound components](/stash/react/patterns/compound-components). Better when the caller needs structure rather than values.
+- [Virtual list](/stash/react/components/virtual-list). A render prop that earns its place, because the container measures and the caller renders the rows.

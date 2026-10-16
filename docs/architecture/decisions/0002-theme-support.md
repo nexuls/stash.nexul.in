@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Stash is Arif Sardar's personal engineering archive. As technical documentation and reference material, it is read and authored across varied environments — from dark IDEs and terminals to well-lit reading situations. A single static color mode would compromise readability in one of these settings.
+Stash is Arif Sardar's personal engineering archive. As technical documentation and reference material, it is read and authored in a dark IDE, in a terminal, and on a bright screen in daylight. One fixed colour mode makes it harder to read in at least one of those.
 
 ## Decision
 

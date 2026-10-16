@@ -2,7 +2,7 @@
 
 This document records what has been decided, built, and verified. Update it whenever an architectural decision is approved or a milestone is reached.
 
-## Current milestone: Stage 3.6 (Landing page) — Completed
+## Current milestone: Stage 3.6 (Landing page), completed
 
 ### 1. Stage 1: Content foundation (Completed)
 - Filesystem content system implemented under `content/` and `lib/content/` (`types.ts`, `parser.ts`, `assets.ts`, `discovery.ts`, `validator.ts`) with strict Zod validation.
@@ -12,7 +12,7 @@ This document records what has been decided, built, and verified. Update it when
 
 ### 2. Stage 2: MDX and code presentation (Completed)
 - MDX engine integration:
-  - Selected and installed `next-mdx-remote-client` (v2.1+) as the modern drop-in successor to deprecated `next-mdx-remote`, fully compatible with Next.js 16 (React 19) and React Server Components (RSC).
+  - Selected and installed `next-mdx-remote-client` (v2.1+) as the drop-in successor to the deprecated `next-mdx-remote`. It works with Next.js 16 (React 19) and React Server Components.
   - Server-side evaluator and renderer implemented in `lib/mdx/renderer.tsx` (`renderMdx` and `<MDXRenderer />`).
 - Syntax highlighting and code presentation:
   - Integrated `rehype-pretty-code` and `shiki` dual themes (`github-light` and `github-dark`) configured in `lib/mdx/options.ts` and styled in `app/globals.css`.
@@ -115,7 +115,7 @@ Recorded in [ADR-0006](architecture/decisions/0006-landing-page-as-archive-index
 - Motion: a canvas draws contour lines of a slowly drifting field behind the hero, at 30fps, stopped while off-screen or on a hidden tab, capped at 2× backing store, re-reading its colour on theme change, and reduced to a single still frame under `prefers-reduced-motion`. Nothing else on the page animates.
 - The field runs behind the header: `main` is pulled up by the header's height and the hero adds it back as padding, so the hero's box starts at the top of the document. The header's backdrop is transparent at rest and solidifies over the first 10rem of scroll.
   - The page scrolls inside a shadcn `ScrollArea` rather than the document, matching the documentation pages, so everything scroll-reactive reads that container. `lib/dom/scroll-parent.ts` resolves it and is now shared with `DocsToc`, which had its own copy.
-  - Two drivers for one ramp: a CSS scroll timeline (`.stash-header-backdrop` in `app/globals.css`) where scroll timelines exist, and `components/landing/header-backdrop.tsx` — the header's only Client Component — where they do not. Firefox 156 reports `CSS.supports('animation-timeline: scroll()') === false`, so the `@supports` block is skipped there and the listener takes over. The component detects which case it is in from `element.getAnimations()` (a scroll-driven animation is never on the document timeline), because a browser can parse the property without running the animation.
+  - Two drivers for one ramp: a CSS scroll timeline (`.stash-header-backdrop` in `app/globals.css`) where scroll timelines exist, and `components/landing/header-backdrop.tsx`, the header's only Client Component, where they do not. Firefox 156 reports `CSS.supports('animation-timeline: scroll()') === false`, so the `@supports` block is skipped there and the listener takes over. The component detects which case it is in from `element.getAnimations()` (a scroll-driven animation is never on the document timeline), because a browser can parse the property without running the animation.
   - Dashed guides (`components/landing/page-guides.tsx`) run the full height of the content column, with section rules and category dividers dashed to match; content rows keep solid rules, so dashed always means structure. Hidden below `sm`, where they would sit on the viewport edge.
   - Transparent is the resting state, so neither driver has a solid first paint to undo; a `noscript` rule pins the backdrop solid when no script runs at all. Verified in Chromium and in Firefox 156 over WebDriver BiDi, both before and after the move into a `ScrollArea`: both ramp 0 → 0.25 → 0.5625 → 1 across the same scroll offsets of the container, and in Chromium the component leaves the element's inline style untouched.
 - The landing page no longer shows a ⌘K control that nothing listens for; the documentation pages keep theirs, wired for Stage 5.

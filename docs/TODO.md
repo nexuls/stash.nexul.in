@@ -23,7 +23,7 @@
 - [x] Create stable `/stash/[...slug]` routes derived from discovered entries.
 - [x] Add a documentation page layout with semantic landmarks, breadcrumbs, heading anchors, and a table of contents.
 - [x] Add category navigation derived from directories without a hard-coded taxonomy.
-- [x] Add previous/next navigation, directory-aware related content, and a restrained “see also” experience.
+- [x] Add previous/next navigation, directory-aware related content, and a restrained "see also" experience.
 - [x] Implement responsive navigation for phone, tablet, and desktop.
 - [x] Add a useful `not-found` experience for invalid content URLs.
 
@@ -31,7 +31,7 @@
 
 - [ ] Create the Stash homepage at `/` emphasizing engineering references and fast search.
 - [ ] Implement light and dark themes using semantic colors and high-contrast tokens.
-- [ ] Add layout-level search entry points and an easily discoverable keyboard-friendly trigger.
+- [ ] Add layout-level search entry points and a keyboard trigger a reader can find.
 - [ ] Add category overviews or directory-based collection pages where helpful.
 - [ ] Ensure the overall visual system feels like Arif Sardar's personal engineering library.
 

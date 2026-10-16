@@ -1,6 +1,6 @@
 ---
 title: Code panels
-description: What every fenced block becomes — a titled panel with a file icon, line numbers, soft wrap, copy and collapse.
+description: What every fenced block becomes, which is a titled panel with a file icon, line numbers, soft wrap, copy and collapse.
 date: 2026-10-16
 tags:
   - authoring
@@ -12,8 +12,7 @@ tags:
 
 A fenced code block is rendered as a panel rather than a bare `<pre>`. The
 header reports what the block is, and the controls on it are the three things a
-reader actually does with code on a page: wrap it, copy it, or get it out of the
-way.
+reader does with code on a page: wrap it, copy it, or get it out of the way.
 
 Highlighting happens while the document is compiled, with a light and a dark
 theme emitted together, so no syntax highlighter ships to the browser and
@@ -68,7 +67,8 @@ snippet.
 
 Numbers are on by default and drawn with CSS counters, so they are never part of
 what the copy button puts on the clipboard. Turn them off with `noLineNumbers`
-where they would be noise — a single command, or output that is really prose:
+where they would be noise, such as a single command or output that is really
+prose:
 
 ```bash noLineNumbers
 bun run dev

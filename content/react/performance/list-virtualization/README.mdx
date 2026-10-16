@@ -1,6 +1,6 @@
 ---
-title: List Virtualization Budget
-description: Decide when windowing is worth its complexity using node counts and measured frame budgets.
+title: List virtualization budget
+description: Decide when windowing is worth its complexity, using node counts and a measured frame budget.
 date: 2026-10-09
 tags:
   - react
@@ -8,34 +8,34 @@ tags:
   - virtualization
 ---
 
-# List Virtualization Budget
+# List virtualization budget
 
-Windowing is a real complexity cost — broken `Ctrl+F`, harder accessibility, scroll anchoring bugs. This entry is the threshold test for paying it.
+Windowing costs real complexity. It breaks `Ctrl+F`, it makes accessibility harder, and it introduces scroll anchoring bugs. This entry is the threshold test for paying that.
 
-## Node Budget
+## Node budget
 
-A rough working budget for a smooth list on mid-range hardware:
+A working budget for a list that scrolls smoothly on mid-range hardware:
 
-- Under 100 rows: render everything. Windowing is premature.
-- 100 to 1,000 rows: render everything, but keep per-row DOM under roughly 10 nodes.
-- Over 1,000 rows, or over 10 nodes per row: window it.
+- Under 100 rows, render everything. Windowing is premature.
+- Between 100 and 1,000 rows, render everything, and keep each row under about 10 DOM nodes.
+- Over 1,000 rows, or over 10 nodes per row, window it.
 
-## Measuring Instead of Guessing
+## Measuring instead of guessing
 
-Record a performance trace while scrolling and look at two numbers: the longest task during scroll and the recalculate-style duration. If the longest task stays under 16ms, the list is fine no matter how many rows it has.
+Record a performance trace while scrolling and read two numbers: the longest task during the scroll, and how long recalculate style took. If the longest task stays under 16ms, the list is fine however many rows it holds.
 
-## What Windowing Costs
+## What windowing costs
 
-- Browser find-in-page only sees rendered rows.
-- Row position must be announced manually via `aria-setsize` and `aria-posinset`.
-- Anchor links into the list need a programmatic scroll rather than a fragment.
-- Variable-height content requires measurement and invalidation.
+- Find-in-page only sees the rendered rows.
+- Each row has to announce its position through `aria-setsize` and `aria-posinset`.
+- An anchor link into the list needs a scroll call rather than a fragment.
+- Variable-height content needs measurement and invalidation.
 
-## Alternatives Worth Trying First
+## Alternatives worth trying first
 
-Pagination, "load more", and collapsing groups all reduce node count without the drawbacks above, and they usually match what users actually want from a long list.
+Pagination, a "load more" button, and collapsing groups each cut the node count without those costs, and they tend to match what a reader wants from a long list.
 
-## Related Entries
+## Related entries
 
-- [Virtual List](/stash/react/components/virtual-list) — The implementation to reach for once the budget is exceeded.
-- [useIntersectionObserver Hook](/stash/react/hooks/use-intersection-observer) — Backs the "load more" alternative.
+- [Virtual list](/stash/react/components/virtual-list). The implementation to reach for once the budget is exceeded.
+- [useIntersectionObserver hook](/stash/react/hooks/use-intersection-observer). Drives the "load more" alternative.

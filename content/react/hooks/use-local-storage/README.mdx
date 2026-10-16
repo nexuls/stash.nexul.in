@@ -1,6 +1,6 @@
 ---
-title: useLocalStorage Hook
-description: A state hook that mirrors its value into localStorage with safe hydration and cross-tab synchronization.
+title: useLocalStorage hook
+description: A state hook that mirrors its value into localStorage, with safe hydration and cross-tab synchronization.
 date: 2026-10-04
 tags:
   - react
@@ -8,17 +8,17 @@ tags:
   - persistence
 ---
 
-# useLocalStorage Hook
+# useLocalStorage hook
 
-Persists a piece of React state into `localStorage` so it survives reloads, while remaining safe to render on the server.
+Keeps a piece of React state in `localStorage` so it survives a reload, and stays safe to render on the server.
 
 ## Overview
 
-A naive implementation reads `window.localStorage` during the initial render, which breaks server rendering and causes hydration mismatches. This version defers the read to an effect and keeps a lazy initializer for the client-only case.
+Reading `window.localStorage` during the first render breaks server rendering and causes a hydration mismatch. This version reads in an effect instead, and keeps a lazy initializer for the client-only case.
 
 ## Implementation
 
-The implementation lives beside this guide in [`use-local-storage.ts`](./use-local-storage.ts):
+The implementation sits beside this guide in [`use-local-storage.ts`](./use-local-storage.ts):
 
 ```typescript
 import { useCallback, useEffect, useState } from "react";
@@ -53,7 +53,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 }
 ```
 
-## Cross-Tab Synchronization
+## Cross-tab synchronization
 
 The `storage` event fires in every other tab of the same origin, which makes it a cheap synchronization channel:
 
@@ -72,11 +72,11 @@ useEffect(() => {
 
 ## Caveats
 
-- Values must be JSON-serializable; `Date` and `Map` require a custom reviver.
-- Writes are synchronous and block the main thread, so avoid storing large payloads.
-- Private browsing modes may throw on write even when reads succeed.
+- A value must be JSON-serializable. `Date` and `Map` need a custom reviver.
+- A write is synchronous and blocks the main thread, so keep payloads small.
+- A private browsing window may throw on a write even when reads succeed.
 
-## Related Entries
+## Related entries
 
-- [useEventListener Hook](/stash/react/hooks/use-event-listener) — The underlying subscription pattern used for `storage` events.
-- [Reducer Store Pattern](/stash/react/state-management/reducer-store) — Persist an entire store slice instead of a single value.
+- [useEventListener hook](/stash/react/hooks/use-event-listener). The subscription pattern underneath the `storage` listener.
+- [Reducer store](/stash/react/state-management/reducer-store). Persists a whole store slice instead of one value.

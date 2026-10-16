@@ -10,8 +10,8 @@ tags:
 
 # Terminals and diffs
 
-Two fence languages are treated as more than syntax, because what the reader
-does with them is different: a terminal block is typed, and a diff block is
+Two fence languages are treated as more than syntax, because the reader does
+something different with each. A terminal block is typed, and a diff block is
 applied.
 
 ## Terminal blocks
@@ -26,9 +26,9 @@ bun run validate:content
 bun run dev
 ```
 
-Keep the commands and nothing else: no `$` prompt, since the reader copies the
-block and a prompt breaks the paste. Where output matters, show it as its own
-`text` block rather than mixing it into the commands.
+Keep the commands and nothing else. Leave out the `$` prompt, because the reader
+copies the block and a prompt breaks the paste. Where output matters, show it as
+its own `text` block rather than mixing it into the commands.
 
 ```bash noLineNumbers
 bun run validate:content

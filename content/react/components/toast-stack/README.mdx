@@ -1,6 +1,6 @@
 ---
-title: Toast Notification Stack
-description: An accessible, queue-backed toast region with pause-on-hover and predictable dismissal order.
+title: Toast notification stack
+description: An accessible, queue-backed toast region with pause-on-hover and a predictable dismissal order.
 date: 2026-10-05
 tags:
   - react
@@ -9,17 +9,17 @@ tags:
   - notifications
 ---
 
-# Toast Notification Stack
+# Toast notification stack
 
-A single live region renders a bounded queue of transient messages, so concurrent notifications never trample each other.
+One live region renders a bounded queue of transient messages, so two notifications raised at once do not overwrite each other.
 
 ## Overview
 
-Toasts are easy to get wrong in three ways: they announce nothing to assistive technology, they stack without a limit, and they disappear while the user is reading them. This implementation addresses all three.
+Toasts usually fail in the same few ways. They announce nothing to assistive technology, they stack without a limit, and they disappear while the reader is still reading. This implementation fixes each one.
 
-## Live Region
+## Live region
 
-The container is rendered once, high in the tree, with the correct ARIA roles:
+The container renders once, high in the tree, with the ARIA roles it needs:
 
 ```tsx
 <ol
@@ -34,11 +34,11 @@ The container is rendered once, high in the tree, with the correct ARIA roles:
 </ol>
 ```
 
-Errors should use `aria-live="assertive"` in a second region, since polite announcements wait for a pause in speech.
+Put errors in a second region with `aria-live="assertive"`, because a polite announcement waits for a pause in speech.
 
-## Queue Behavior
+## Queue behavior
 
-The reducer caps visible toasts and holds the overflow:
+The reducer caps the visible toasts and holds the overflow:
 
 ```typescript
 const VISIBLE_LIMIT = 3;
@@ -55,11 +55,11 @@ function reduce(state: Toast[], action: ToastAction): Toast[] {
 }
 ```
 
-## Pause On Hover
+## Pause on hover
 
-Auto-dismiss timers pause on `pointerenter` and on focus within the region. Without this, a toast containing an action button is unusable by keyboard.
+The auto-dismiss timer pauses on `pointerenter` and on focus inside the region. Without that pause, a keyboard user cannot reach the action button inside a toast before it closes.
 
-## Related Entries
+## Related entries
 
-- [Reducer Store Pattern](/stash/react/state-management/reducer-store) — The store shape backing the toast queue.
-- [useEventListener Hook](/stash/react/hooks/use-event-listener) — Pause timers when the document loses visibility.
+- [Reducer store](/stash/react/state-management/reducer-store). The store shape behind the toast queue.
+- [useEventListener hook](/stash/react/hooks/use-event-listener). Pauses the timers when the document loses visibility.

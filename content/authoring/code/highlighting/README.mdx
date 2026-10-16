@@ -10,9 +10,9 @@ tags:
 
 # Line and token highlighting
 
-A snippet is usually shown for two or three of its lines; the rest is there so
-those lines make sense. Highlighting says which is which, and saves a paragraph
-that would otherwise have to count lines out loud.
+A snippet is usually shown for two or three of its lines, and the rest is there
+so those lines make sense. Highlighting says which is which, and saves a
+paragraph that would otherwise have to count the lines out for the reader.
 
 ## Line ranges
 
@@ -46,8 +46,8 @@ too long rather than under-marked.
 
 Quote a word on the fence and every occurrence of it is marked, wherever it
 appears. This is the better tool when the subject is an identifier rather than a
-place — a reader following `useCallback` through a file does not care which line
-it is on:
+place. A reader following `useCallback` through a file does not care which line
+it sits on:
 
 ```typescript title="hooks/use-toggle.ts" "boolean" "useCallback"
 import { useCallback, useState } from "react";
@@ -64,8 +64,8 @@ export function useToggle(
 
 ## Both at once
 
-Ranges and tokens combine, and the marks are distinguishable: the range tints
-the line, the token outlines the word.
+Ranges and tokens combine, and the two marks look different. The range tints the
+line, and the token outlines the word.
 
 ```typescript title="lib/content/validate.ts" {6-8} "permalink"
 export function checkLinks(entries: ContentEntry[]): string[] {
@@ -83,6 +83,6 @@ export function checkLinks(entries: ContentEntry[]): string[] {
 }
 ```
 
-Highlighting is decoration to a screen reader, so the surrounding prose still
-has to name what was marked. The marks make the prose quicker to follow; they do
-not replace it.
+Highlighting is decoration to a screen reader, so the prose around the block
+still has to name what was marked. The marks make that prose quicker to follow,
+and do not replace it.
