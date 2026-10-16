@@ -1,0 +1,35 @@
+---
+title: OpenTUI
+description: Notes from building terminal interfaces with OpenTUI — what the renderer gives you, what it leaves to you, and where it has to be patched.
+date: 2026-10-02
+updated: 2026-10-17
+tags:
+  - opentui
+  - terminal
+  - react
+---
+
+# OpenTUI
+
+[OpenTUI](https://github.com/sst/opentui) renders a component tree into a
+terminal: a layout and paint engine in `@opentui/core`, with framework
+renderers (`@opentui/react` among them) on top. Writing against it is React
+work with the browser's guarantees removed — no CSS, no subpixels, no
+accessibility tree, one font metric, and a canvas that is a grid of cells the
+user can resize mid-frame.
+
+These notes are what that cost me. Each one is written from something that ran,
+and says where the approach stops working.
+
+## How this is organised
+
+- **patches**, the rough edges: what breaks, the workaround, and the condition
+  under which the workaround can be deleted.
+- **features**, behaviour worth building once — input, focus, layout,
+  rendering — and the terminal realities it has to survive.
+- **components**, reusable pieces, each with the composition and keyboard model
+  it assumes.
+
+A note earns its place here when the answer took longer to find than it takes
+to read. Where OpenTUI's own documentation already says it plainly, these notes
+link to it instead of repeating it.
