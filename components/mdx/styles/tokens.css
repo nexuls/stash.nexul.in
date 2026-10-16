@@ -14,7 +14,7 @@
      foreground, so the pair tracks the theme from one declaration.
      Both stay well inside WCAG AAA: 11.7:1 light, 12.7:1 dark, against 19:1
      for emphasis. */
-  --prose: oklch(0.34 0.006 228.8);
+  --prose: oklch(0.345 0.014 78);
   --prose-emphasis: var(--foreground);
 
   /* Callout hues. Tuned around the teal primary rather than taken from a stock
@@ -25,10 +25,10 @@
   --danger: oklch(0.56 0.195 25);
   --highlight: oklch(0.52 0.16 292);
 
-  --code-bg: oklch(0.985 0.002 197.1);
-  --code-header: oklch(0.967 0.003 214.3);
-  --code-rule: oklch(0.915 0.006 214.3);
-  --code-gutter: oklch(0.6 0.015 213.5);
+  --code-bg: oklch(0.962 0.018 92);
+  --code-header: oklch(0.94 0.022 90);
+  --code-rule: oklch(0.89 0.022 88);
+  --code-gutter: oklch(0.58 0.022 82);
   --diff-add: oklch(0.57 0.13 150);
   --diff-del: oklch(0.58 0.19 24);
 }

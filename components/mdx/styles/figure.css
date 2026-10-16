@@ -6,5 +6,5 @@
    authored for a light surface, and SVG text drawn in near-black disappears
    against a dark card. */
 .stash-figure-image {
-  background-color: oklch(0.985 0 0);
+  background-color: oklch(0.985 0.01 92);
 }
