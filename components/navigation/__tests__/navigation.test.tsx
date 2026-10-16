@@ -28,6 +28,7 @@ import {
   getActiveDomain,
   getActiveTrail,
   getNavDomains,
+  toNavCategoryIndexes,
 } from "@/lib/content/nav-tree";
 import type { ContentHeading } from "@/lib/content/types";
 
@@ -135,7 +136,7 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
 
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebar entries={entries} categoryIndexPaths={[]} />
+        <DocsSidebar entries={entries} categoryIndexes={[]} />
       </SidebarProvider>,
     );
 
@@ -155,7 +156,7 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
 
     const html = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebar entries={entries} categoryIndexPaths={[]} />
+        <DocsSidebar entries={entries} categoryIndexes={[]} />
       </SidebarProvider>,
     );
 
@@ -179,8 +180,7 @@ describe("Domain overview row", () => {
       getCategoryIndexes(),
     ]);
     const first = getNavDomains(
-      buildNavTree(entries),
-      categoryIndexes.keys(),
+      buildNavTree(entries, toNavCategoryIndexes(categoryIndexes)),
     )[0];
     if (!first) throw new Error("Expected at least one domain");
 
@@ -188,7 +188,7 @@ describe("Domain overview row", () => {
       <SidebarProvider defaultOpen={true}>
         <DocsSidebar
           entries={entries}
-          categoryIndexPaths={[...categoryIndexes.keys()]}
+          categoryIndexes={toNavCategoryIndexes(categoryIndexes)}
         />
       </SidebarProvider>,
     );
@@ -205,7 +205,7 @@ describe("Domain overview row", () => {
     // No index entry means no domain page, so the row stays out.
     const withoutHome = renderStatic(
       <SidebarProvider defaultOpen={true}>
-        <DocsSidebar entries={entries} categoryIndexPaths={[]} />
+        <DocsSidebar entries={entries} categoryIndexes={[]} />
       </SidebarProvider>,
     );
     expect(withoutHome).not.toContain("Overview");
@@ -249,6 +249,38 @@ describe("Domain derivation (getNavDomains / getActiveDomain)", () => {
     expect(fallback?.homePermalink).toBe(
       findFirstNavEntry(fallback?.nodes ?? [])?.entry.permalink,
     );
+  });
+
+  it("keeps a category that authored a page but holds no note yet", async () => {
+    const [entries, categoryIndexes] = await Promise.all([
+      getAllEntries(),
+      getCategoryIndexes(),
+    ]);
+    const seeded = buildNavTree(entries, toNavCategoryIndexes(categoryIndexes));
+
+    // Derived from notes alone, a category with none of them is invisible.
+    const fromNotesOnly = getNavDomains(buildNavTree(entries));
+    expect(fromNotesOnly.some((domain) => domain.slug === "opentui")).toBe(
+      false,
+    );
+
+    const domains = getNavDomains(seeded);
+    const opentui = domains.find((domain) => domain.slug === "opentui");
+    expect(opentui?.hasHomePage).toBe(true);
+    expect(opentui?.homePermalink).toBe("/stash/opentui");
+    expect(opentui?.entryCount).toBe(0);
+
+    // Its own empty categories are there too, each pointing at its page and
+    // keeping the place its directory number asks for.
+    expect(
+      opentui?.nodes.map((node) =>
+        node.kind === "group" ? [node.id, node.homePermalink] : [node.id, null],
+      ),
+    ).toEqual([
+      ["opentui/patches", "/stash/opentui/patches"],
+      ["opentui/features", "/stash/opentui/features"],
+      ["opentui/components", "/stash/opentui/components"],
+    ]);
   });
 
   it("resolves the active domain from the route", async () => {

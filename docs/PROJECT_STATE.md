@@ -189,6 +189,16 @@ Recorded in [ADR-0008](architecture/decisions/0008-ordered-directory-prefixes.md
   repository, and the app itself was driven over a pseudo-terminal, which is how
   the clack `box` crash on a zero-width terminal was found and guarded.
 
+### 9. Empty categories are part of the archive
+
+- A category that authored a `home` page is now listed whether or not it holds a note yet. Both listings were derived from notes alone, so a new domain was served at its URL and reachable by nothing: the OpenTUI domain and its three categories existed on disk, built, and appeared in neither the landing page nor the sidebar.
+- `lib/content/nav-tree.ts` takes the category indexes (`buildNavTree(entries, toNavCategoryIndexes(indexes))`) and seeds their groups before placing notes, so a category's own order prefix decides its position rather than the first note that happens to live under it. `NavGroupNode` records `homePermalink`, and `getNavDomains` reads it instead of being told which paths have an index.
+- `lib/content/archive-index.ts` seeds a domain for every top-level category index. A seeded directory with nothing in it is left out of the rendered listing, since it would be a heading over an empty list, but the domain and its page stay.
+- `findCategory(domains, path)` resolves a category at any depth and is what `app/stash/[...slug]/page.tsx` now uses. A nested category page previously looked itself up among the top-level domains, found nothing, and listed none of its notes; `/stash/opentui/patches` is the first category inside a category, which is why that was never noticed.
+- The sidebar's "nothing matches" state is now reserved for an active filter; a domain holding no notes showed it with an empty query quoted back. An empty category renders as a link to its page (`EmptyGroupRow`) rather than a collapsible that opens onto nothing.
+- `lib/icons/domain-icons.ts` resolves `tui`/`terminal` to the Lucide terminal mark, so OpenTUI is not a plain folder in the switcher.
+- Verification: new tests in `lib/content/__tests__/archive-index.test.ts` (`findCategory`, the seeded domain) and `components/navigation/__tests__/navigation.test.tsx` (seeding, ordering, `homePermalink`); `bun x tsc --noEmit`, `bun x biome check .` and `bun run build` clean, with the 17 failures the suite already had unchanged. Checked against the running dev server: the landing page lists OpenTUI, `/stash/opentui` shows its three categories in the sidebar, and each category page is served.
+
 ## Confirmed architecture
 
 - Stash is a personal engineering archive, not a project portfolio.

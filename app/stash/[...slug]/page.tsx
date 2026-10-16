@@ -16,7 +16,7 @@ import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsToc } from "@/components/navigation/docs-toc";
-import { buildArchiveIndex } from "@/lib/content/archive-index";
+import { buildArchiveIndex, findCategory } from "@/lib/content/archive-index";
 import { entryAssetBaseUrl, entryAssetUrl } from "@/lib/content/asset-url";
 import {
   getAllEntries,
@@ -120,10 +120,7 @@ export default async function DocPage({ params }: DocPageProps) {
     const path = entry.categories.join("/");
 
     return (
-      <CategoryView
-        entry={entry}
-        domain={index.domains.find((domain) => domain.path === path)}
-      />
+      <CategoryView entry={entry} domain={findCategory(index.domains, path)} />
     );
   }
 

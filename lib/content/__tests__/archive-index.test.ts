@@ -9,7 +9,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { buildArchiveIndex, filterArchive } from "../archive-index";
+import {
+  buildArchiveIndex,
+  filterArchive,
+  findCategory,
+} from "../archive-index";
 import {
   getAllEntries,
   getAllSlugs,
@@ -21,6 +25,29 @@ import type { ContentEntry } from "../types";
 const entries = await getAllEntries();
 const categoryIndexes = await getCategoryIndexes();
 const index = buildArchiveIndex(entries, categoryIndexes);
+
+describe("findCategory", () => {
+  it("answers with the domain itself for a top-level path", () => {
+    expect(findCategory(index.domains, "react")?.path).toBe("react");
+  });
+
+  it("narrows to one directory for a path inside a domain", () => {
+    const hooks = findCategory(index.domains, "react/hooks");
+
+    expect(hooks?.path).toBe("react/hooks");
+    expect(hooks?.href).toBe("/stash/react/hooks");
+    expect(hooks?.groups.map((group) => group.path)).toEqual(["react/hooks"]);
+    expect(hooks?.noteCount).toBeGreaterThan(0);
+    // The narrowed view holds that directory's notes, not the domain's.
+    const react = findCategory(index.domains, "react");
+    expect(hooks?.noteCount).toBeLessThan(react?.noteCount ?? 0);
+  });
+
+  it("answers undefined for a category that holds no note", () => {
+    expect(findCategory(index.domains, "opentui/patches")).toBeUndefined();
+    expect(findCategory(index.domains, "nothing/here")).toBeUndefined();
+  });
+});
 
 describe("buildArchiveIndex", () => {
   it("counts every discovered note once", () => {
@@ -53,7 +80,20 @@ describe("buildArchiveIndex", () => {
       "react",
       "typescript",
       "authoring",
+      "opentui",
     ]);
+  });
+
+  it("keeps a category that authored a page but holds no note yet", () => {
+    const opentui = index.domains.find((domain) => domain.slug === "opentui");
+
+    expect(opentui).toBeDefined();
+    expect(opentui?.href).toBe("/stash/opentui");
+    expect(opentui?.label).toBe("OpenTUI");
+    // Seeded from its `home` entry, so the summary is the authored one.
+    expect(opentui?.description).toBeTruthy();
+    // A directory with nothing in it is not listed as an empty heading.
+    expect(opentui?.groups.every((group) => group.notes.length > 0)).toBe(true);
   });
 
   it("falls back to the domain holding the most notes when none is numbered", () => {
@@ -63,7 +103,16 @@ describe("buildArchiveIndex", () => {
       order: null,
     }));
 
-    const counts = buildArchiveIndex(stripped, categoryIndexes).domains.map(
+    // The seeded categories carry their own numbering, so they are stripped
+    // too; otherwise a numbered category would still lead.
+    const strippedIndexes = new Map(
+      [...categoryIndexes].map(([path, entry]) => [
+        path,
+        { ...entry, categoryOrders: entry.categoryOrders.map(() => null) },
+      ]),
+    );
+
+    const counts = buildArchiveIndex(stripped, strippedIndexes).domains.map(
       (domain) => domain.noteCount,
     );
     expect(counts).toEqual([...counts].sort((a, b) => b - a));

@@ -14,7 +14,11 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { getAllEntries, getCategoryIndexes } from "@/lib/content/discovery";
-import { buildNavTree, getNavDomains } from "@/lib/content/nav-tree";
+import {
+  buildNavTree,
+  getNavDomains,
+  toNavCategoryIndexes,
+} from "@/lib/content/nav-tree";
 import { resolveDomainIcons } from "@/lib/icons/domain-icon-svg";
 import { cn } from "@/lib/utils";
 
@@ -39,8 +43,9 @@ export default async function StashLayout({
 
   // The glyphs are read from disk here, so the sidebar can stay a Client
   // Component without the icon theme reaching the browser.
+  const navCategoryIndexes = toNavCategoryIndexes(categoryIndexes);
   const domainIcons = resolveDomainIcons(
-    getNavDomains(buildNavTree(entries), categoryIndexes.keys()).map(
+    getNavDomains(buildNavTree(entries, navCategoryIndexes)).map(
       (domain) => domain.slug,
     ),
   );
@@ -57,7 +62,7 @@ export default async function StashLayout({
 
       <DocsSidebar
         entries={entries}
-        categoryIndexPaths={[...categoryIndexes.keys()]}
+        categoryIndexes={navCategoryIndexes}
         domainIcons={domainIcons}
       />
 

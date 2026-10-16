@@ -36,10 +36,39 @@ export interface NavGroupNode {
   depth: number;
   /** Total entries contained in this group, including nested groups */
   entryCount: number;
+  /** Route of the category's own `home` page, null when it authored none */
+  homePermalink: string | null;
   children: NavNode[];
 }
 
 export type NavNode = NavGroupNode | NavEntryNode;
+
+/**
+ * A category that authored its own `home` page, in the shape the tree needs.
+ *
+ * `getCategoryIndexes()` answers with whole entries, which carry a compiled MDX
+ * body; the sidebar is a Client Component, so the tree takes this much instead
+ * and `toNavCategoryIndexes` does the narrowing on the server.
+ */
+export interface NavCategoryIndex {
+  /** Category path from the content root, e.g. "opentui/patches" */
+  path: string;
+  /** Route the category's page is served at, e.g. "/stash/opentui/patches" */
+  permalink: string;
+  /** Order prefix of each path segment, as `categoryOrders` reports them */
+  orders: (number | null)[];
+}
+
+/** Narrows loaded category indexes to what `buildNavTree` reads. */
+export function toNavCategoryIndexes(
+  categoryIndexes: Iterable<[string, ContentEntry]>,
+): NavCategoryIndex[] {
+  return [...categoryIndexes].map(([path, entry]) => ({
+    path,
+    permalink: entry.permalink,
+    orders: entry.categoryOrders.map((order) => order ?? null),
+  }));
+}
 
 /**
  * Names that capitalisation rules get wrong, keyed by their lowercase form.
@@ -120,15 +149,25 @@ function countEntriesIn(nodes: NavNode[]): number {
  * Each entry is placed under its `categories` directory path; entries at the
  * content root become top-level nodes alongside the domain groups.
  */
-export function buildNavTree(entries: ContentEntry[]): NavNode[] {
+export function buildNavTree(
+  entries: ContentEntry[],
+  categoryIndexes: NavCategoryIndex[] = [],
+): NavNode[] {
   const root: NavNode[] = [];
   const groups = new Map<string, NavGroupNode>();
 
-  for (const entry of entries) {
+  /**
+   * Walks a category path, creating the groups that are missing, and answers
+   * with the children of the last one — where a note at that path belongs.
+   */
+  function openPath(
+    segments: string[],
+    orders: (number | null | undefined)[],
+  ): NavNode[] {
     let siblings = root;
     let path = "";
 
-    for (const [index, segment] of entry.categories.entries()) {
+    for (const [index, segment] of segments.entries()) {
       path = path ? `${path}/${segment}` : segment;
       let group = groups.get(path);
 
@@ -138,9 +177,10 @@ export function buildNavTree(entries: ContentEntry[]): NavNode[] {
           id: path,
           segment,
           label: formatSegmentLabel(segment),
-          order: entry.categoryOrders[index] ?? null,
+          order: orders[index] ?? null,
           depth: index,
           entryCount: 0,
+          homePermalink: null,
           children: [],
         };
         groups.set(path, group);
@@ -149,6 +189,24 @@ export function buildNavTree(entries: ContentEntry[]): NavNode[] {
 
       siblings = group.children;
     }
+
+    return siblings;
+  }
+
+  // A category that authored a `home` page is part of the archive whether or
+  // not it holds a note yet: the page is served, so the sidebar has to be able
+  // to reach it. Seeding before the notes are placed also means the order
+  // prefix comes from the category itself rather than from the first note that
+  // happens to live under it.
+  for (const index of categoryIndexes) {
+    const segments = index.path.split("/").filter(Boolean);
+    openPath(segments, index.orders);
+    const group = groups.get(segments.join("/"));
+    if (group) group.homePermalink = index.permalink;
+  }
+
+  for (const entry of entries) {
+    const siblings = openPath(entry.categories, entry.categoryOrders);
 
     siblings.push({
       kind: "entry",
@@ -282,10 +340,11 @@ function containsPermalink(nodes: NavNode[], permalink: string): boolean {
  * Entries stored at the content root are collected into a trailing "general"
  * domain so that nothing in the archive is unreachable from the switcher.
  *
- * A domain with a category index opens at its own page; `categoryIndexPaths`
- * names the categories that have one, since index entries are not part of the
- * tree. Without an index there is no domain page to open, so the first note in
- * tree order stands in for it.
+ * A domain with a category index opens at its own page. The tree records that
+ * on the group when it was seeded from the category indexes;
+ * `categoryIndexPaths` still names them for a caller that built the tree
+ * without them. Without an index there is no domain page to open, so the first
+ * note in tree order stands in for it.
  */
 export function getNavDomains(
   tree: NavNode[],
@@ -301,7 +360,8 @@ export function getNavDomains(
       continue;
     }
 
-    const hasHomePage = withIndex.has(node.id);
+    const homePermalink = node.homePermalink;
+    const hasHomePage = homePermalink !== null || withIndex.has(node.id);
 
     domains.push({
       slug: node.id,
@@ -309,7 +369,7 @@ export function getNavDomains(
       entryCount: node.entryCount,
       hasHomePage,
       homePermalink: hasHomePage
-        ? `/stash/${node.id}`
+        ? (homePermalink ?? `/stash/${node.id}`)
         : (findFirstNavEntry(node.children)?.entry.permalink ?? "/"),
       nodes: node.children,
     });

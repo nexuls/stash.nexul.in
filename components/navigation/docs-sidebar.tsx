@@ -41,6 +41,7 @@ import {
   getActiveDomain,
   getActiveTrail,
   getNavDomains,
+  type NavCategoryIndex,
 } from "@/lib/content/nav-tree";
 import type { ContentEntry } from "@/lib/content/types";
 import type { DomainIcons } from "@/lib/icons/domain-icon-svg";
@@ -48,8 +49,11 @@ import { siteConfig } from "@/lib/site-config";
 
 interface DocsSidebarProps {
   entries: ContentEntry[];
-  /** Category paths that have an index page, e.g. `["react"]` */
-  categoryIndexPaths: string[];
+  /**
+   * Categories that authored a `home` page, so one with no notes yet is still
+   * part of the tree. Narrowed on the server by `toNavCategoryIndexes`.
+   */
+  categoryIndexes: NavCategoryIndex[];
   /** Domain glyphs resolved on the server; see `lib/icons/domain-icon-svg.ts` */
   domainIcons?: DomainIcons;
 }
@@ -81,7 +85,7 @@ function moveRowFocus(
 
 export function DocsSidebar({
   entries,
-  categoryIndexPaths,
+  categoryIndexes,
   domainIcons,
 }: DocsSidebarProps) {
   const pathname = usePathname() ?? "";
@@ -93,8 +97,8 @@ export function DocsSidebar({
   const [query, setQuery] = React.useState("");
 
   const domains = React.useMemo(
-    () => getNavDomains(buildNavTree(entries), categoryIndexPaths),
-    [entries, categoryIndexPaths],
+    () => getNavDomains(buildNavTree(entries, categoryIndexes)),
+    [entries, categoryIndexes],
   );
   const activeDomain = getActiveDomain(domains, pathname);
 
@@ -349,7 +353,12 @@ export function DocsSidebar({
             onKeyDown={handleTreeKeyDown}
             aria-label={`${activeDomain?.label ?? "Archive"} contents`}
           >
-            {matchCount === 0 ? (
+            {/*
+              The empty state answers a filter that matched nothing. A domain
+              that simply holds no note yet still has a tree to show: its page
+              and its categories.
+            */}
+            {isFiltering && matchCount === 0 ? (
               <div className="px-2 py-5 text-center">
                 <p className="text-xs text-muted-foreground">
                   Nothing in{" "}

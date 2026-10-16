@@ -146,6 +146,73 @@ function EntryRow({
   );
 }
 
+/**
+ * A category that has a page but holds no notes yet.
+ *
+ * Collapsing it would open onto nothing, so the directory is the link: the row
+ * goes to the category's own page, which is where its notes will be listed
+ * once there are any.
+ */
+function EmptyGroupRow({
+  node,
+  href,
+  context,
+  nested,
+}: {
+  node: NavGroupNode;
+  href: string;
+  context: NavTreeContext;
+  nested: boolean;
+}) {
+  const isActive = href === context.activePermalink;
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const link = (
+    <Link
+      href={href}
+      data-nav-row
+      data-nav-group={node.id}
+      aria-current={isActive ? "page" : undefined}
+      onClick={() => {
+        if (isMobile) setOpenMobile(false);
+      }}
+    />
+  );
+
+  const label = (
+    <>
+      <FolderOpen className="size-4 shrink-0" />
+      <span className="truncate">{node.label}</span>
+    </>
+  );
+
+  if (!nested) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          render={link}
+          isActive={isActive}
+          className={cn(ROW_CLASSES, "h-8 rounded-lg gap-2 font-medium")}
+        >
+          {label}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton
+        render={link}
+        isActive={isActive}
+        className={cn(ROW_CLASSES, "h-8 gap-2 rounded-md text-xs font-medium")}
+      >
+        {label}
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  );
+}
+
 function GroupRow({
   node,
   context,
@@ -247,7 +314,17 @@ function NavTreeNodes({
 }) {
   return nodes.map((node) =>
     node.kind === "group" ? (
-      <GroupRow key={node.id} node={node} context={context} nested={nested} />
+      node.children.length === 0 && node.homePermalink ? (
+        <EmptyGroupRow
+          key={node.id}
+          node={node}
+          href={node.homePermalink}
+          context={context}
+          nested={nested}
+        />
+      ) : (
+        <GroupRow key={node.id} node={node} context={context} nested={nested} />
+      )
     ) : (
       <EntryRow key={node.id} node={node} context={context} nested={nested} />
     ),

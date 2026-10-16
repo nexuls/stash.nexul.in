@@ -75,6 +75,8 @@ content/01 - react/
 - The page renders the document and then lists every note in the category, grouped by directory, so the MDX body only needs to say what the category is for.
 - It is not a note: it is excluded from note listings, counts, related entries and previous/next navigation. `getAllEntries({ includeCategoryIndexes: true })` includes them when that is what you want, and `getCategoryIndexes()` returns them keyed by category path.
 - `/stash/react/home` is not a route. An entry answers at one URL only, so the directory path returns 404.
+- A category with a `home` page is listed even while it holds no notes: it appears on the landing page, in the domain switcher and in the sidebar, where its row links to its page instead of expanding onto nothing. A category with no `home` page and no notes is nothing at all — no page is served, so nothing lists it.
+- A category inside a category works the same way. `content/04 - opentui/01 - patches/home/README.mdx` serves `/stash/opentui/patches`, and that page lists the notes under `patches` rather than the whole domain's.
 
 ## Frontmatter specification
 

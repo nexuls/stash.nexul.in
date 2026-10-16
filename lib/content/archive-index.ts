@@ -134,12 +134,38 @@ export function buildArchiveIndex(
     }
   }
 
+  // A category that authored a `home` page exists whether or not it holds a
+  // note yet. Its page is served and linked, so leaving it out of the index
+  // would hide it from the landing page until its first note landed.
+  for (const [path, index] of categoryIndexes) {
+    const [domainSlug, groupSlug] = path.split("/");
+    if (!domainSlug) continue;
+
+    const groups = domains.get(domainSlug) ?? new Map<string, ArchiveNote[]>();
+    if (!domainOrders.has(domainSlug)) {
+      domainOrders.set(domainSlug, index.categoryOrders[0] ?? null);
+    }
+    if (groupSlug) {
+      const groupKey = `${domainSlug}/${groupSlug}`;
+      if (!groupOrders.has(groupKey)) {
+        groupOrders.set(groupKey, index.categoryOrders[1] ?? null);
+      }
+      if (!groups.has(groupSlug)) groups.set(groupSlug, []);
+    }
+    domains.set(domainSlug, groups);
+  }
+
   const resolved: ArchiveDomain[] = [];
 
   for (const [domainSlug, groups] of domains) {
     const resolvedGroups: ArchiveGroup[] = [];
 
     for (const [groupSlug, notes] of groups) {
+      // A seeded group with nothing in it yet would render as a heading over
+      // an empty list, so it is left out of the listing; the category itself
+      // is still reachable from the sidebar and from its own page.
+      if (notes.length === 0) continue;
+
       resolvedGroups.push({
         label: groupSlug === ROOT_GROUP ? null : formatSegmentLabel(groupSlug),
         path:
@@ -191,6 +217,42 @@ export function buildArchiveIndex(
     noteCount: entries.length,
     lastUpdated:
       lastTimestamp === null ? null : dateFormat.format(lastTimestamp),
+  };
+}
+
+/**
+ * The index entry for one category path, at any depth.
+ *
+ * A domain answers with itself. A directory inside one answers with a domain
+ * shaped around that directory alone, so a nested category's page lists the
+ * notes it holds rather than the whole domain's. A path the index does not
+ * know, such as a category that holds nothing yet, answers `undefined`.
+ */
+export function findCategory(
+  domains: ArchiveDomain[],
+  path: string,
+): ArchiveDomain | undefined {
+  const domain = domains.find((candidate) => candidate.path === path);
+  if (domain) return domain;
+
+  const [domainSlug] = path.split("/");
+  const parent = domains.find((candidate) => candidate.path === domainSlug);
+  if (!parent) return undefined;
+
+  const groups = parent.groups.filter(
+    (group) => group.path === path || group.path.startsWith(`${path}/`),
+  );
+  if (groups.length === 0) return undefined;
+
+  return {
+    ...parent,
+    label: groups[0]?.label ?? parent.label,
+    slug: path,
+    path,
+    href: `/stash/${path}`,
+    description: null,
+    noteCount: groups.reduce((sum, group) => sum + group.notes.length, 0),
+    groups,
   };
 }
 
