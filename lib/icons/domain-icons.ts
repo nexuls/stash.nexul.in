@@ -57,7 +57,12 @@ export function getDomainIcon(name: string): LucideIcon {
     return FileCode2;
   if (normalized.includes("authoring") || normalized.includes("writing"))
     return PenLine;
-  if (normalized.includes("linux") || normalized.includes("bash"))
+  if (
+    normalized.includes("tui") ||
+    normalized.includes("terminal") ||
+    normalized.includes("linux") ||
+    normalized.includes("bash")
+  )
     return Terminal;
   if (normalized.includes("backend") || normalized.includes("api"))
     return Server;
