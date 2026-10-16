@@ -1,18 +1,17 @@
 "use client";
 
-import type * as React from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { cn } from "cn";
-
-import { Button } from "@/components/ui/button";
 import {
-  XIcon,
   CircleCheckIcon,
   InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
   Loader2Icon,
+  OctagonXIcon,
+  TriangleAlertIcon,
+  XIcon,
 } from "lucide-react";
+import type * as React from "react";
+import { Button } from "@/components/ui/button";
 
 const toast = ToastPrimitive.createToastManager();
 
