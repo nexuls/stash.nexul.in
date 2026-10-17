@@ -154,8 +154,11 @@ export function Pre({
   return (
     <pre
       className={cn(
-        "overflow-x-auto font-mono text-[0.8125rem] leading-[1.7]",
+        // The scroll area in the panel owns the overflow; the <pre> only has
+        // to be as wide as its longest line.
+        "font-mono text-[0.8125rem] leading-[1.7]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+        "[&>code]:bg-transparent [&>code]:border-none [&>code]:px-0 [&>code]:rounded-none",
         className,
       )}
       {...props}

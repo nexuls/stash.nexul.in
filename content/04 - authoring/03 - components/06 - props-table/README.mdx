@@ -10,10 +10,11 @@ tags:
 
 # Props table
 
-The reference block at the end of a component note. Despite the name it is not a
-table but a definition list. A reader arrives looking for one prop, such as
-`defaultOpen`, rather than comparing four columns, and a four-column grid is the
-first thing to break on a phone.
+The reference block at the end of a component note. Two columns carry what a
+reader scans — the name and a short type — and each row holds the rest until it
+is opened. A reader arrives looking for one prop, such as `defaultOpen`, rather
+than comparing four columns, and a long union or a callback signature would
+otherwise widen the type column for every other row.
 
 <PropsTable
   of="<Callout />"
@@ -40,8 +41,9 @@ first thing to break on a phone.
 
 ## Required and optional
 
-A row marked `required` says so beside the name, and a row with a `default`
-prints it. Between them a reader can tell what they must pass from what they may:
+A name prints with a question mark unless its row sets `required`, the way
+TypeScript writes it, and a row with a `default` shows it when opened. Between
+them a reader can tell what they must pass from what they may:
 
 <PropsTable
   of="loadEntry(options)"
@@ -67,12 +69,64 @@ prints it. Between them a reader can tell what they must pass from what they may
   ]}
 />
 
+## Signatures
+
+A function-typed prop names its shape in the row and keeps the signature
+inside, with its parameters and what it returns:
+
+<PropsTable
+  of="useDebounce(value, options)"
+  rows={[
+    {
+      name: "onSettled",
+      type: "function",
+      typeDetail: "(value: string, elapsed: number) => void",
+      parameters: [
+        { name: "value", description: "The value that settled." },
+        { name: "elapsed", description: "Milliseconds waited before it did." },
+      ],
+      returns: "Nothing. Throwing here is left to the caller.",
+      description: "Called once the value stops changing.",
+    },
+    {
+      name: "leading",
+      type: "boolean",
+      default: "false",
+      description: "Fire on the first change as well as the last.",
+    },
+  ]}
+/>
+
+## Rich descriptions
+
+A `rows` description is plain text. When a prop needs more than a sentence,
+write the row as a `<Prop>` child and the description becomes MDX, the way a
+JSDoc comment is written:
+
+<PropsTable of="<Callout />">
+  <Prop name="type" type="string" default="note">
+    Which notice to show. `info` and `caution` are accepted as aliases, so a
+    note carried over from another site keeps rendering.
+
+    ```tsx
+    <Callout type="tip" title="Worth knowing" />
+    ```
+  </Prop>
+  <Prop name="compact" type="boolean" default="false">
+    Renders on one line without a heading. Use it for an aside that would
+    otherwise outweigh the paragraph it belongs to.
+  </Prop>
+</PropsTable>
+
+The attributes are a row's, minus `description`. A table takes `rows`, `<Prop>`
+children, or both.
+
 ## Writing the rows
 
-Row text is plain text rather than Markdown. A description is one sentence about
-what the prop does, and the name and type already render as code. If a prop
-needs a paragraph, an example or a caveat, that belongs in the prose above,
-where it can have a heading and a code block.
+Keep a `rows` description to one sentence about what the prop does; the name
+and type already render as code. Anything that needs an example or a caveat
+belongs either in a `<Prop>` body or in the prose above, where it can have a
+heading of its own.
 
 ## Props
 
@@ -88,7 +142,8 @@ where it can have a heading and a code block.
       name: "rows",
       type: "PropRow[]",
       required: true,
-      description: "One object per prop: name, type, default, required, description.",
+      typeDetail: "Array<{ name: string; type?: string; typeDetail?: string; parameters?: { name: string; description?: string }[]; returns?: string; default?: string; required?: boolean; description?: string }>",
+      description: "One object per prop. Only name is required; a row with nothing beyond a type renders as a plain line.",
     },
   ]}
 />

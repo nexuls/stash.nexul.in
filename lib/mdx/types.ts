@@ -169,11 +169,27 @@ export type FolderProps = z.infer<typeof folderPropsSchema> & {
 };
 
 /**
- * One row of a PropsTable.
+ * One parameter of a function-typed prop, listed inside its row.
+ */
+export const propParameterSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+});
+
+export type PropParameter = z.infer<typeof propParameterSchema>;
+
+/**
+ * One row of a PropsTable. `name` and `type` are the line a reader scans;
+ * everything else is detail the row holds until it is opened.
  */
 export const propRowSchema = z.object({
   name: z.string().min(1),
+  /** Short form shown on the row, e.g. `function` or `union`. */
   type: z.string().optional(),
+  /** Full signature, when `type` is a short stand-in for it. */
+  typeDetail: z.string().optional(),
+  parameters: z.array(propParameterSchema).optional(),
+  returns: z.string().optional(),
   default: z.string().optional(),
   required: z.boolean().optional().default(false),
   description: z.string().optional(),
@@ -181,14 +197,29 @@ export const propRowSchema = z.object({
 
 export type PropRow = z.infer<typeof propRowSchema>;
 
+/**
+ * Props of a single `<Prop>` child. Same fields as a row, with the
+ * description written as the tag's children so it can hold Markdown — a code
+ * span, a link, a list, a fenced block — the way a JSDoc comment does.
+ */
+export type PropProps = z.infer<typeof propRowSchema> & {
+  children?: React.ReactNode;
+};
+
 export const propsTablePropsSchema = z.object({
-  rows: z.array(propRowSchema).min(1, "PropsTable needs at least one row"),
+  /** Rows as data. Omitted when the table is written as `<Prop>` children. */
+  rows: z
+    .array(propRowSchema)
+    .min(1, "PropsTable needs at least one row")
+    .optional(),
   /** Caption describing what the props belong to. */
   of: z.string().optional(),
   className: z.string().optional(),
 });
 
-export type PropsTableProps = z.infer<typeof propsTablePropsSchema>;
+export type PropsTableProps = z.infer<typeof propsTablePropsSchema> & {
+  children?: React.ReactNode;
+};
 
 /**
  * Props for the LinkCard component.

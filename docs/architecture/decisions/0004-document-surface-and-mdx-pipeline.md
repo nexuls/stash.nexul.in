@@ -118,7 +118,9 @@ once applies to the rest of the document.
   surface is explicit, which is also what makes it reviewable.
 - `<CodeBlock>` with a computed `code` prop renders unhighlighted. This is
   visible in the output and documented in the authoring guide.
-- `PropsTable` rows take plain text, not Markdown.
+- `PropsTable` rows given as `rows` data take plain text, not Markdown. A row
+  written as a `<Prop>` child takes its description as MDX, so it can hold a
+  code span, a link, a list or a highlighted fenced block.
 - A standalone figure keeps a light plate in both themes. Entry diagrams are
   authored for a light surface, and SVG text drawn in near-black vanished
   against a dark card. A diagram that handles both themes itself would have to

@@ -1,0 +1,53 @@
+/* ==========================================================================
+   Details
+   ========================================================================== */
+
+/* Open and close as an accordion rather than a jump. `::details-content` is
+   the only handle on the part a native <details> reveals, so the animation
+   stays in CSS and the element keeps its built-in keyboard and find-in-page
+   behaviour.
+
+   The height comes from a collapsing grid row rather than from `block-size:
+   auto`: animating to `auto` needs `interpolate-size`, which Chromium has and
+   the other engines do not, so it silently snapped there. A `0fr` to `1fr`
+   row interpolates everywhere `::details-content` exists.
+
+   `content-visibility` is in the transition so the content stays rendered
+   while it collapses; the UA hides it the moment the element closes
+   otherwise. Browsers without `::details-content` ignore all of this and snap
+   open, which is the behaviour the component had before. */
+.stash-details::details-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  padding: 0;
+  transition:
+    grid-template-rows 220ms ease,
+    opacity 150ms ease,
+    padding 150ms ease,
+    content-visibility 220ms allow-discrete;
+}
+
+/* The padding is on the pseudo-element so it eases in with the height rather
+   than appearing at full size inside a zero-height row. It is read from a
+   custom property so another disclosure — the props table's rows — can reuse
+   this animation with its own spacing; the fallbacks are the Details box. */
+.stash-details[open]::details-content {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  padding-inline: var(--stash-details-pad-x, calc(var(--spacing) * 3.5));
+  padding-block: var(--stash-details-pad-y, calc(var(--spacing) * 3));
+}
+
+/* The grid item has to be able to shrink past its content, and clip what no
+   longer fits. */
+.stash-details-content {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stash-details::details-content {
+    transition: none;
+  }
+}

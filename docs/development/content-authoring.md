@@ -341,15 +341,50 @@ Each row picks its own icon from the name you give it, using the same Material I
 
 The props of a component or the options of a function. Row text is plain text, not Markdown.
 
+Each row shows its name and a short type; a row that carries anything else —
+a description, a `typeDetail` signature, `parameters`, `returns` or a
+`default` — opens to show it. A name without `required: true` prints as
+optional, the way TypeScript writes it.
+
 ```mdx
 <PropsTable
   of="<Callout />"
   rows={[
     { name: "type", type: "string", default: "note", description: "Which notice to show." },
-    { name: "title", type: "string", description: "Replaces the default heading." },
+    { name: "title", type: "string", required: true, description: "Replaces the default heading." },
+    {
+      name: "onDismiss",
+      type: "function",
+      typeDetail: "(reason: string) => void",
+      parameters: [{ name: "reason", description: "Why the notice closed." }],
+      returns: "Nothing.",
+    },
   ]}
 />
 ```
+
+For a prop that needs more than a sentence, write the row as a `<Prop>` child
+instead. Its children are MDX — a code span, a link, a list, a fenced block
+the pipeline highlights — the way a JSDoc comment is written. The attributes
+are the same as a row's, minus `description`:
+
+```mdx
+<PropsTable of="<Callout />">
+  <Prop name="type" type="string" default="note">
+    Which notice to show. `info` and `caution` are accepted as aliases.
+
+    ```tsx
+    <Callout type="tip" title="Worth knowing" />
+    ```
+  </Prop>
+  <Prop name="title" type="string" required>
+    Replaces the default heading for the chosen type.
+  </Prop>
+</PropsTable>
+```
+
+A table takes `rows`, `<Prop>` children, or both; a row with nothing beyond a
+name and type renders as a plain line rather than a disclosure.
 
 ### CardGrid and LinkCard
 

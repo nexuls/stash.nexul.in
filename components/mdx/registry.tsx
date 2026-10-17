@@ -19,7 +19,7 @@ import { Details } from "@/components/mdx/details";
 import { File, FileTree, Folder } from "@/components/mdx/file-tree";
 import { Kbd } from "@/components/mdx/kbd";
 import { CardGrid, LinkCard } from "@/components/mdx/link-card";
-import { PropsTable } from "@/components/mdx/props-table";
+import { Prop, PropsTable } from "@/components/mdx/props-table";
 import { Step, Steps } from "@/components/mdx/steps";
 import { Tab, Tabs } from "@/components/mdx/tabs";
 import { typographyComponents } from "@/components/mdx/typography";
@@ -49,6 +49,7 @@ export const baseMdxComponents = {
 
   // Reference
   PropsTable,
+  Prop,
   CardGrid,
   LinkCard,
   Kbd,

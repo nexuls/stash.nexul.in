@@ -72,8 +72,9 @@ function createHeading(level: HeadingLevel, headingClassName: string) {
 
 const linkClassName = cn(
   "font-medium text-prose-emphasis underline decoration-primary/45 decoration-1 underline-offset-[3px]",
-  "transition-colors hover:decoration-primary",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-sm",
+  "text-primary-foreground/70 hover:text-primary-foreground",
+  "transition-colors hover:decoration-primary",
 );
 
 /**
@@ -238,7 +239,10 @@ function MdxCode({
     props["data-theme"] !== undefined
   ) {
     return (
-      <code className={className} {...props}>
+      <code
+        className={cn("bg-muted border border-b-2 px-1 rounded-sm", className)}
+        {...props}
+      >
         {children}
       </code>
     );
@@ -250,7 +254,7 @@ function MdxCode({
         "rounded border border-border/70 bg-muted px-[0.3em] py-[0.1em]",
         "font-mono text-[0.85em] text-prose-emphasis",
         // A link or heading already carries its own emphasis.
-        "[a_&]:border-primary/25 [a_&]:text-inherit",
+        "in-[a]:border-primary/25 in-[a]:text-inherit",
         className,
       )}
       {...props}

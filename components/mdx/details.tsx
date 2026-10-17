@@ -26,7 +26,7 @@ export function Details({
     <details
       open={defaultOpen}
       className={cn(
-        "group my-6 overflow-hidden rounded-lg border border-border bg-card/40",
+        "stash-details group my-6 overflow-hidden rounded-lg border border-border bg-card/40",
         className,
       )}
       {...props}
@@ -46,7 +46,7 @@ export function Details({
         <span className="flex-1">{summary}</span>
       </summary>
 
-      <div className="px-3.5 py-3 text-[0.9375rem] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      <div className="stash-details-content text-[0.9375rem] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
         {!validation.success && (
           <p className="font-mono text-xs text-destructive">
             Malformed Details: {validation.error.issues[0]?.message}

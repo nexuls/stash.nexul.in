@@ -12,6 +12,7 @@
 import { ChevronDown, Terminal, WrapText } from "lucide-react";
 import * as React from "react";
 import { CopyButton } from "@/components/mdx/copy-button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 /** Blocks longer than this open collapsed so a page stays scannable. */
@@ -181,14 +182,25 @@ export function CodePanel({
         </div>
       </div>
 
+      {/* The outer element stays a plain box because the collapse state clips
+          it and fades it out; the scroll area inside it owns the overflow, so
+          a collapsed panel cannot be scrolled past its mask. */}
       <div
         className={cn(
           "stash-code-viewport relative",
           // The header stays put and the code moves under it.
-          framed && "min-h-0 flex-1 overflow-auto",
+          framed && "flex min-h-0 flex-1 overflow-hidden",
         )}
       >
-        {children}
+        <ScrollArea
+          // Framed, the panel has a fixed height and scrolls both ways;
+          // otherwise it is as tall as its code and only ever scrolls across.
+          orientation={framed ? "both" : "horizontal"}
+          className={cn(framed ? "min-h-0 min-w-0 flex-1" : "w-full")}
+          viewportClassName="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        >
+          {children}
+        </ScrollArea>
       </div>
 
       {collapsible && (

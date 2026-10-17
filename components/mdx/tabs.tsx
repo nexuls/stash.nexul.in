@@ -5,8 +5,10 @@
  * languages, runtimes.
  *
  * Implements the WAI-ARIA tab pattern with arrow, Home and End navigation.
- * Panels are not boxed: the strip itself carries the structure, which keeps a
- * code panel inside a tab from sitting inside a second border.
+ * The set is a container: one rounded frame carries a header strip and the
+ * panel below it, matching the code panel and the component preview. A code
+ * block that is a tab's only content runs to the frame's edges instead of
+ * sitting inside a second border.
  *
  * Tabs sharing a `group` stay in sync, so a reader who picks Bun once sees Bun
  * for the rest of the document.
@@ -109,8 +111,12 @@ export function Tab({ value, label, className, children, ...props }: TabProps) {
       // biome-ignore lint/a11y/noNoninteractiveTabindex: required by the tab pattern
       tabIndex={0}
       className={cn(
-        "pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        // A lone code block fills the frame: its own border and corners would
+        // only repeat the container's.
+        "[&>.stash-code:only-child]:-mx-4 [&>.stash-code:only-child]:-my-3",
+        "[&>.stash-code:only-child]:rounded-none [&>.stash-code:only-child]:border-0",
         className,
       )}
       {...props}
@@ -218,11 +224,15 @@ export function Tabs({
   return (
     <TabsContext.Provider value={contextValue}>
       <div
-        className={cn("my-6 w-full [&_.stash-code]:my-0", className)}
+        className={cn(
+          "my-6 w-full overflow-hidden rounded-xl border border-code-rule bg-card",
+          "[&_.stash-code]:my-0",
+          className,
+        )}
         {...props}
       >
         {!validation.success && (
-          <p className="mb-2 font-mono text-xs text-destructive">
+          <p className="border-b border-code-rule px-4 py-2 font-mono text-xs text-destructive">
             Malformed Tabs: {validation.error.issues[0]?.message}
           </p>
         )}
@@ -231,7 +241,7 @@ export function Tabs({
           ref={tabListRef}
           role="tablist"
           aria-orientation="horizontal"
-          className="flex items-stretch gap-4 overflow-x-auto border-b border-border"
+          className="flex items-stretch gap-4 overflow-x-auto border-b border-code-rule bg-code-header px-4"
         >
           {tabItems.map((tab) => {
             const isSelected = activeTab === tab.value;
@@ -247,10 +257,10 @@ export function Tabs({
                 onClick={() => select(tab.value)}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                  "-mb-px shrink-0 border-b-2 pb-2 text-sm whitespace-nowrap transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "shrink-0 border-border border-b-3 pb-1 pt-2 text-sm whitespace-nowrap transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   isSelected
-                    ? "border-primary font-medium text-foreground"
+                    ? "border-primary font-medium text-primary-foreground"
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >

@@ -580,8 +580,43 @@ describe("Document components", () => {
     const { content } = await renderMdx({ source: good });
     const html = renderStatic(content);
     expect(html).toContain("type");
-    expect(html).toContain("default note");
+    expect(html).toContain("Default");
+    expect(html).toContain("note");
     expect(html).toContain("Which notice to show.");
+    // A row with detail folds into a disclosure; one without stays a line.
+    expect(html).toContain("<details");
+
+    const bare = `<PropsTable rows={[{ name: "id", type: "string" }]} />`;
+    const bareHtml = renderStatic((await renderMdx({ source: bare })).content);
+    expect(bareHtml).not.toContain("<details");
+
+    const empty = `<PropsTable of="Callout" />`;
+    const emptyHtml = renderStatic(
+      (await renderMdx({ source: empty })).content,
+    );
+    expect(emptyHtml).toContain("needs rows or");
+  });
+
+  it("renders PropsTable rows written as <Prop> children", async () => {
+    const source = `
+<PropsTable of="<Callout />">
+  <Prop name="type" type="string" default="note">
+    Which notice to show. See \`lib/mdx/types.ts\` for the union.
+
+    \`\`\`tsx
+    <Callout type="tip" />
+    \`\`\`
+  </Prop>
+  <Prop name="title" type="string" required />
+</PropsTable>
+`;
+    const { content } = await renderMdx({ source });
+    const html = renderStatic(content);
+    expect(html).toContain("Which notice to show.");
+    // The body is MDX, so the fence became a highlighted code panel.
+    expect(html).toContain("stash-code");
+    // A required prop drops the question mark an optional one carries.
+    expect(html).toContain("title");
 
     const bad = `<PropsTable rows={[]} />`;
     const broken = renderStatic((await renderMdx({ source: bad })).content);

@@ -20,22 +20,21 @@ html.dark code[data-language] span {
 
 .stash-code pre {
   /* Horizontal padding belongs to the lines, not the block, so a highlighted
-     line can bleed to both edges of the panel. */
+     line can bleed to both edges of the panel. The scrolling is the scroll
+     area's in `components/ui/scroll-area.tsx`, which is why there is no
+     scrollbar styling here. */
   padding: 0.75rem 0;
   margin: 0;
   background: transparent;
-  scrollbar-width: thin;
-  scrollbar-color: var(--code-rule) transparent;
-  -webkit-overflow-scrolling: touch;
 }
 
-.stash-code pre::-webkit-scrollbar {
-  height: 0.5rem;
-}
-
-.stash-code pre::-webkit-scrollbar-thumb {
-  background: var(--code-rule);
-  border-radius: 9999px;
+/* Lines are as wide as the widest one rather than as wide as the viewport, so
+   a highlighted or diffed line keeps its background all the way across when
+   the panel is scrolled. Wrapping has no width to grow to. */
+.stash-code:not([data-wrap="true"]) pre > code {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
 }
 
 .stash-code [data-line] {
@@ -123,6 +122,18 @@ html.dark code[data-language] span {
 
 .stash-code[data-wrap="true"] pre {
   overflow-x: hidden;
+}
+
+/* A wrapped line continues under the code, not under the gutter. The line box
+   is indented by the whole gutter and the first line is pulled back out of it
+   by the same amount, so the number keeps its place and every continuation
+   lands on the code column. The two have to agree, so the gutter is measured
+   once here and the ::before above is built from the same parts: 1rem of left
+   padding, the digits, 0.875rem of right padding and a 1rem margin. */
+.stash-code[data-wrap="true"] code[data-line-numbers] > [data-line] {
+  --stash-line-gutter: calc(2.875rem + var(--stash-line-digits, 2) * 1ch);
+  padding-left: var(--stash-line-gutter);
+  text-indent: calc(-1 * var(--stash-line-gutter));
 }
 
 /* Long blocks are clipped until expanded; the fade marks that there is more. */

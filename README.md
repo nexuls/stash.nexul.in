@@ -60,7 +60,7 @@ and the previous/next links from the tree on disk.
   and token highlighting, terminal and diff styling, soft-wrap, copy, and
   collapse for long blocks.
 - **Authoring components** — `Callout`, `Tabs`/`Tab` (synchronised by `group`),
-  `Steps`/`Step`, `Details`, `FileTree`/`Folder`/`File`, `PropsTable`,
+  `Steps`/`Step`, `Details`, `FileTree`/`Folder`/`File`, `PropsTable`/`Prop`,
   `CardGrid`/`LinkCard`, `Kbd`, `CodeBlock`, and `ComponentPreview` for live,
   resizable previews of a real component.
 - **Author-facing errors** — an unregistered tag renders a diagnostic listing
