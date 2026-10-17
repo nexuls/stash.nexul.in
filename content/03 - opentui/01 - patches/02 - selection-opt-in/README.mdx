@@ -1,7 +1,7 @@
 ---
 title: Making drag-selection opt-in
 description: OpenTUI's text renderables are selectable by default, so a click-to-navigate UI starts a drag-selection instead. Flipping the default without disabling selection.
-date: 2026-10-17
+date: 2026-08-17
 tags:
   - opentui
   - patches
@@ -25,6 +25,8 @@ copyable. So the fix flips the default while keeping the prop meaningful. A
 renderable given no `selectable` prop comes up non-selectable, and one given
 the prop gets exactly what the caller asked for.
 
+![Two panels: a left mouse-down reaching either drag-selection or the click handler depending on the flag, and the chain that resolves the flag from the upstream constructor through the catalogue subclass to the per-element outcome](./selectable-resolution.svg "The flag decides whether a press is a selection or a click, and the subclass decides the flag")
+
 ## Where the default lives
 
 `selectable` is resolved inside each renderable's own constructor:
@@ -36,6 +38,13 @@ this.selectable = options.selectable ?? this._defaultOptions.selectable;
 `_defaultOptions` is a class *field*, so each instance gets its own copy during
 construction. Nothing on the prototype can change it, and nothing outside the
 constructor can get in front of that line. Subclassing is the only seam.
+
+0.6.0 moved `selectable` itself onto `Renderable.prototype`, as an accessor
+backed by the renderable's native scene hooks rather than a plain instance
+field. That does not open a new seam. The line above still runs in the
+constructor and still writes through that accessor, so redefining the
+descriptor would only intercept a write whose value has already been decided.
+Correcting the flag after `super()` remains the way in.
 
 ## The dead end
 
@@ -223,7 +232,14 @@ Upstream would need a way to set the default from outside the constructor,
 either a renderer option or a `selectable` that reads a context value instead
 of a class field. Either one removes the need for the subclass wrapper.
 
+Still required as of `@opentui/core` 0.6.6, and the module runs unchanged
+there. Constructing each catalogue class directly on 0.6.6 and reading the flag
+back gives `true` for `text`, `code`, `input`, `textarea` and `ascii-font`, and
+`false` for `box` and `scrollbox`, exactly as on 0.5.x. Mounting the patched
+catalogue leaves `<text>` at `false`, `<text selectable>` at `true` and
+`<text selectable={false}>` at `false`.
+
 ## Related entries
 
 - [Terminal-relative dimensions](/stash/opentui/patches/negative-dimension-patch). Uses the same catalogue seam, for a prop upstream rejects outright.
-- [Clipping box borders](/stash/opentui/patches/box-clip-patch). A prototype patch rather than a catalogue one, and the reason why.
+- [Clipping box borders](/stash/opentui/patches/box-clip-patch). A prototype patch rather than a catalogue one, and the reason why. Resolved upstream in 0.6.0.

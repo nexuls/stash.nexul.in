@@ -1,7 +1,7 @@
 ---
 title: Clipping box borders
-description: OpenTUI's native box draw ignores the scissor stack, so a bordered box paints its border over everything around its scroll container. The patch keeps native rendering.
-date: 2026-10-17
+description: OpenTUI's native box draw ignored the scissor stack, so a bordered box painted its border over everything around its scroll container. Fixed upstream in 0.6.0; kept for the detour it describes.
+date: 2026-08-17
 tags:
   - opentui
   - patches
@@ -9,6 +9,14 @@ tags:
 ---
 
 # Clipping box borders
+
+<Callout type="important" title="Fixed upstream in 0.6.0. Do not install this on 0.6.x">
+  0.6.0 moved box painting into the native scene, which clips every layer
+  alike. On 0.6.6 a bordered box straddling an `overflow: hidden` edge draws
+  nothing past it. The module below is also unusable there, for the reasons
+  under [Resolved in 0.6.0](#resolved-in-060). Everything else here describes
+  0.5.x and earlier.
+</Callout>
 
 Put a bordered `<box>` inside a `<scrollbox>` and scroll it. The box's text
 clips to the viewport the way you expect. Its border keeps drawing, straight
@@ -24,9 +32,11 @@ over whatever sits around the scroll container.
 </scrollbox>
 ```
 
-Reproduced on `@opentui/core` 0.4.5 and still there in 0.5.3. It has nothing to
-do with scrollboxes in particular. A plain `<box overflow="hidden">` leaks its
-children's borders the same way.
+Reproduced on `@opentui/core` 0.4.5, still there in 0.5.3, and last seen in
+0.5.17. It has nothing to do with scrollboxes in particular. A plain
+`<box overflow="hidden">` leaks its children's borders the same way.
+
+![A bordered box straddling a clip edge, drawn twice: under 0.5.17 its bottom border paints a row below the edge, over a sibling; under 0.6.6 the border stops at the edge](./border-clip-frames.svg "The same two-row clipper on either side of the 0.6.0 rewrite")
 
 ## Why the text clips and the border does not
 
@@ -365,13 +375,42 @@ partial sides and both title alignments.
 **Clipping.** A bordered box inside a scrollbox paints nothing outside the
 viewport at any scroll offset.
 
-## When it can go
+## Resolved in 0.6.0
 
-Delete the module and the one call site as soon as `bufferDrawBox` intersects
-the scissor stack upstream. There is no behaviour here worth keeping beyond
-that point, because every visual decision already belongs to `renderSelf`.
+The exit condition was `bufferDrawBox` intersecting the scissor stack. 0.6.0
+met it by deleting `bufferDrawBox`. A box now declares its paint through
+`getNativeScenePaint()`, naming its border, style, colours and fill, and the
+native scene traversal draws that paint inside the same clip it already
+applies to text. The JS `BoxRenderable.renderSelf` survives as a fallback, and
+it draws through `OptimizedBuffer.drawBox`, which reads the stack.
+
+Three things make the module below inert or broken on 0.6.x, and each one is a
+seam it depended on:
+
+<Steps>
+  <Step title="renderSelf is not called">
+    Painting a plain `<box>` no longer goes through the prototype. Wrapping
+    `BoxRenderable.prototype.renderSelf` and counting calls across a frame on
+    0.6.6 gives zero, so the patch never runs.
+  </Step>
+  <Step title="getScissorRect is gone">
+    `ancestorClip` walks ancestors calling `getScissorRect()`. `Renderable` has
+    no such method any more, because layout and clipping live in the native
+    scene. A subclass that overrides `renderSelf` would still reach that walk,
+    and the walk would throw.
+  </Step>
+  <Step title="_screenX is read-only">
+    The scratch-buffer detour works by moving `_screenX`/`_screenY` to zero for
+    the duration of the draw. Both are now getters derived from the native
+    scene layout, with no setter, so the patch cannot move the box to the
+    scratch buffer's origin.
+  </Step>
+</Steps>
+
+Delete the module and its call site when the app moves to 0.6.x. Pinned to
+0.5.x, it still applies as written.
 
 ## Related entries
 
-- [Making drag-selection opt-in](/stash/opentui/patches/selection-opt-in). The other patch installed beside this one, through a different seam.
-- [Terminal-relative dimensions](/stash/opentui/patches/negative-dimension-patch). Patches the `Renderable` prototype as well, for the accessor half of its job.
+- [Making drag-selection opt-in](/stash/opentui/patches/selection-opt-in). The other patch installed beside this one, through a different seam. Still required on 0.6.6.
+- [Terminal-relative dimensions](/stash/opentui/patches/negative-dimension-patch). Patches the `Renderable` prototype as well, for the accessor half of its job. Still required on 0.6.6.

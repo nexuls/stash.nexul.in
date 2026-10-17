@@ -1,7 +1,7 @@
 ---
 title: Terminal-relative dimensions
 description: Giving a negative width or height the meaning "terminal size minus that many cells", re-resolved on every resize, since OpenTUI percentages resolve against the parent.
-date: 2026-10-17
+date: 2026-08-17
 tags:
   - opentui
   - patches
@@ -35,6 +35,8 @@ depend on what they used to do.
 
 A width reaches a renderable through two code paths that share nothing, and
 both need handling.
+
+![Three lanes: construction rewriting a negative option before validateOptions sees it, an assignment going through the patched prototype accessor, and a resize sweeping the tracked raw values back through the original setters](./dimension-seams.svg "Both seams resolve the same raw value, and the resize sweep re-resolves it")
 
 <Steps>
   <Step title="Construction">
@@ -381,7 +383,21 @@ through `createRoot` rather than construct renderables directly. At a 40-cell
 terminal, `<box width={-4}>` lays out at 36, and the same box reports 76 after
 a resize to 80 columns.
 
+## Still required
+
+Checked against `@opentui/core` 0.6.6, where the module runs unchanged.
+`validateOptions` still rejects a negative constructor option and is still
+module-private, the `width`/`height` setters on `Renderable.prototype` still
+validate nothing, and the React reconciler still applies a changed dimension
+as a plain assignment. Mounted at a 40-cell terminal, `<box width={-4}>` lays
+out at 36; after a resize to 80 columns the same box reports 76; and assigning
+`box.width = -10` afterwards gives 70.
+
+What did change is where a resolved dimension ends up: 0.6.0 hands it to the
+native scene rather than pushing it into yoga directly. The patch is untouched
+by that because it never reaches below the public setters.
+
 ## Related entries
 
 - [Making drag-selection opt-in](/stash/opentui/patches/selection-opt-in). The other catalogue patch, and the first use of the subclass seam.
-- [Clipping box borders](/stash/opentui/patches/box-clip-patch). Patches a prototype method instead, where the catalogue would be the wrong level.
+- [Clipping box borders](/stash/opentui/patches/box-clip-patch). Patches a prototype method instead, where the catalogue would be the wrong level. Resolved upstream in 0.6.0.

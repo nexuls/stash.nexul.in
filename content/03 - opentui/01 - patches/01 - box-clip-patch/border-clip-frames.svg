@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 256" width="100%" height="256">
+  <defs>
+    <style>
+      .label { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+      .heading { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 600; fill: #0f172a; }
+      .bad { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; fill: #b91c1c; }
+      .tiny { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #8b5cf6; }
+      .screen { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; rx: 6; }
+      .border-ok { fill: none; stroke: #0f172a; stroke-width: 2; }
+      .border-leak { fill: none; stroke: #ef4444; stroke-width: 2; }
+      .fill-ok { fill: #eff6ff; }
+      .sibling { fill: #10b981; }
+      .edge { stroke: #8b5cf6; stroke-width: 1.5; stroke-dasharray: 4 3; }
+    </style>
+  </defs>
+
+  <!-- Left panel -->
+  <text x="20" y="24" class="heading">0.5.17 — the border escapes the clip</text>
+  <rect x="20" y="34" width="285" height="112" class="screen" />
+  <rect x="46" y="54" width="148" height="38" class="fill-ok" />
+  <path d="M46 92 L46 54 L194 54 L194 92" class="border-ok" />
+  <path d="M46 92 L46 130 L194 130 L194 92" class="border-leak" />
+  <line x1="28" y1="92" x2="297" y2="92" class="edge" />
+  <text x="202" y="88" class="tiny">clip edge</text>
+  <rect x="46" y="104" width="180" height="7" class="sibling" />
+  <text x="234" y="111" class="label">sibling</text>
+  <text x="46" y="168" class="bad">painted below the edge</text>
+  <text x="20" y="196" class="label">Children and the background fill clip. The</text>
+  <text x="20" y="212" class="label">border glyphs go through a native call that</text>
+  <text x="20" y="228" class="label">never reads the scissor stack, so they do not.</text>
+
+  <!-- Right panel -->
+  <text x="335" y="24" class="heading">0.6.6 — the border is clipped</text>
+  <rect x="335" y="34" width="285" height="112" class="screen" />
+  <rect x="361" y="54" width="148" height="38" class="fill-ok" />
+  <path d="M361 92 L361 54 L509 54 L509 92" class="border-ok" />
+  <line x1="343" y1="92" x2="612" y2="92" class="edge" />
+  <text x="517" y="88" class="tiny">clip edge</text>
+  <rect x="361" y="104" width="180" height="7" class="sibling" />
+  <text x="549" y="111" class="label">sibling</text>
+  <text x="335" y="196" class="label">Box paint moved into the native scene, which</text>
+  <text x="335" y="212" class="label">clips every layer alike. Nothing is drawn past</text>
+  <text x="335" y="228" class="label">the edge, and the patch has nothing left to do.</text>
+</svg>

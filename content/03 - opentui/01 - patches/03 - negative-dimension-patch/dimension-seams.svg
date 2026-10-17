@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 310" width="100%" height="310">
+  <defs>
+    <style>
+      .label { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #64748b; }
+      .heading { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 600; fill: #0f172a; }
+      .bad { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #b91c1c; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; fill: #0f172a; }
+      .box { stroke-width: 1.5; rx: 6; }
+      .box-in { fill: #eff6ff; stroke: #3b82f6; }
+      .box-patch { fill: #f5f3ff; stroke: #8b5cf6; }
+      .box-out { fill: #ecfdf5; stroke: #10b981; }
+      .arrow { stroke: #94a3b8; stroke-width: 1.5; stroke-linecap: round; fill: none; }
+    </style>
+    <marker id="ah3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+
+  <!-- Lane 1 -->
+  <text x="20" y="22" class="heading">Construction — the catalogue seam</text>
+  <rect x="20" y="32" width="140" height="48" class="box box-in" />
+  <text x="32" y="52" class="label">JSX element</text>
+  <text x="32" y="69" class="mono">&lt;box width={-4} /&gt;</text>
+
+  <line x1="160" y1="56" x2="192" y2="56" class="arrow" marker-end="url(#ah3)" />
+
+  <rect x="200" y="32" width="178" height="48" class="box box-patch" />
+  <text x="212" y="52" class="label">subclass rewrites options</text>
+  <text x="212" y="69" class="mono">-4 → ctx.width - 4 = 36</text>
+
+  <text x="212" y="96" class="label">…and track() keeps the raw -4</text>
+  <line x1="378" y1="56" x2="410" y2="56" class="arrow" marker-end="url(#ah3)" />
+
+  <rect x="418" y="32" width="202" height="48" class="box box-out" />
+  <text x="430" y="52" class="mono">super(ctx, options)</text>
+  <text x="430" y="69" class="bad">a raw -4 here still throws</text>
+
+  <!-- Lane 2 -->
+  <text x="20" y="122" class="heading">Updates — the accessor seam</text>
+  <rect x="20" y="132" width="140" height="48" class="box box-in" />
+  <text x="32" y="152" class="label">reconciler assigns</text>
+  <text x="32" y="169" class="mono">inst.width = -4</text>
+
+  <line x1="160" y1="156" x2="192" y2="156" class="arrow" marker-end="url(#ah3)" />
+
+  <rect x="200" y="132" width="178" height="48" class="box box-patch" />
+  <text x="212" y="152" class="label">patched setter on</text>
+  <text x="212" y="169" class="mono">Renderable.prototype</text>
+
+  <text x="212" y="196" class="label">…and track() keeps the raw -4</text>
+  <line x1="378" y1="156" x2="410" y2="156" class="arrow" marker-end="url(#ah3)" />
+
+  <rect x="418" y="132" width="202" height="48" class="box box-out" />
+  <text x="430" y="152" class="mono">originalSet.call(r, 36)</text>
+  <text x="430" y="169" class="label">this path validates nothing</text>
+
+  <!-- Lane 3 -->
+  <text x="20" y="222" class="heading">Resize — re-resolved from the raw value</text>
+  <rect x="20" y="232" width="140" height="62" class="box box-in" />
+  <text x="32" y="252" class="mono">ctx.on("resize")</text>
+  <text x="32" y="269" class="label">terminal now 80 cols</text>
+
+  <line x1="160" y1="256" x2="192" y2="256" class="arrow" marker-end="url(#ah3)" />
+
+  <rect x="200" y="232" width="178" height="62" class="box box-patch" />
+  <text x="212" y="252" class="mono">specs: Map&lt;Renderable,</text>
+  <text x="212" y="266" class="mono">  {width?, height?}&gt;</text>
+  <text x="212" y="286" class="label">swept on every resize</text>
+
+  <line x1="378" y1="256" x2="410" y2="256" class="arrow" marker-end="url(#ah3)" />
+
+  <rect x="418" y="232" width="202" height="62" class="box box-out" />
+  <text x="430" y="252" class="mono">originalSet.call(r, 76)</text>
+  <text x="430" y="269" class="label">the patched ones would untrack</text>
+
+</svg>
