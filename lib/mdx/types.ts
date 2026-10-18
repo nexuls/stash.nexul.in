@@ -277,6 +277,45 @@ export type ComponentPreviewProps = z.infer<
 };
 
 /**
+ * One file offered by `<FileDownloads>`, resolved by the pipeline.
+ */
+export const fileDownloadItemSchema = z.object({
+  /** Path relative to the entry directory. */
+  path: z.string().min(1),
+  /** Size in bytes, read at compile time. */
+  size: z.number().int().nonnegative(),
+});
+
+export type FileDownloadItem = z.infer<typeof fileDownloadItemSchema>;
+
+export const fileDownloadItemsSchema = z.array(fileDownloadItemSchema);
+
+/**
+ * Props for the FileDownloads list.
+ *
+ * `items`, `base` and `error` are not authored: `remarkFileDownloads` writes
+ * them onto the tag at compile time, because only the pipeline knows the
+ * entry's directory, what its files weigh, and whether a listed name exists.
+ */
+export const fileDownloadsPropsSchema = z.object({
+  /** Files to offer, comma or newline separated. Omit it for every asset. */
+  files: z.string().optional(),
+  /** Heading for the list. */
+  title: z.string().optional().default("Download"),
+  /** One line under the heading, when the files need explaining. */
+  description: z.string().optional(),
+  /** Resolved files as JSON, written by the pipeline. */
+  items: z.string().optional(),
+  /** URL prefix that maps to the entry directory, written by the pipeline. */
+  base: z.string().optional(),
+  /** Compile-time diagnostic, e.g. a listed file that does not exist. */
+  error: z.string().optional(),
+  className: z.string().optional(),
+});
+
+export type FileDownloadsProps = z.infer<typeof fileDownloadsPropsSchema>;
+
+/**
  * Options for MDX evaluation.
  */
 export const mdxEvaluateOptionsSchema = z.object({

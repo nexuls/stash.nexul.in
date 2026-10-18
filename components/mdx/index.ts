@@ -8,6 +8,7 @@ export * from "./code-panel";
 export * from "./component-preview";
 export * from "./copy-button";
 export * from "./details";
+export * from "./file-downloads";
 export * from "./file-tree";
 export * from "./image";
 export * from "./kbd";

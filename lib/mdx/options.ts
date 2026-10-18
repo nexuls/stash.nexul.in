@@ -2,7 +2,7 @@
  * MDX compilation and plugin options.
  *
  * The pipeline is: GitHub Flavored Markdown, preview-source inlining,
- * `<CodeBlock>` lowering, the line-number default, entry-relative asset
+ * download-list resolution, `<CodeBlock>` lowering, the line-number default, entry-relative asset
  * resolution, standalone-image promotion, removal of a duplicated title
  * heading, heading slugs, Shiki highlighting, then a pass that lifts code
  * metadata onto the figure element so the React renderer never inspects its
@@ -18,6 +18,7 @@ import { rehypeCodeMeta } from "./plugins/rehype-code-meta";
 import { remarkCodeBlockJsx } from "./plugins/remark-code-block-jsx";
 import { remarkCodeLineNumbers } from "./plugins/remark-code-line-numbers";
 import { remarkEntryAssets } from "./plugins/remark-entry-assets";
+import { remarkFileDownloads } from "./plugins/remark-file-downloads";
 import { remarkImageFigures } from "./plugins/remark-image-figures";
 import { remarkPreviewSource } from "./plugins/remark-preview-source";
 import { remarkStripTitleHeading } from "./plugins/remark-strip-title-heading";
@@ -81,6 +82,16 @@ export function getMdxOptions(config: MdxOptionsConfig = {}) {
       ] as [
         typeof remarkPreviewSource,
         { entryDirectory?: string; entryDirectoryPath?: string },
+      ],
+      [
+        remarkFileDownloads,
+        {
+          entryDirectory: config.entryDirectory,
+          assetBaseUrl: config.assetBaseUrl,
+        },
+      ] as [
+        typeof remarkFileDownloads,
+        { entryDirectory?: string; assetBaseUrl?: string },
       ],
       remarkCodeBlockJsx,
       remarkCodeLineNumbers,

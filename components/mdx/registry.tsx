@@ -16,6 +16,7 @@ import { CodeBlock, CodeFigure, Pre } from "@/components/mdx/code-block";
 import { ComponentPreview } from "@/components/mdx/component-preview";
 import { CopyButton } from "@/components/mdx/copy-button";
 import { Details } from "@/components/mdx/details";
+import { FileDownloads } from "@/components/mdx/file-downloads";
 import { File, FileTree, Folder } from "@/components/mdx/file-tree";
 import { Kbd } from "@/components/mdx/kbd";
 import { CardGrid, LinkCard } from "@/components/mdx/link-card";
@@ -46,6 +47,9 @@ export const baseMdxComponents = {
   FileTree,
   Folder,
   File,
+
+  // Files
+  FileDownloads,
 
   // Reference
   PropsTable,
