@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { join } from "node:path";
 import type * as React from "react";
 import ReactDOMServer from "react-dom/server";
 import { formatLanguageLabel } from "@/components/mdx/code-block";
@@ -20,6 +21,7 @@ import {
   tabPropsSchema,
   tabsPropsSchema,
 } from "@/lib/mdx/types";
+import { formatFileSize } from "@/lib/utils";
 
 function renderStatic(element: React.ReactElement | null): string {
   if (!element) {
@@ -694,5 +696,83 @@ describe("Document components", () => {
     expect(html.match(/aria-label="Copy link to this section"/g)).toHaveLength(
       2,
     );
+  });
+});
+
+describe("Entry file downloads", () => {
+  const entryDirectory = join(
+    process.cwd(),
+    "content/01 - react/04 - canvas/01 - svg-particles",
+  );
+  const assetBaseUrl = "/content-assets/react/canvas/svg-particles";
+
+  it("offers the files an author lists, with sizes and download anchors", async () => {
+    const source = `<FileDownloads files="svg-particles.tsx, preview.tsx" description="The component and the demo." />`;
+    const { content, error } = await renderMdx({
+      source,
+      assetBaseUrl,
+      entryDirectory,
+    });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    expect(html).toContain(`href="${assetBaseUrl}/svg-particles.tsx"`);
+    expect(html).toContain('download="svg-particles.tsx"');
+    expect(html).toContain(`href="${assetBaseUrl}/preview.tsx"`);
+    expect(html).toContain("2 files");
+    expect(html).toContain("The component and the demo.");
+    // Sizes are read at compile time, so a weight is rendered, not a guess.
+    expect(html).toMatch(/\d+(\.\d+)? (B|KB|MB)/);
+  });
+
+  it("offers every adjacent asset when no files are named", async () => {
+    const { content } = await renderMdx({
+      source: "<FileDownloads />",
+      assetBaseUrl,
+      entryDirectory,
+    });
+
+    const html = renderStatic(content);
+    expect(html).toContain(`href="${assetBaseUrl}/svg-particles.tsx"`);
+    expect(html).toContain(`href="${assetBaseUrl}/preview.tsx"`);
+    // The entry's own document is not one of its downloads.
+    expect(html).not.toContain("README.mdx");
+  });
+
+  it("reports a missing file, an escaping path and a missing entry", async () => {
+    const missing = renderStatic(
+      (
+        await renderMdx({
+          source: '<FileDownloads files="not-here.tsx" />',
+          assetBaseUrl,
+          entryDirectory,
+        })
+      ).content,
+    );
+    expect(missing).toContain(
+      "names a file that is not in the entry directory",
+    );
+
+    const escaping = renderStatic(
+      (
+        await renderMdx({
+          source: '<FileDownloads files="../../secrets.ts" />',
+          assetBaseUrl,
+          entryDirectory,
+        })
+      ).content,
+    );
+    expect(escaping).toContain("points outside the entry directory");
+
+    const unbound = renderStatic(
+      (await renderMdx({ source: "<FileDownloads />" })).content,
+    );
+    expect(unbound).toContain("needs the entry it belongs to");
+  });
+
+  it("formats sizes the way the entry page's file list does", () => {
+    expect(formatFileSize(512)).toBe("512 B");
+    expect(formatFileSize(2048)).toBe("2 KB");
+    expect(formatFileSize(5 * 1024 * 1024)).toBe("5.0 MB");
   });
 });
