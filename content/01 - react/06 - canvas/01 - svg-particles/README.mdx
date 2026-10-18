@@ -1,0 +1,300 @@
+---
+title: SVG Particles
+description: Turn an SVG path into a canvas particle field by painting it once, reading the pixels back, and animating the dots under the cursor.
+date: 2026-08-18
+tags:
+  - react
+  - canvas
+  - particles
+  - interaction
+  - performance
+---
+
+# SVG Particles
+
+A logo made of a few thousand dots that move out of the way when the cursor
+comes close, then settle back. The component paints the path onto a canvas
+once, reads the canvas back as pixels, and keeps the coordinates that landed
+inside the shape. After that every frame is arithmetic over a flat array of
+points, so a complicated path costs no more than a simple one.
+
+<ComponentPreview demo="Preview" files="svg-particles.tsx" height={620} fps />
+
+## Sampling the shape, not the outline
+
+`getPointAtLength` needs a real `SVGPathElement` and only walks the outline, so
+a filled logo comes out as a wireframe. `Path2D` takes the same `d` string with
+no DOM, and `getImageData` hands back every pixel it covered.
+
+```tsx title="svg-particles.tsx"
+const paths = Array.isArray(svgPath) ? svgPath : [svgPath];
+for (const pathStr of paths) {
+  const path = new Path2D(pathStr);
+  if (pathStyle === "stroke") ctx.stroke(path);
+  else ctx.fill(path);
+}
+
+textImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+```
+
+The `viewBoxWidth` and `viewBoxHeight` props set the scale, since the numbers
+in a path mean nothing without the box they were drawn against. Canvas does the
+drawing, so subpaths, even-odd holes, joins and caps all still work, and an
+array of `d` strings becomes one shape.
+
+<Callout type="note" compact>
+  The shape is drawn into the visible canvas and cleared in the same task, so
+  nothing ever reaches the screen. An offscreen canvas would be clearer to
+  read, at the cost of a second context.
+</Callout>
+
+## Where the particles come from
+
+A particle is any pixel the shape covered. The component picks a random pixel,
+keeps it if its alpha is above half, and tries again up to a hundred times if
+it is not. `baseX` and `baseY` are the home pixel every later frame measures
+against.
+
+Each attempt succeeds with roughly the probability that the shape covers the
+canvas, so a solid logo lands in a few tries while a thin stroke on a wide
+canvas can fail outright. The budget is 7000 particles for a 1080p frame,
+scaled by the square root of the area ratio, and the loop refills the field
+every frame. That is why a stroked shape fills in over the first second.
+
+A particle's home is a pixel of a bitmap, so nothing survives a resize. A
+`ResizeObserver` throws the bitmap away and builds the field again.
+
+## Scatter and spill
+
+The two modes differ in whether a particle remembers anything between frames.
+`scatter` does not. Position is assigned from the cursor distance, so nothing
+can drift, and `returnSpeed` closes a fixed fraction of the way home each
+frame.
+
+```tsx title="svg-particles.tsx"
+p.x = p.baseX - Math.cos(angle) * force * 60;
+p.y = p.baseY - Math.sin(angle) * force * 60;
+```
+
+`spill` adds up velocity instead. The cursor pushes, `friction` bleeds the push
+off, and `returnSpeed` acts as a spring pulling each particle home.
+
+```tsx title="svg-particles.tsx"
+p.vx -= Math.cos(angle) * force * 2;
+p.x += p.vx;
+p.vx *= friction;
+p.vx += (p.baseX - p.x) * returnSpeed * 0.1;
+```
+
+Tune those two together. A strong spring with friction near 0.99 keeps the
+field wobbling after the cursor has gone. The documented range of 0.8 to 0.99
+stays inside safe values.
+
+<Callout type="tip" title="Which mode">
+  Use `scatter` when the shape should feel stuck to the cursor and snap back.
+  Use `spill` for something liquid that keeps moving after the cursor stops.
+  `scatter` is also cheaper, since it stores no velocity.
+</Callout>
+
+## Colour and lifetime
+
+A particle is drawn in `particleColor` at rest and `scatteredColor` once it has
+moved more than two pixels from home. The threshold stops the resting field
+from flickering while the spring settles.
+
+With `enableParticleDeath`, each particle lives 50 to 150 frames and is then
+replaced somewhere else in the shape. The count stays the same but the pixels
+keep changing, which looks like a slow shimmer. In `spill` a particle that dies
+in mid-flight comes back home, so a field you pushed hard heals from the inside
+while the pushed dots are still drifting back.
+
+## Cost and trade-offs
+
+One pass over the array per frame: a distance, a few multiplications, and a
+`fillRect` of one pixel or so. No DOM, no allocation, no layout. What it does
+spend is canvas state changes, since `fillStyle` is set per particle rather
+than per colour. If you need a higher count, sort the field and draw it in two
+passes, one per colour.
+
+- The canvas is sized in CSS pixels with no `devicePixelRatio` scaling, so
+  dots look soft on a high-density screen. For 1px dots that reads as a glow,
+  and it cuts the number of fills by four.
+- `backgroundColor` is painted opaquely every frame, so the page behind never
+  shows through. On a themed surface, drop it and let `clearRect` work alone.
+- Touch has its own code path. The field only reacts while a finger is down,
+  and the desktop check is `!("ontouchstart" in window)`, so a laptop with a
+  touchscreen needs a press first.
+
+<Callout type="warning" title="The mobile height runs the effect twice">
+  `isMobile` is state, set from the measured width inside the effect that reads
+  it, and it is in that effect's dependency list. On a narrow viewport the
+  field is built at the desktop height, the flag flips, and the effect runs
+  again. Deriving the height from `rect.width` would remove both.
+</Callout>
+
+## Using it
+
+The canvas fills its container, so give it a sized box.
+
+```tsx title="page.tsx"
+import SVGParticles from "@/components/ui/svg-particles";
+
+export default function Page() {
+  return (
+    <SVGParticles
+      svgPath="M12 1L24 22H0L12 1Z"
+      viewBoxWidth={24}
+      viewBoxHeight={22}
+      logoHeight={200}
+      scatteredColor="#00DCFF"
+      className="h-screen w-full"
+    />
+  );
+}
+```
+
+A stroked shape needs the stroke props, in viewBox units, and an array of `d`
+strings when the source SVG had more than one path element.
+
+```tsx title="page.tsx"
+<SVGParticles
+  svgPath={["M9 15v-6l7.745 10.65a9 9 0 1 1 2.255 -1.993", "M15 12v-3"]}
+  viewBoxWidth={24}
+  viewBoxHeight={24}
+  pathStyle="stroke"
+  strokeWidth={2}
+  lineJoin="round"
+  lineCap="round"
+/>
+```
+
+<ComponentPreview demo="Stroke" height={420} fps />
+
+## Props
+
+<PropsTable
+  of="<SVGParticles />"
+  rows={[
+    {
+      name: "svgPath",
+      type: "string | string[]",
+      required: true,
+      description: "The d attribute to sample. An array is drawn as subpaths of one shape, in order.",
+    },
+    {
+      name: "viewBoxWidth",
+      type: "number",
+      default: "100",
+      description: "Width of the viewBox the path was drawn against. A wrong value scales the shape wrongly; it cannot distort it.",
+    },
+    {
+      name: "viewBoxHeight",
+      type: "number",
+      default: "100",
+      description: "Height of that viewBox. Together with logoHeight it sets the scale.",
+    },
+    {
+      name: "logoHeight",
+      type: "number",
+      default: "120",
+      description: "Rendered height of the shape in pixels, on a container at least 768px wide.",
+    },
+    {
+      name: "mobileLogoHeight",
+      type: "number",
+      default: "60",
+      description: "Rendered height below a container width of 768px. Measured from the container, not the viewport.",
+    },
+    {
+      name: "particleColor",
+      type: "string",
+      default: '"white"',
+      description: "Colour of a particle at rest. The shape is also drawn in this colour, so it must be opaque for the alpha test to find it.",
+    },
+    {
+      name: "scatteredColor",
+      type: "string",
+      default: '"#00DCFF"',
+      description: "Colour of a particle that has moved away from its home pixel.",
+    },
+    {
+      name: "backgroundColor",
+      type: "string",
+      default: '"black"',
+      description: "Painted opaquely over the whole canvas every frame, so the page behind the field never shows through.",
+    },
+    {
+      name: "pathStyle",
+      type: '"fill" | "stroke"',
+      default: '"fill"',
+      description: "Whether the path is filled or stroked when it is drawn. A fill gives the sampler far more area to hit.",
+    },
+    {
+      name: "strokeWidth",
+      type: "number",
+      default: "1",
+      description: "Stroke width in viewBox units, so it scales with the shape.",
+    },
+    {
+      name: "lineJoin",
+      type: "CanvasLineJoin",
+      default: '"miter"',
+      description: "Join style for stroke corners: miter, round or bevel.",
+    },
+    {
+      name: "lineCap",
+      type: "CanvasLineCap",
+      default: '"butt"',
+      description: "Cap style for stroke ends: butt, round or square.",
+    },
+    {
+      name: "interactionMode",
+      type: '"scatter" | "spill"',
+      default: '"scatter"',
+      description: "scatter sets the position from the cursor distance each frame; spill adds up velocity with friction and a spring.",
+    },
+    {
+      name: "forceMu",
+      type: "number",
+      default: "1",
+      description: "Multiplier on the cursor's push, which falls off evenly over 240 pixels.",
+    },
+    {
+      name: "returnSpeed",
+      type: "number",
+      default: "0.1",
+      description: "Fraction of the remaining distance closed each frame in scatter mode; the spring strength in spill mode.",
+    },
+    {
+      name: "friction",
+      type: "number",
+      default: "0.95",
+      description: "Velocity kept each frame in spill mode. Ignored in scatter mode, which stores no velocity.",
+    },
+    {
+      name: "enableParticleDeath",
+      type: "boolean",
+      default: "true",
+      description: "Give each particle a 50-150 frame life and respawn it elsewhere in the shape, for a shimmer across the shape.",
+    },
+  ]}
+/>
+
+Anything else is passed to the wrapping `div`, including `className`, which is
+how you give the field its size.
+
+## Supplying the path data
+
+Open the SVG in an editor and read `viewBox="0 0 24 24"` off the root element
+and `d="…"` off each `<path>`. Nothing else is needed.
+
+- **Area beats outline.** Raise `strokeWidth` before you raise the particle
+  count.
+- **Keep the shape large in the frame.** Pixels outside it are thrown away, so
+  a small shape on a wide canvas wastes attempts on empty space.
+- **Only `<path>` elements work.** Convert `<circle>`, `<rect>` and `<polygon>`
+  first; most editors will do it.
+- **This is not accessible on its own.** The canvas carries an `aria-label` and
+  nothing more, so a shape that carries meaning needs that meaning in the
+  markup around it.
