@@ -14,12 +14,16 @@
 import { XIcon } from "lucide-react";
 import * as React from "react";
 import { createPortal } from "react-dom";
+import {
+  invertedTransform,
+  LIFT_DURATION,
+  LIFT_EASING,
+  prefersReducedMotion,
+} from "@/lib/dom/lift";
 import { cn } from "@/lib/utils";
 
 /** Breathing room kept between the zoomed figure and the viewport edges. */
 const VIEWPORT_PADDING = 32;
-const DURATION = 260;
-const EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)";
 
 type ImageZoomProps = React.ComponentPropsWithoutRef<"img"> &
   Record<string, unknown>;
@@ -41,17 +45,6 @@ function zoomedRect(thumbnail: DOMRect) {
     width,
     height,
   };
-}
-
-/** The transform that puts an element at `from` while it is laid out at `to`. */
-function invertedTransform(from: DOMRect, to: ReturnType<typeof zoomedRect>) {
-  return `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${
-    from.width / to.width
-  })`;
-}
-
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export function ImageZoom({ className, alt, ...props }: ImageZoomProps) {
@@ -88,7 +81,7 @@ export function ImageZoom({ className, alt, ...props }: ImageZoomProps) {
     for (const chrome of [backdropRef.current, closeRef.current]) {
       chrome?.animate(
         { opacity: [1, 0] },
-        { duration: DURATION, easing: EASING, fill: "forwards" },
+        { duration: LIFT_DURATION, easing: LIFT_EASING, fill: "forwards" },
       );
     }
 
@@ -98,7 +91,7 @@ export function ImageZoom({ className, alt, ...props }: ImageZoomProps) {
     // back to full size for a frame before React unmounts the overlay.
     element.animate(
       { transform: ["none", invertedTransform(from, to)] },
-      { duration: DURATION, easing: EASING, fill: "forwards" },
+      { duration: LIFT_DURATION, easing: LIFT_EASING, fill: "forwards" },
     ).onfinish = finish;
   }, []);
 
@@ -124,7 +117,7 @@ export function ImageZoom({ className, alt, ...props }: ImageZoomProps) {
     if (!prefersReducedMotion()) {
       element.animate(
         { transform: [invertedTransform(from, to), "none"] },
-        { duration: DURATION, easing: EASING },
+        { duration: LIFT_DURATION, easing: LIFT_EASING },
       );
     }
 
