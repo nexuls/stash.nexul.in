@@ -17,12 +17,11 @@
 import { readFileSync, statSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import type { HastNode } from "./hast";
-
-interface MdxAttribute {
-  type: string;
-  name?: string;
-  value?: unknown;
-}
+import {
+  type MdxAttribute,
+  readStringAttribute,
+  setAttribute,
+} from "./mdx-attributes";
 
 interface MdastNode extends HastNode {
   name?: string;
@@ -85,34 +84,6 @@ export interface RemarkPreviewSourceOptions {
   entryDirectory?: string;
   /** The same directory relative to `content/`, order prefixes included. */
   entryDirectoryPath?: string;
-}
-
-/** Reads a plain string attribute; anything expression-valued is ignored. */
-function readStringAttribute(
-  attributes: MdxAttribute[],
-  name: string,
-): string | undefined {
-  const attribute = attributes.find(
-    (candidate) =>
-      candidate.type === "mdxJsxAttribute" && candidate.name === name,
-  );
-  return typeof attribute?.value === "string" ? attribute.value : undefined;
-}
-
-function setAttribute(
-  attributes: MdxAttribute[],
-  name: string,
-  value: string,
-): void {
-  const existing = attributes.find(
-    (candidate) =>
-      candidate.type === "mdxJsxAttribute" && candidate.name === name,
-  );
-  if (existing) {
-    existing.value = value;
-    return;
-  }
-  attributes.push({ type: "mdxJsxAttribute", name, value });
 }
 
 /**
