@@ -409,6 +409,30 @@ A keyboard key. A `<kbd>` typed directly in the document renders identically, so
 Press <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> to open the command menu.
 ```
 
+### FileDownloads
+
+Hands the reader the entry's own files. Useful directly under a preview, where
+someone who has just seen the component running wants the source on disk.
+
+```mdx
+<FileDownloads
+  files="svg-particles.tsx, preview.tsx"
+  description="The component and the demos above."
+/>
+```
+
+Omit `files` to offer every asset discovered beside `README.mdx`:
+
+```mdx
+<FileDownloads title="Every file in this entry" />
+```
+
+Paths are relative to the entry directory and must stay inside it. Sizes are
+read at compile time, and a name that no longer exists renders a diagnostic
+where the list would have been, so a renamed file is caught in review rather
+than by a reader. The rows are ordinary download links served by the content
+asset route, so nothing about this component reaches the client bundle.
+
 ## Error handling & author diagnostics
 
 - **Unregistered components**: If an unregistered component (e.g. `<UnknownWidget />`) is used, Stash renders an informative diagnostic banner displaying the missing component name, passed props, and available components rather than crashing the page.

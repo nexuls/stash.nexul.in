@@ -199,6 +199,14 @@ Recorded in [ADR-0008](architecture/decisions/0008-ordered-directory-prefixes.md
 - `lib/icons/domain-icons.ts` resolves `tui`/`terminal` to the Lucide terminal mark, so OpenTUI is not a plain folder in the switcher.
 - Verification: new tests in `lib/content/__tests__/archive-index.test.ts` (`findCategory`, the seeded domain) and `components/navigation/__tests__/navigation.test.tsx` (seeding, ordering, `homePermalink`); `bun x tsc --noEmit`, `bun x biome check .` and `bun run build` clean, with the 17 failures the suite already had unchanged. Checked against the running dev server: the landing page lists OpenTUI, `/stash/opentui` shows its three categories in the sidebar, and each category page is served.
 
+### 10. Downloading an entry's files (Completed)
+
+- `<FileDownloads />` offers an entry's adjacent files as downloads, authored for the place a reader asks for them: under the preview, rather than only in the entry page's footer list. Both `react/layout/masonry-row-grid` and `react/canvas/svg-particles` use it.
+- `remarkFileDownloads` (`lib/mdx/plugins/remark-file-downloads.ts`) resolves the authored `files` list against the entry directory at compile time, reads each size, and writes the asset URL prefix onto the tag. Written bare, the tag offers every asset `discoverAdjacentAssets` finds, so an added file needs no edit to the document. A name that does not exist renders a diagnostic where the list would have been, the way a renamed `<ComponentPreview>` source does.
+- `components/mdx/file-downloads.tsx` is a Server Component: the rows are plain anchors carrying `download`, pointing at the already-prerendered content asset route, so saving a file costs nothing in the client bundle.
+- `readStringAttribute`/`setAttribute` moved to `lib/mdx/plugins/mdx-attributes.ts`, shared by the two plugins that fill a tag. `formatFileSize` moved to `lib/utils.ts`, so the footer list and the download rows round a size the same way.
+- Verification: four tests in `lib/mdx/__tests__/mdx.test.ts` (an authored list, bare discovery, the three diagnostics, the size format); `bun run lint` and `bun x tsc --noEmit` clean; `bun run build` prerenders both entries with `download` anchors and compile-time sizes. The 20 failures the suite already had are unchanged.
+
 ## Confirmed architecture
 
 - Stash is a personal engineering archive, not a project portfolio.
