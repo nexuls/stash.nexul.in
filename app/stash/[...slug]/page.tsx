@@ -28,6 +28,7 @@ import {
 } from "@/lib/content/discovery";
 import { MDXRenderer } from "@/lib/mdx/renderer";
 import { siteConfig } from "@/lib/site-config";
+import { formatFileSize } from "@/lib/utils";
 
 interface DocPageProps {
   params: Promise<{
@@ -87,13 +88,6 @@ export async function generateMetadata({
       description: entry.description,
     },
   };
-}
-
-/** Formats a size in bytes for the companion files list. */
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default async function DocPage({ params }: DocPageProps) {
