@@ -20,6 +20,8 @@ export function DocsMobileHeader({ className }: { className?: string }) {
     <div
       className={cn(
         "flex md:hidden h-12 w-full items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm sticky top-0 z-30",
+        // Shell, not document: paper gets the entry alone.
+        "print:hidden",
         className,
       )}
     >

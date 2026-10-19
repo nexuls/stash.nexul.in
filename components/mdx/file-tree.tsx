@@ -148,7 +148,7 @@ export function FileTree({
   return (
     <ul
       className={cn(
-        "my-6 list-none rounded-lg border border-border bg-card/40 px-2.5 py-2",
+        "stash-panel my-6 list-none rounded-lg border border-border bg-card/40 px-2.5 py-2",
         className,
       )}
       {...props}

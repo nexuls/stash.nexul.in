@@ -1,0 +1,299 @@
+/* ==========================================================================
+   Print
+   --------------------------------------------------------------------------
+   On screen the archive is an application shell: a fixed sidebar beside a
+   full-height inset, and the page itself scrolls inside a Base UI scroll area
+   rather than in the document. Paper has none of that. Without these rules a
+   print is the shell photographed once — sidebar included, and the entry cut
+   off at the bottom of the scroll box, because a scroll container paginates
+   to exactly one page.
+
+   So printing undoes the shell: the navigation chrome is dropped, every
+   height and overflow that holds the reading column inside a box is released
+   so the document flows and paginates, and the palette is pinned to ink on
+   white whichever theme the reader had on.
+
+   Everything here is print-only, and the selectors are the same data-slots and
+   class hooks the components already carry, so nothing on screen changes.
+   ========================================================================== */
+
+@media print {
+  /* Margins and the citation ------------------------------------------- */
+
+  /* The margin holds the running citation, so it is deep enough to carry a
+     line of text clear of the column. Chrome draws these boxes; browsers that
+     do not support them simply print the document without them, and a reader
+     who sets "Margins: None" in the print dialog gets the same — which is why
+     the column keeps a little padding of its own further down rather than
+     trusting the page margin for all of its breathing room.
+
+     The strings come from components/print/print-citation.tsx, which declares
+     them on the root element for the entry being printed; the fallbacks cover
+     every other page. */
+  @page {
+    margin: 16mm 14mm;
+
+    @bottom-left {
+      content: var(--print-citation, "stash.nexul.in");
+      font-family: var(--font-mono), monospace;
+      font-size: 7.5pt;
+      color: #555555;
+      vertical-align: top;
+      padding-top: 5mm;
+    }
+
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: var(--font-mono), monospace;
+      font-size: 7.5pt;
+      color: #555555;
+      vertical-align: top;
+      padding-top: 5mm;
+    }
+  }
+
+  /* The source is named once, at the top of the first sheet; after that the
+     footer carries it. */
+  @page :first {
+    @top-left {
+      content: var(--print-source, "Stash");
+      font-family: var(--font-mono), monospace;
+      font-size: 7.5pt;
+      color: #555555;
+      vertical-align: bottom;
+      padding-bottom: 5mm;
+    }
+
+    @top-right {
+      content: var(--print-updated, "");
+      font-family: var(--font-mono), monospace;
+      font-size: 7.5pt;
+      color: #555555;
+      vertical-align: bottom;
+      padding-bottom: 5mm;
+    }
+  }
+
+  /* Ink on paper ------------------------------------------------------- */
+
+  /* The dark theme is a screen affordance; on paper it would flood the sheet,
+     so printing runs on the light palette whichever theme the reader had on.
+     The theme class sits on `html`, so the selector is written to outrank
+     `.dark` rather than relying on this file's place in the import order.
+
+     The values are the light theme's own — one palette, not a second one to
+     keep in step — with three changes paper asks for: the page surfaces drop
+     their warm tint so the sheet is left white, and the secondary text and
+     rules step down a little, because what reads as quiet grey on a lit screen
+     reads as faint on paper. */
+  html:root {
+    color-scheme: light;
+
+    --background: #ffffff;
+    --card: #ffffff;
+    --popover: #ffffff;
+    --sidebar: #ffffff;
+
+    --muted-foreground: oklch(0.45 0.02 82);
+    --border: oklch(0.82 0.016 90);
+    --input: oklch(0.82 0.016 90);
+    --prose: oklch(0.28 0.012 78);
+
+    /* The rest of the light palette, restated so a dark-theme reader gets the
+       same sheet as a light-theme one. */
+    --foreground: oklch(0.175 0.012 75);
+    --card-foreground: oklch(0.175 0.012 75);
+    --popover-foreground: oklch(0.175 0.012 75);
+    --sidebar-foreground: oklch(0.175 0.012 75);
+    --primary: oklch(0.511 0.096 186.391);
+    --primary-foreground: oklch(40.97% 0.0735 181.66);
+    --secondary: oklch(0.955 0.016 92);
+    --secondary-foreground: oklch(0.26 0.013 75);
+    --muted: oklch(0.952 0.017 92);
+    --accent: oklch(0.945 0.021 90);
+    --accent-foreground: oklch(0.24 0.014 75);
+
+    --prose-emphasis: var(--foreground);
+    --note: oklch(0.511 0.096 186.391);
+    --tip: oklch(0.54 0.115 152);
+    --warn: oklch(0.63 0.135 72);
+    --danger: oklch(0.56 0.195 25);
+    --highlight: oklch(0.52 0.16 292);
+    --code-bg: oklch(0.975 0.008 92);
+    --code-header: oklch(0.955 0.01 90);
+    --code-rule: oklch(0.87 0.015 88);
+    --code-gutter: oklch(0.52 0.02 82);
+    --diff-add: oklch(0.57 0.13 150);
+    --diff-del: oklch(0.58 0.19 24);
+  }
+
+  /* Shell ------------------------------------------------------------- */
+
+  html,
+  body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  /* The sidebar, its layout gap, its rail and every trigger that opens it. */
+  [data-slot="sidebar"],
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-rail"],
+  [data-slot="sidebar-trigger"],
+  .sidebar-toggle {
+    display: none !important;
+  }
+
+  /* The inset is a full-height, inset, bordered card on screen; on paper it is
+     only a wrapper around the column. */
+  [data-slot="sidebar-wrapper"],
+  [data-slot="sidebar-inset"] {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* The scroll area is what trims the print to one page: its viewport carries
+     `overflow: scroll` as an inline style, so only `!important` reaches it. */
+  [data-slot="scroll-area"],
+  [data-slot="scroll-area-viewport"] {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  [data-slot="scroll-area-scrollbar"],
+  [data-slot="scroll-area-corner"] {
+    display: none !important;
+  }
+
+  /* Reading column ---------------------------------------------------- */
+
+  /* The measure is set for a screen beside a sidebar and a table of contents;
+     with the sheet to itself the column takes the text block it is given. */
+  .stash-doc {
+    max-width: none !important;
+    width: auto !important;
+    /* The screen padding goes, but not all of it. Part is the list marker,
+       which is set outside the text column and would print off the edge of a
+       column sitting flush to the page margin; the rest is insurance, because
+       a reader can turn the page margin off in the print dialog and the text
+       should not then start on the trim. */
+    padding: 6mm 4mm 0 5mm !important;
+  }
+
+  /* Page breaks -------------------------------------------------------- */
+
+  /* Headings keep at least the start of what they introduce with them. */
+  .stash-doc h1,
+  .stash-doc h2,
+  .stash-doc h3,
+  .stash-doc h4 {
+    break-after: avoid-page;
+  }
+
+  /* A bordered block is read as one object — a code panel, a tab set, a props
+     table, a file tree, a download list, a preview, a step, a callout, a
+     figure. Split across a fold it reads as two broken ones, so it moves to
+     the next sheet whole. `stash-panel` is the hook the MDX components carry
+     for exactly this; it has no screen styling.
+
+     Anything taller than a sheet is still broken by the browser, which is the
+     right answer: an unbreakable block that cannot fit would otherwise be
+     dropped. */
+  .stash-doc .stash-panel,
+  .stash-doc .stash-code,
+  .stash-doc .stash-callout,
+  .stash-doc .stash-details,
+  .stash-doc .stash-preview,
+  .stash-doc figure,
+  .stash-doc img,
+  .stash-doc tr {
+    break-inside: avoid;
+  }
+
+  /* A table that does run over a fold repeats its head on the next sheet. */
+  .stash-doc thead {
+    display: table-header-group;
+  }
+
+  /* In-document chrome: the copy-link control beside each heading, and the
+     code panel's own toolbar and collapse toggle. */
+  .stash-anchor,
+  .stash-code button {
+    display: none !important;
+  }
+
+  /* A disclosure is a screen gesture. On paper there is nothing to click, so
+     what it holds is printed rather than lost with the sheet. */
+  .stash-details::details-content {
+    content-visibility: visible !important;
+    block-size: auto !important;
+    grid-template-rows: 1fr !important;
+    opacity: 1 !important;
+    padding-inline: var(--stash-details-pad-x, calc(var(--spacing) * 3.5));
+    padding-block: var(--stash-details-pad-y, calc(var(--spacing) * 3));
+  }
+
+  /* Code ------------------------------------------------------------- */
+
+  /* Backgrounds carry meaning here — a highlighted line, an added or removed
+     one — so they are asked for explicitly rather than dropped. */
+  .stash-code,
+  .stash-doc .stash-callout,
+  .stash-preview {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Both themes put their colour on every token; paper takes the light one. */
+  .stash-code span,
+  code[data-language] span {
+    color: var(--shiki-light, inherit) !important;
+  }
+
+  /* A code panel scrolls across on screen, and a long one is clipped until it
+     is expanded. Neither gesture exists on paper, so lines wrap and the whole
+     block prints. */
+  .stash-code pre,
+  .stash-code pre > code {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .stash-code[data-collapsed="true"] .stash-code-viewport {
+    max-height: none !important;
+    overflow: visible !important;
+    mask-image: none !important;
+  }
+
+  /* A wrapped line continues under the code rather than under the gutter: the
+     same indent the on-screen wrap toggle applies in code.css. */
+  .stash-code code[data-line-numbers] > [data-line] {
+    --stash-line-gutter: calc(2.875rem + var(--stash-line-digits, 2) * 1ch);
+    padding-left: var(--stash-line-gutter) !important;
+    text-indent: calc(-1 * var(--stash-line-gutter)) !important;
+  }
+
+  /* Nothing on paper responds to a pointer, so interactive styling goes. */
+  * {
+    transition: none !important;
+    animation: none !important;
+    box-shadow: none;
+  }
+}

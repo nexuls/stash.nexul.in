@@ -225,7 +225,7 @@ export function Tabs({
     <TabsContext.Provider value={contextValue}>
       <div
         className={cn(
-          "my-6 w-full overflow-hidden rounded-xl border border-code-rule bg-card",
+          "stash-panel my-6 w-full overflow-hidden rounded-xl border border-code-rule bg-card",
           "[&_.stash-code]:my-0",
           className,
         )}

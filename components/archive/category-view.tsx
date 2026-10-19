@@ -14,6 +14,7 @@ import { FolderTree, History } from "lucide-react";
 import { NoteList } from "@/components/archive/note-list";
 import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button";
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
+import { PrintCitation } from "@/components/print/print-citation";
 import type { ArchiveDomain } from "@/lib/content/archive-index";
 import { entryAssetBaseUrl } from "@/lib/content/asset-url";
 import type { ContentEntry } from "@/lib/content/types";
@@ -29,7 +30,12 @@ export function CategoryView({ entry, domain }: CategoryViewProps) {
   const noteCount = domain?.noteCount ?? 0;
 
   return (
-    <div className="flex min-h-screen w-full flex-col p-2">
+    <div className="flex min-h-screen w-full flex-col p-2 print:min-h-0 print:p-0">
+      <PrintCitation
+        title={entry.title}
+        permalink={entry.permalink}
+        updated={updated}
+      />
       <DocsMobileHeader />
 
       <div className="flex w-full flex-1 justify-center gap-10">

@@ -26,7 +26,7 @@ export function Step({ title, className, children, ...props }: StepProps) {
   return (
     <li
       className={cn(
-        "relative pb-6 pl-10 last:pb-0",
+        "stash-panel relative pb-6 pl-10 last:pb-0",
         // The rail is drawn by the list item so it stops at the last marker.
         "before:absolute before:top-7 before:bottom-0 before:left-2.75 before:w-px before:bg-border",
         "last:before:hidden",

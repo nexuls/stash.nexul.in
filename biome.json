@@ -31,6 +31,14 @@
   },
   "overrides": [
     {
+      "includes": ["app/print.css"],
+      "linter": {
+        "rules": {
+          "complexity": { "noImportantStyles": "off" }
+        }
+      }
+    },
+    {
       "includes": ["components/ui/**"],
       "linter": {
         "rules": {

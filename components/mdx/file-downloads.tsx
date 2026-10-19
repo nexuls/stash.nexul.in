@@ -96,7 +96,7 @@ export function FileDownloads({
   return (
     <div
       className={cn(
-        "my-6 overflow-hidden rounded-xl border border-border bg-card/40",
+        "stash-panel my-6 overflow-hidden rounded-xl border border-border bg-card/40",
         className,
       )}
     >

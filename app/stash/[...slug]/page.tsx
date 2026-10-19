@@ -16,6 +16,7 @@ import { CopyMarkdownButton } from "@/components/navigation/copy-markdown-button
 import { DocsMobileHeader } from "@/components/navigation/docs-mobile-header";
 import { DocsPager } from "@/components/navigation/docs-pager";
 import { DocsToc } from "@/components/navigation/docs-toc";
+import { PrintCitation } from "@/components/print/print-citation";
 import { buildArchiveIndex, findCategory } from "@/lib/content/archive-index";
 import { entryAssetBaseUrl, entryAssetUrl } from "@/lib/content/asset-url";
 import {
@@ -126,7 +127,12 @@ export default async function DocPage({ params }: DocPageProps) {
   const formattedDate = entry.updated || entry.date;
 
   return (
-    <div className="flex min-h-screen w-full flex-col p-2">
+    <div className="flex min-h-screen w-full flex-col p-2 print:min-h-0 print:p-0">
+      <PrintCitation
+        title={entry.title}
+        permalink={entry.permalink}
+        updated={formattedDate}
+      />
       <DocsMobileHeader />
 
       <div className="flex w-full flex-1 justify-center gap-10">
@@ -187,7 +193,7 @@ export default async function DocPage({ params }: DocPageProps) {
           </header>
 
           {entry.headings.length > 1 && (
-            <div className="mb-10 rounded-lg border border-border bg-card/40 p-4 xl:hidden">
+            <div className="mb-10 rounded-lg border border-border bg-card/40 p-4 xl:hidden print:hidden">
               <DocsToc headings={entry.headings} />
             </div>
           )}
@@ -217,7 +223,7 @@ export default async function DocPage({ params }: DocPageProps) {
                 Saved beside the document, and served as-is.
               </p>
 
-              <ul className="mt-4 list-none divide-y divide-border rounded-lg border border-border pl-0">
+              <ul className="stash-panel mt-4 list-none divide-y divide-border rounded-lg border border-border pl-0">
                 {entry.assets.map((asset) => (
                   <li key={asset.relativePath}>
                     <a
@@ -253,7 +259,7 @@ export default async function DocPage({ params }: DocPageProps) {
 
         <aside
           aria-label="Table of contents"
-          className="hidden w-60 shrink-0 px-4 py-8 pt-18 xl:block"
+          className="hidden w-60 shrink-0 px-4 py-8 pt-18 xl:block print:hidden"
         >
           <div className="sticky top-18 h-[calc(100vh-10rem)] overflow-y-auto pr-1">
             <DocsToc headings={entry.headings} />

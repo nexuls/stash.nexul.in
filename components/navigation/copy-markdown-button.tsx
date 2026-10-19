@@ -49,6 +49,8 @@ export function CopyMarkdownButton({
         "hover:bg-muted hover:text-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         copied ? "text-tip" : "text-muted-foreground",
+        // A clipboard control has nothing to offer on paper.
+        "print:hidden",
         className,
       )}
     >

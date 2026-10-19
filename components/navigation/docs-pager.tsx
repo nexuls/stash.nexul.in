@@ -39,7 +39,8 @@ export function DocsPager({
   const githubSourceUrl = `${siteConfig.links.github}/blob/main/${currentEntry.filePath}`;
 
   return (
-    <div className={cn("mt-12 space-y-10", className)}>
+    // Linear navigation is a reading affordance, so it stays off paper.
+    <div className={cn("mt-12 space-y-10 print:hidden", className)}>
       {/* Related entries */}
       {related.length > 0 && (
         <section aria-labelledby="see-also-heading" className="space-y-4">

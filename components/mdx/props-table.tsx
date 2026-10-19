@@ -208,7 +208,7 @@ export function PropsTable({ rows, of, className, children }: PropsTableProps) {
   return (
     <div
       className={cn(
-        "my-6 rounded-xl border border-code-rule bg-card/40 p-1.5",
+        "stash-panel my-6 rounded-xl border border-code-rule bg-card/40 p-1.5",
         className,
       )}
     >

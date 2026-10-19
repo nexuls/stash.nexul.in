@@ -72,7 +72,7 @@ export default async function StashLayout({
           "opacity-100 peer-data-[state=expanded]:[&_.sidebar-toggle]:opacity-0 peer-data-[state=expanded]:[&_.sidebar-toggle]:pointer-events-none",
         )}
       >
-        <div className="sidebar-toggle max-md:hidden absolute z-50 top-4 left-4 transition-opacity duration-200">
+        <div className="sidebar-toggle max-md:hidden absolute z-50 top-4 left-4 transition-opacity duration-200 print:hidden">
           <SidebarTrigger size="icon-lg" />
         </div>
 

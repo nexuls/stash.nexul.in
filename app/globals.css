@@ -5,6 +5,9 @@
 /* Document surface: see components/mdx/styles/index.css. */
 @import "../components/mdx/styles/index.css";
 
+/* Paper: see app/print.css. */
+@import "./print.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
