@@ -1,0 +1,105 @@
+---
+title: "OneOf: exclusive unions"
+description: A union in TypeScript does not forbid mixing its members. A mapped utility type makes the members mutually exclusive.
+date: 2026-10-24
+tags:
+  - typescript
+  - patterns
+  - type-level
+---
+
+# OneOf: exclusive unions
+
+`A | B` means *assignable to at least one of these*, not *exactly one of these*.
+A value carrying the fields of both members satisfies it:
+
+```typescript
+interface Electric { name: string; batteryKwh: number }
+interface Petrol { name: string; tankLitres: number }
+
+const raw = { name: "x", batteryKwh: 75, tankLitres: 50 };
+const car: Electric | Petrol = raw; // no error
+```
+
+Excess property checking hides this for a fresh object literal and stops
+applying the moment the value arrives through a variable, a parse or an API
+response — which is where it matters.
+
+`OneOf` fixes the union itself by giving each member an optional `never` for
+every key it does not declare, so a foreign key has no type it could hold:
+
+<TypeMatrix
+  of="const car: … = raw"
+  types={["Electric | Petrol", "OneOf<Electric | Petrol>"]}
+  cases={[
+    {
+      label: "battery only",
+      code: '{ name: "x", batteryKwh: 75 }',
+      verdicts: ["ok", "ok"],
+    },
+    {
+      label: "tank only",
+      code: '{ name: "x", tankLitres: 50 }',
+      verdicts: ["ok", "ok"],
+    },
+    {
+      label: "both — the case worth catching",
+      code: '{ name: "x", batteryKwh: 75, tankLitres: 50 }',
+      verdicts: [
+        "ok",
+        {
+          status: "error",
+          message: "Type 'number' is not assignable to type 'undefined'.",
+        },
+      ],
+    },
+  ]}
+/>
+
+## Implementation
+
+Two lines, in [`one-of.ts`](./one-of.ts):
+
+```typescript title="one-of.ts"
+type KeysOfUnion<T> = T extends unknown ? keyof T : never;
+
+export type OneOf<
+  Members extends object,
+  AllKeys extends PropertyKey = KeysOfUnion<Members>,
+> = Members extends unknown
+  ? Members & Partial<Record<Exclude<AllKeys, keyof Members>, never>>
+  : never;
+```
+
+`AllKeys` is a defaulted type parameter rather than an inline computation, and
+that is the whole trick. `Members extends unknown` distributes over the union,
+and inside the distribution `Members` is a single member, so `keyof Members`
+can no longer see the others. Resolving the key set in the parameter list
+captures it before distribution begins.
+
+`KeysOfUnion` exists for the same reason: `keyof (Electric | Petrol)` is only
+the keys the members *share*, so it cannot be used here.
+
+## Cost
+
+Three things to know before reaching for it:
+
+- **Error messages get worse.** A mixed object reports a `never`-typed
+  property, not *you mixed two variants*. In a wide union the reader has to work
+  out which member the compiler picked.
+- **It takes an interface, not a discriminated union.** If the members already
+  carry a shared literal tag, use that — `switch` narrowing, exhaustiveness
+  checks and the error messages are all better.
+- **Excess keys stay forbidden downstream.** `Partial<Record<K, never>>` means
+  *absent or `undefined`*, so `{ ...petrol, batteryKwh: undefined }` passes
+  while `batteryKwh: 0` does not. That is usually what you want; occasionally it
+  surprises someone spreading a partial update.
+
+Reach for it when the variants genuinely have no tag to discriminate on —
+message shapes off the wire, mutually exclusive component props, config objects
+where exactly one backend is configured.
+
+## Related entries
+
+- [Type-safe result pattern](/stash/typescript/patterns/result-type). The
+  discriminated-union alternative, for when the variants can carry a tag.
