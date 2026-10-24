@@ -386,6 +386,46 @@ are the same as a row's, minus `description`:
 A table takes `rows`, `<Prop>` children, or both; a row with nothing beyond a
 name and type renders as a plain line rather than a disclosure.
 
+### TypeMatrix
+
+What a type accepts, and what it turns away. A type is easiest to understand
+from the values it admits, so rather than describing the rejection in prose,
+list the candidates and let the table show which ones landed.
+
+```mdx
+<TypeMatrix
+  of="const car: … = raw"
+  types={["Electric | Petrol", "OneOf<Electric | Petrol>"]}
+  cases={[
+    { label: "battery only", code: '{ batteryKwh: 75 }', verdicts: ["ok", "ok"] },
+    {
+      label: "both",
+      code: '{ batteryKwh: 75, tankLitres: 50 }',
+      verdicts: [
+        "ok",
+        { status: "error", message: "Type 'number' is not assignable to type 'undefined'." },
+      ],
+    },
+  ]}
+/>
+```
+
+Declaring more than one type puts a naive definition beside the one that fixes
+it, and the same value lands differently in each column. `verdicts` is
+positional: one entry per name in `types`, in the same order, and a count that
+does not match renders a diagnostic rather than a lopsided table.
+
+A verdict is `"ok"` or `"error"` on its own, or the object form
+`{ status, message }` when the compiler's own complaint is worth quoting.
+Messages render beneath the value, prefixed by the column they came from. With
+a single type, pass one name in `types` and one verdict per case; the heading
+is dropped and the caption carries the context.
+
+It renders a real `<table>` — rows are values, columns are types — so the
+header association a screen reader needs comes from the markup, and the glyphs
+carry a text alternative rather than meaning only in colour. Nothing about it
+is interactive, so it stays a Server Component.
+
 ### CardGrid and LinkCard
 
 A cross-reference that deserves a larger target than an inline link.

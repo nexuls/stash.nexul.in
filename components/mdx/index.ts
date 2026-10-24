@@ -19,5 +19,6 @@ export * from "./props-table";
 export * from "./registry";
 export * from "./steps";
 export * from "./tabs";
+export * from "./type-matrix";
 export * from "./typography";
 export * from "./unregistered-fallback";

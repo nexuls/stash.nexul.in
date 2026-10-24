@@ -1,0 +1,124 @@
+---
+title: Type matrix
+description: What a type accepts and what it turns away, as a table of candidate values against the types under test.
+date: 2026-10-24
+tags:
+  - authoring
+  - components
+  - typescript
+---
+
+# Type matrix
+
+A type is easiest to understand from the values it admits. Prose describing a
+rejection asks the reader to run the compiler in their head; a matrix just shows
+them the result.
+
+Rows are candidate values, columns are the types under test, and each cell says
+whether the compiler took it.
+
+<TypeMatrix
+  of="type Id = `${string}-${number}`"
+  types={["Id"]}
+  cases={[
+    { code: '"order-42"', verdicts: ["ok"] },
+    { code: '"order-"', verdicts: ["error"] },
+    {
+      code: '`order-${count}`',
+      label: "count: number",
+      verdicts: ["ok"],
+    },
+  ]}
+/>
+
+## Comparing two types
+
+The reason for more than one column: a naive definition beside the one that
+fixes it, with the same values running through both.
+
+<TypeMatrix
+  of="const car: … = raw"
+  types={["Electric | Petrol", "OneOf<Electric | Petrol>"]}
+  cases={[
+    {
+      label: "battery only",
+      code: '{ name: "x", batteryKwh: 75 }',
+      verdicts: ["ok", "ok"],
+    },
+    {
+      label: "both — the case worth catching",
+      code: '{ name: "x", batteryKwh: 75, tankLitres: 50 }',
+      verdicts: [
+        "ok",
+        {
+          status: "error",
+          message: "Type 'number' is not assignable to type 'undefined'.",
+        },
+      ],
+    },
+  ]}
+/>
+
+`verdicts` is positional: one entry per name in `types`, in the same order. A
+count that does not match renders a diagnostic rather than a lopsided table, so
+a column added later cannot silently shift every row.
+
+## Verdicts
+
+A verdict is `"ok"` or `"error"` on its own. The object form adds the
+compiler's own complaint, which is the part worth quoting when a type rejects
+something a reader expected it to accept:
+
+```mdx
+verdicts={[
+  "ok",
+  { status: "error", message: "Type 'number' is not assignable to type 'undefined'." },
+]}
+```
+
+Messages render under the value, prefixed by the column they came from. Quote
+what `tsc` actually printed, trimmed to the line that carries the reason —
+paraphrasing it defeats the point, which is to let someone recognise the error
+when they meet it themselves.
+
+Two statuses only, deliberately. The compiler either accepted the value or it
+did not, and a matrix offering shades of *nearly* would stop being a record of
+what the type does.
+
+## Writing a good one
+
+- **Order the rows as an argument.** The cases that pass first, then the one
+  the type exists to catch. The last row is the point.
+- **Keep the value short.** It is source text and will not wrap, so a long
+  literal scrolls the table sideways. Trim to the fields the comparison turns
+  on and name the rest in a `label`.
+- **Use `label` for intent**, such as `mixes two variants` — not to repeat what
+  the code already says.
+- **Give `of` the declaration being tested**, e.g. `const car: … = raw`. It
+  renders above the table and is also the table's accessible caption.
+
+## Props
+
+<PropsTable
+  of="<TypeMatrix />"
+  rows={[
+    {
+      name: "types",
+      type: "string[]",
+      required: true,
+      description: "One label per column. A single column drops its heading.",
+    },
+    {
+      name: "cases",
+      type: "TypeCase[]",
+      required: true,
+      typeDetail: 'Array<{ code: string; label?: string; verdicts: ("ok" | "error" | { status: "ok" | "error"; message?: string })[] }>',
+      description: "One row per value. Each needs a verdict for every type, in order.",
+    },
+    {
+      name: "of",
+      type: "string",
+      description: "Caption naming what is under test. Also the table's accessible caption.",
+    },
+  ]}
+/>

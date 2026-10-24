@@ -23,6 +23,7 @@ import { CardGrid, LinkCard } from "@/components/mdx/link-card";
 import { Prop, PropsTable } from "@/components/mdx/props-table";
 import { Step, Steps } from "@/components/mdx/steps";
 import { Tab, Tabs } from "@/components/mdx/tabs";
+import { TypeMatrix } from "@/components/mdx/type-matrix";
 import { typographyComponents } from "@/components/mdx/typography";
 import { UnregisteredComponentFallback } from "@/components/mdx/unregistered-fallback";
 
@@ -54,6 +55,7 @@ export const baseMdxComponents = {
   // Reference
   PropsTable,
   Prop,
+  TypeMatrix,
   CardGrid,
   LinkCard,
   Kbd,

@@ -316,6 +316,85 @@ export const fileDownloadsPropsSchema = z.object({
 export type FileDownloadsProps = z.infer<typeof fileDownloadsPropsSchema>;
 
 /**
+ * Verdict statuses a `<TypeMatrix>` cell can carry.
+ *
+ * Only two, deliberately: the compiler either accepts the value or it does
+ * not, and a matrix that offered shades of nearly would stop being a record
+ * of what the type actually does.
+ */
+export const typeVerdictStatusSchema = z.enum(["ok", "error"]);
+
+export type TypeVerdictStatus = z.infer<typeof typeVerdictStatusSchema>;
+
+/**
+ * One cell. A bare status is the common case; the object form adds the
+ * complaint the compiler makes, which is the part worth quoting when a type
+ * rejects something a reader expected it to accept.
+ */
+export const typeVerdictSchema = z.union([
+  typeVerdictStatusSchema,
+  z.object({
+    status: typeVerdictStatusSchema,
+    message: z.string().optional(),
+  }),
+]);
+
+export type TypeVerdict = z.infer<typeof typeVerdictSchema>;
+
+/** Normalizes either verdict form to the object the renderer works with. */
+export function normalizeTypeVerdict(verdict: TypeVerdict): {
+  status: TypeVerdictStatus;
+  message?: string;
+} {
+  return typeof verdict === "string" ? { status: verdict } : verdict;
+}
+
+/**
+ * One row: a value, and what each type under test makes of it.
+ */
+export const typeCaseSchema = z.object({
+  /** The value, written as it would appear in source. */
+  code: z.string().min(1, "a case needs code"),
+  /** Short name for the case, e.g. "mixes two variants". */
+  label: z.string().optional(),
+  /** One verdict per column, in the order the columns are declared. */
+  verdicts: z.array(typeVerdictSchema).min(1, "a case needs a verdict"),
+});
+
+export type TypeCase = z.infer<typeof typeCaseSchema>;
+
+/**
+ * Props for the TypeMatrix assignability table.
+ *
+ * `types` names the columns, so one matrix can set a naive type beside the one
+ * that fixes it and show the same values landing differently.
+ */
+export const typeMatrixPropsSchema = z
+  .object({
+    /** One label per column. A single column needs no name. */
+    types: z.array(z.string().min(1)).min(1, "TypeMatrix needs a type"),
+    /** One row per value. */
+    cases: z.array(typeCaseSchema).min(1, "TypeMatrix needs a case"),
+    /** Caption naming what is under test, e.g. "assignable to Car". */
+    of: z.string().optional(),
+    className: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    for (const [index, testCase] of value.cases.entries()) {
+      if (testCase.verdicts.length === value.types.length) continue;
+
+      ctx.addIssue({
+        code: "custom",
+        message: `case ${index + 1} has ${testCase.verdicts.length} verdicts for ${value.types.length} types`,
+      });
+    }
+  });
+
+export type TypeMatrixProps = z.infer<typeof typeMatrixPropsSchema> & {
+  children?: React.ReactNode;
+};
+
+/**
  * Options for MDX evaluation.
  */
 export const mdxEvaluateOptionsSchema = z.object({

@@ -18,8 +18,10 @@ import {
   codeBlockPropsSchema,
   detailsPropsSchema,
   normalizeCalloutType,
+  normalizeTypeVerdict,
   tabPropsSchema,
   tabsPropsSchema,
+  typeMatrixPropsSchema,
 } from "@/lib/mdx/types";
 import { formatFileSize } from "@/lib/utils";
 
@@ -774,5 +776,77 @@ describe("Entry file downloads", () => {
     expect(formatFileSize(512)).toBe("512 B");
     expect(formatFileSize(2048)).toBe("2 KB");
     expect(formatFileSize(5 * 1024 * 1024)).toBe("5.0 MB");
+  });
+});
+
+describe("Type matrix", () => {
+  it("renders a column per type and a verdict per cell", async () => {
+    const source = `<TypeMatrix
+  of="const car: … = raw"
+  types={["Electric | Petrol", "OneOf<Electric | Petrol>"]}
+  cases={[
+    { label: "battery only", code: "{ batteryKwh: 75 }", verdicts: ["ok", "ok"] },
+    {
+      label: "both",
+      code: "{ batteryKwh: 75, tankLitres: 50 }",
+      verdicts: ["ok", { status: "error", message: "Type 'number' is not assignable to type 'undefined'." }],
+    },
+  ]}
+/>`;
+    const { content, error } = await renderMdx({ source });
+    expect(error).toBeUndefined();
+
+    const html = renderStatic(content);
+    // Rows are values and columns are types, as a real table.
+    expect(html).toContain("<table");
+    expect(html).toContain('scope="col"');
+    expect(html).toContain('scope="row"');
+    expect(html).toContain("OneOf&lt;Electric | Petrol&gt;");
+    expect(html).toContain("battery only");
+
+    // The glyph means nothing on its own, so each cell carries a text
+    // alternative rather than relying on colour.
+    expect(html).toContain("accepted");
+    expect(html).toContain("rejected");
+
+    // A quoted complaint renders beneath the value it belongs to.
+    expect(html).toContain("is not assignable to type &#x27;undefined&#x27;");
+  });
+
+  it("drops the heading for a single type but keeps it readable", async () => {
+    const source = `<TypeMatrix
+  of="type Id = \`\${string}-\${number}\`"
+  types={["Id"]}
+  cases={[{ code: '"order-42"', verdicts: ["ok"] }]}
+/>`;
+    const { content } = await renderMdx({ source });
+    const html = renderStatic(content);
+
+    // Still announced to a screen reader, just not shown twice.
+    expect(html).toContain('class="sr-only">Id<');
+  });
+
+  it("reports a verdict count that does not match the columns", async () => {
+    const source = `<TypeMatrix
+  types={["A", "B"]}
+  cases={[{ code: "{}", verdicts: ["ok"] }]}
+/>`;
+    const { content } = await renderMdx({ source });
+    const html = renderStatic(content);
+
+    expect(html).toContain("Malformed TypeMatrix");
+    expect(html).toContain("1 verdicts for 2 types");
+  });
+
+  it("validates verdict shorthand and the object form", () => {
+    expect(normalizeTypeVerdict("ok")).toEqual({ status: "ok" });
+    expect(normalizeTypeVerdict({ status: "error", message: "nope" })).toEqual({
+      status: "error",
+      message: "nope",
+    });
+
+    expect(
+      typeMatrixPropsSchema.safeParse({ types: [], cases: [] }).success,
+    ).toBe(false);
   });
 });

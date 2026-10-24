@@ -224,6 +224,14 @@ Recorded in [ADR-0008](architecture/decisions/0008-ordered-directory-prefixes.md
 - `@page` margin boxes carry the citation: the source and date on the first sheet, the entry title with its address and `Page N of M` on every one. The strings cannot come from CSS, so `components/print/print-citation.tsx` declares them as custom properties on the root element for the entry being printed, with fallbacks for every other page. Chrome draws these boxes; browsers that do not simply print without them. The column also keeps a little padding of its own, so a reader who sets "Margins: None" does not get text on the trim.
 - Verification: printed to PDF from a production build in headless Chrome. An entry prints paginated with no sidebar and nothing clipped; a 27-line code block, a tab set, a props table, a download list and a wide table each print whole; a dark-theme print (`preferredColorScheme=0`, confirmed dark on screen) is identical to the light one; the category index and the landing page print clean. `bun run lint`, `bun x tsc --noEmit` and `bun run build` are clean, and the 20 failures the suite already had are unchanged.
 
+### 13. Visualising a type (Completed)
+
+- `<TypeMatrix />` (`components/mdx/type-matrix.tsx`) shows what a type accepts and what it turns away: rows are candidate values, columns are the types under test, and each cell says whether the compiler took it. Declaring two types puts a naive definition beside the one that fixes it, so the same value visibly lands differently in each column — the comparison a type-level note otherwise asks the reader to run in their head.
+- A real `<table>`, so the header association a screen reader needs comes from the markup rather than from ARIA, and each verdict glyph carries a text alternative rather than meaning only in colour. Nothing about it is interactive, so it stays a Server Component and costs the client bundle nothing.
+- `verdicts` is positional, one per declared type. `typeMatrixPropsSchema` refines the count and renders an actionable diagnostic when it disagrees, so a column added later cannot silently shift every row. A verdict is `"ok"` or `"error"`, or the object form carrying the compiler's own complaint, which renders beneath the value prefixed by the column it came from.
+- First use: `typescript/patterns/one-of`, a condensed note on making union members mutually exclusive, with the implementation in the entry's own `one-of.ts`. Documented in `docs/development/content-authoring.md` and demonstrated at `authoring/components/type-matrix`.
+- Verification: `bun run lint`, `bun x tsc --noEmit` and `bun test` are clean (48 MDX tests, four of them new). `bun run validate:content` reports no error for either new entry; the 10 broken-internal-link errors it already had are unchanged.
+
 ## Confirmed architecture
 
 - Stash is a personal engineering archive, not a project portfolio.
