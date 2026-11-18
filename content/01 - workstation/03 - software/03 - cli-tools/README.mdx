@@ -1,0 +1,95 @@
+---
+title: Modern CLI tools
+description: The replacements for ls, cat, grep, find, cd and top that I install on every machine, with the aliases and the gotchas.
+date: 2026-11-18
+tags:
+  - workstation
+  - software
+  - terminal
+  - linux
+  - macos
+  - windows
+---
+
+# Modern CLI tools
+
+These are faster or friendlier replacements for the standard Unix commands.
+All of them are single binaries and available on every OS.
+
+| Instead of | I use | Why |
+| --- | --- | --- |
+| `ls` | [eza](https://eza.rocks/) | Icons, Git status per file, a tree view |
+| `cat` | [bat](https://github.com/sharkdp/bat) | Syntax highlighting, line numbers, Git changes in the margin |
+| `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) | Much faster, recursive by default, skips `.gitignore`d files |
+| `find` | [fd](https://github.com/sharkdp/fd) | Short syntax, respects `.gitignore`, colored output |
+| `cd` | [zoxide](https://github.com/ajeetdsouza/zoxide) (`z`) | Jumps to frequently used directories by a part of the name |
+| Ctrl+R, file pickers | [fzf](https://github.com/junegunn/fzf) | Fuzzy finder for history, files and directories |
+| `top` | [btop](https://github.com/aristocratos/btop) | Readable CPU, memory, disk, network and process views |
+| `git` for staging | [lazygit](https://github.com/jesseduffield/lazygit) | A terminal UI for staging hunks, rebasing and resolving conflicts |
+
+## Install
+
+<Tabs items={["Arch", "macOS", "Debian/Ubuntu", "Windows"]} group="os">
+  <Tab value="Arch">
+    ```bash
+    sudo pacman -S eza bat ripgrep fd fzf zoxide btop lazygit
+    ```
+  </Tab>
+  <Tab value="macOS">
+    ```bash
+    brew install eza bat ripgrep fd fzf zoxide btop lazygit
+    ```
+  </Tab>
+  <Tab value="Debian/Ubuntu">
+    ```bash
+    sudo apt install eza bat ripgrep fd-find fzf zoxide btop
+    ```
+
+    `eza` is packaged from Debian 13 and Ubuntu 24.04. On older releases,
+    install it from its own repository or with `cargo install eza`.
+
+    Debian ships `bat` as `batcat` and `fd` as `fdfind`, because of name clashes
+    with older packages. Alias them back, or link them into `~/.local/bin`.
+  </Tab>
+  <Tab value="Windows">
+    All of them except btop are in [winget](/stash/workstation/systems/windows/package-managers)
+    and Scoop. They run best inside [WSL](/stash/workstation/systems/windows/wsl).
+  </Tab>
+</Tabs>
+
+## Wiring them into the shell
+
+```bash title="~/.zshrc"
+alias ls="eza --icons --group-directories-first"
+alias ll="eza -lh --icons --git --group-directories-first"
+alias la="eza -a --icons --group-directories-first"
+alias lt="eza --tree --level=2 --icons --group-directories-first"
+alias cat="bat"
+alias grep="rg"
+
+eval "$(zoxide init zsh)"
+
+# fzf: Ctrl+T files, Ctrl+R history, Alt+C directories, listed by fd
+source <(fzf --zsh)
+export FZF_DEFAULT_COMMAND='fd --hidden --strip-cwd-prefix --exclude .git'
+```
+
+`fzf --zsh` needs fzf 0.48 or later. On older versions, source the
+`key-bindings.zsh` and `completion.zsh` files that the package installs. Arch
+puts them in `/usr/share/fzf/`.
+
+## Gotchas
+
+<Callout type="note" title="Aliases only apply where you type">
+  Aliases don't apply in scripts, so `cat` and `grep` in a script are still the
+  originals. They do apply to commands you paste. `grep` flags copied from a
+  guide then go to `rg`, which accepts most of them but not all. Run
+  `command grep` or `\grep` when you need the real one.
+</Callout>
+
+- `bat` detects when its output goes to a pipe or a file and prints plain text,
+  so `cat=bat` doesn't break `cat file | …`.
+- `rg` and `fd` skip anything in `.gitignore` and hidden files. Add `--hidden`,
+  or `-u` to search everything, when looking inside `node_modules` or dotfiles.
+- `z` only knows directories you have already visited with `cd` or `z`. On a
+  new machine it starts out empty.

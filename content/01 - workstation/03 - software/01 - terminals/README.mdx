@@ -1,0 +1,74 @@
+---
+title: Terminal emulators
+description: Why kitty is my terminal, and how it compares with Alacritty, WezTerm, Ghostty and the platform defaults.
+date: 2026-11-18
+tags:
+  - workstation
+  - software
+  - terminal
+  - linux
+  - macos
+  - windows
+---
+
+# Terminal emulators
+
+## My pick: kitty
+
+[kitty](https://sw.kovidgoyal.net/kitty/) is my default terminal on Linux. It
+renders on the GPU, and its tabs, splits and layouts are built in, so I don't
+need a multiplexer just to see two shells side by side. The rest of my setup
+depends on two of its features:
+
+- **Shell integration.** kitty knows where each prompt and each command's
+  output begins, so you can jump between prompts or open the last command's
+  output in a pager.
+- **The kitty graphics protocol.** Images display inline in the terminal.
+  `fastfetch`, `yazi` and Neovim image plugins use it.
+
+```text title="~/.config/kitty/kitty.conf"
+font_family      JetBrainsMono Nerd Font
+font_size        9.0
+shell_integration enabled
+tab_bar_style    powerline
+tab_bar_align    left
+```
+
+Use a [Nerd Font](https://www.nerdfonts.com/) for the font. Without one, the
+icons from [eza](/stash/workstation/software/cli-tools) and
+[Starship](/stash/workstation/software/shells-and-prompts) show as empty boxes.
+
+## Comparison
+
+| Terminal | OS | Tabs and splits | Config | Best at |
+| --- | --- | --- | --- | --- |
+| **kitty** | Linux, macOS | Built in, with layouts | `kitty.conf` | Features without a multiplexer |
+| Alacritty | Linux, macOS, Windows | None, by design | TOML | Minimal and fast, paired with tmux |
+| WezTerm | Linux, macOS, Windows | Built in, with a multiplexer | Lua | One config on every OS |
+| Ghostty | Linux, macOS | Built in, native UI | Plain text | Native look with GPU speed |
+| Windows Terminal | Windows | Built in | JSON / Settings UI | The default on Windows, and good |
+| iTerm2 | macOS | Built in | GUI | The long-standing macOS choice |
+
+## The alternatives
+
+**Alacritty** is installed too. It does one thing, rendering text quickly, and
+leaves tabs and splits to tmux. That keeps it simple, but you need tmux for
+anything beyond a single shell. It also runs on Windows, which kitty doesn't.
+
+**WezTerm** is the strongest choice if you want one terminal and one config
+everywhere, because a single Lua file works on all three OSes. Releases have
+been infrequent.
+
+**Ghostty** is the newest of these. It's quick and feels native on both Linux
+and macOS. It has no Windows build.
+
+On **Windows**, use Windows Terminal. It hosts PowerShell, Command Prompt and
+every [WSL](/stash/workstation/systems/windows/wsl) distribution as tabs in one
+window.
+
+## When I would switch
+
+- To **WezTerm**, if I spent a lot of time on Windows and wanted the same
+  terminal everywhere.
+- To **Alacritty and tmux**, if I needed sessions that survive closing the
+  window, for example on remote machines.

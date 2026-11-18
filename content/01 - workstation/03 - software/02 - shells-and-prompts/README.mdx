@@ -1,0 +1,112 @@
+---
+title: Shells and prompts
+description: zsh with three plugins and no framework, Starship as the prompt, and how that compares with Oh My Zsh, fish and the alternatives.
+date: 2026-11-18
+tags:
+  - workstation
+  - software
+  - shell
+  - zsh
+  - linux
+  - macos
+---
+
+# Shells and prompts
+
+## My pick: zsh, three plugins, Starship
+
+**zsh** without a framework. Three plugins installed from the system package
+manager do the work that most people install Oh My Zsh for, and they start
+noticeably faster:
+
+| Plugin | What it adds |
+| --- | --- |
+| `zsh-autosuggestions` | Suggests the rest of the command from history, in grey; <Kbd>→</Kbd> accepts it |
+| `zsh-syntax-highlighting` | Colors commands as you type, red when a command doesn't exist |
+| `zsh-history-substring-search` | <Kbd>↑</Kbd> / <Kbd>↓</Kbd> search history for what is already typed |
+
+[**Starship**](https://starship.rs/) draws the prompt. It's a single binary
+configured with one TOML file, and it works the same in zsh, bash, fish and
+PowerShell, so the prompt looks the same on every machine and shell.
+
+## Setup
+
+<Tabs items={["Arch", "macOS"]} group="os">
+  <Tab value="Arch">
+    ```bash
+    sudo pacman -S zsh zsh-autosuggestions zsh-syntax-highlighting \
+      zsh-history-substring-search starship
+    ```
+
+    ```bash title="~/.zshrc"
+    source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+    ```
+  </Tab>
+  <Tab value="macOS">
+    ```bash
+    brew install zsh-autosuggestions zsh-syntax-highlighting \
+      zsh-history-substring-search starship
+    ```
+
+    ```bash title="~/.zshrc"
+    source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    source $(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh
+    ```
+  </Tab>
+</Tabs>
+
+The rest of `~/.zshrc` is the same on both:
+
+```bash title="~/.zshrc"
+# History that is large, shared between sessions and free of duplicates
+HISTSIZE=100000
+SAVEHIST=100000
+HISTFILE=~/.zsh_history
+setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_REDUCE_BLANKS
+setopt SHARE_HISTORY INC_APPEND_HISTORY
+
+# Completion menu, case-insensitive
+autoload -Uz compinit && compinit
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+
+# Up and down search history for what is already typed
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+
+export STARSHIP_CONFIG=~/.config/starship/starship.toml
+eval "$(starship init zsh)"
+```
+
+<Callout type="warning" title="Load order matters">
+  Source `zsh-syntax-highlighting` **before** `zsh-history-substring-search`.
+  The history-substring-search README requires this order, because the two
+  plugins hook the same widgets.
+</Callout>
+
+## Comparison
+
+| Option | Kind | Strength | Cost |
+| --- | --- | --- | --- |
+| **zsh + plugins** | POSIX-like shell | Runs bash-style snippets, fast, nothing hidden | You write the `.zshrc` yourself |
+| zsh + Oh My Zsh | Framework | Hundreds of plugins and themes in one install | Slower startup, a lot of code you never read |
+| fish | Shell | Autosuggestions and highlighting with no setup | Not POSIX: pasted bash snippets often need rewriting |
+| Nushell | Shell | Pipelines carry structured data, not text | A different language from every other shell |
+| PowerShell | Shell | The native choice on Windows, object pipelines | Verbose for quick Unix-style work |
+
+| Prompt | Notes |
+| --- | --- |
+| **Starship** | Rust, one TOML file, works in every shell |
+| Oh My Posh | Same idea, popular on Windows, themes in JSON/YAML/TOML |
+| Powerlevel10k | Very fast zsh-only prompt; its README says it is on limited support |
+
+## When I would switch
+
+- To **fish**, on a machine where I never paste shell snippets and want good
+  defaults without a config file.
+- If startup ever gets slow, I'd measure it with `zsh -i -c exit` under `time`
+  before blaming the plugins. Version-manager init scripts are usually the
+  culprit.
