@@ -704,7 +704,7 @@ describe("Document components", () => {
 describe("Entry file downloads", () => {
   const entryDirectory = join(
     process.cwd(),
-    "content/01 - react/04 - canvas/01 - svg-particles",
+    "content/02 - react/04 - canvas/01 - svg-particles",
   );
   const assetBaseUrl = "/content-assets/react/canvas/svg-particles";
 

@@ -194,7 +194,9 @@ describe("buildArchiveIndex", () => {
   });
 
   it("carries presentable metadata only, never MDX source", () => {
-    const note = index.domains[0]?.groups[0]?.notes[0];
+    const note = index.domains
+      .flatMap((domain) => domain.groups)
+      .flatMap((group) => group.notes)[0];
     expect(note).toBeDefined();
     expect(Object.keys(note ?? {}).sort()).toEqual([
       "date",

@@ -195,12 +195,16 @@ describe("Domain overview row", () => {
     expect(withHome).toContain("Overview");
     expect(withHome).toContain(`href="/stash/${first.slug}"`);
 
-    // The row sits above the domain's contents.
+    // The row sits above the domain's contents. A domain may hold category
+    // pages before it holds a note, so its first group stands in for one.
     const firstEntry = findFirstNavEntry(first.nodes);
-    if (!firstEntry) throw new Error("Expected the domain to hold a note");
-    expect(withHome.indexOf("Overview")).toBeLessThan(
-      withHome.indexOf(firstEntry.entry.permalink),
-    );
+    const firstNode = first.nodes[0];
+    const marker =
+      firstEntry?.entry.permalink ??
+      (firstNode?.kind === "group" ? firstNode.label : undefined);
+    if (!marker) throw new Error("Expected the domain to hold something");
+    expect(withHome.indexOf(marker)).toBeGreaterThan(-1);
+    expect(withHome.indexOf("Overview")).toBeLessThan(withHome.indexOf(marker));
 
     // No index entry means no domain page, so the row stays out.
     const withoutHome = renderStatic(
