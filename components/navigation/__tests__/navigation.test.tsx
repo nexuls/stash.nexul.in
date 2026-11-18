@@ -76,7 +76,7 @@ describe("Table of Contents (DocsToc)", () => {
 
 describe("Documentation Pager (DocsPager)", () => {
   it("renders previous and next links when available", async () => {
-    const entry = await getEntryBySlug("react/hooks/use-debounce");
+    const entry = await getEntryBySlug("react/hooks/use-local-storage");
     if (!entry) throw new Error("Entry not found");
 
     const { prev, next } = await getPrevNextEntries(entry.slug);
@@ -108,7 +108,7 @@ describe("Documentation Pager (DocsPager)", () => {
   });
 
   it("renders related entries section if provided", async () => {
-    const entry = await getEntryBySlug("react/hooks/use-debounce");
+    const entry = await getEntryBySlug("react/hooks/use-local-storage");
     if (!entry) throw new Error("Entry not found");
 
     const entries = await getAllEntries();
@@ -162,7 +162,7 @@ describe("Documentation Sidebar (DocsSidebar)", () => {
 
     // The switcher shows the active domain and its note count.
     expect(html).toContain(firstDomain.slug);
-    expect(html).toContain(`${firstDomain.entryCount} notes`);
+    expect(html).toContain(`>${firstDomain.entryCount}</span>`);
 
     // Notes from other domains stay out of the scoped tree.
     const otherDomain = domains.find((d) => d.slug !== firstDomain.slug);
@@ -262,20 +262,28 @@ describe("Domain derivation (getNavDomains / getActiveDomain)", () => {
     ]);
     const seeded = buildNavTree(entries, toNavCategoryIndexes(categoryIndexes));
 
-    // Derived from notes alone, a category with none of them is invisible.
-    const fromNotesOnly = getNavDomains(buildNavTree(entries));
-    expect(fromNotesOnly.some((domain) => domain.slug === "opentui")).toBe(
-      false,
+    // `opentui/components` has a home page and no notes. Derived from notes
+    // alone, it is invisible.
+    const groupIds = (
+      domain: ReturnType<typeof getNavDomains>[number] | undefined,
+    ) => domain?.nodes.map((node) => node.id) ?? [];
+    const fromNotesOnly = getNavDomains(buildNavTree(entries)).find(
+      (domain) => domain.slug === "opentui",
     );
+    expect(groupIds(fromNotesOnly)).not.toContain("opentui/components");
 
     const domains = getNavDomains(seeded);
     const opentui = domains.find((domain) => domain.slug === "opentui");
     expect(opentui?.hasHomePage).toBe(true);
     expect(opentui?.homePermalink).toBe("/stash/opentui");
-    expect(opentui?.entryCount).toBe(0);
 
-    // Its own empty categories are there too, each pointing at its page and
-    // keeping the place its directory number asks for.
+    const components = opentui?.nodes.find(
+      (node) => node.id === "opentui/components",
+    );
+    expect(components?.kind === "group" && components.entryCount).toBe(0);
+
+    // Every category is there, each pointing at its page and keeping the
+    // place its directory number asks for.
     expect(
       opentui?.nodes.map((node) =>
         node.kind === "group" ? [node.id, node.homePermalink] : [node.id, null],
@@ -292,7 +300,7 @@ describe("Domain derivation (getNavDomains / getActiveDomain)", () => {
     const domains = getNavDomains(buildNavTree(entries));
 
     expect(
-      getActiveDomain(domains, "/stash/react/hooks/use-debounce")?.slug,
+      getActiveDomain(domains, "/stash/react/hooks/use-local-storage")?.slug,
     ).toBe("react");
     expect(getActiveDomain(domains, "/stash/typescript")?.slug).toBe(
       "typescript",
@@ -315,7 +323,7 @@ describe("Navigation tree derivation (buildNavTree)", () => {
     expect(react?.kind).toBe("group");
     if (react?.kind !== "group") throw new Error("Expected a react group");
 
-    // content/react/hooks/use-debounce and content/react/components/command-menu
+    // content/react/hooks/use-local-storage and content/react/components/virtual-list
     expect(react.children.every((child) => child.kind === "group")).toBe(true);
     expect(react.entryCount).toBe(
       entries.filter((entry) => entry.categories[0] === "react").length,
@@ -332,10 +340,10 @@ describe("Navigation tree derivation (buildNavTree)", () => {
       byPath.every((node) => node.kind === "group" && node.id === "react"),
     ).toBe(true);
 
-    const byTitle = filterNavTree(tree, "debounce");
+    const byTitle = filterNavTree(tree, "localstorage");
     expect(countNavEntries(byTitle)).toBe(1);
     expect(findFirstNavEntry(byTitle)?.entry.slug).toBe(
-      "react/hooks/use-debounce",
+      "react/hooks/use-local-storage",
     );
 
     expect(countNavEntries(filterNavTree(tree, "zzz-no-such-note"))).toBe(0);
@@ -344,10 +352,9 @@ describe("Navigation tree derivation (buildNavTree)", () => {
   it("resolves the group trail leading to the active entry", async () => {
     const entries = await getAllEntries();
 
-    expect(getActiveTrail(entries, "/stash/react/hooks/use-debounce")).toEqual([
-      "react",
-      "react/hooks",
-    ]);
+    expect(
+      getActiveTrail(entries, "/stash/react/hooks/use-local-storage"),
+    ).toEqual(["react", "react/hooks"]);
     expect(getActiveTrail(entries, "/stash/nope")).toEqual([]);
   });
 });
@@ -393,7 +400,7 @@ describe("Copy Markdown Button", () => {
       <CopyMarkdownButton content="# Test Markdown Content" />,
     );
 
-    expect(html).toContain("copy markdown");
+    expect(html).toContain("Copy Markdown");
   });
 });
 

@@ -44,7 +44,7 @@ describe("findCategory", () => {
   });
 
   it("answers undefined for a category that holds no note", () => {
-    expect(findCategory(index.domains, "opentui/patches")).toBeUndefined();
+    expect(findCategory(index.domains, "opentui/components")).toBeUndefined();
     expect(findCategory(index.domains, "nothing/here")).toBeUndefined();
   });
 });
@@ -77,10 +77,11 @@ describe("buildArchiveIndex", () => {
 
   it("leads with the domains in their numbered order", () => {
     expect(index.domains.map((domain) => domain.slug)).toEqual([
+      "workstation",
       "react",
       "typescript",
-      "authoring",
       "opentui",
+      "authoring",
     ]);
   });
 
@@ -232,25 +233,27 @@ describe("filterArchive", () => {
   });
 
   it("matches a note by its path", () => {
-    const result = filterArchive(index.domains, "react/hooks/use-debounce");
+    const result = filterArchive(
+      index.domains,
+      "react/hooks/use-local-storage",
+    );
     expect(result).toHaveLength(1);
-    expect(result[0]?.groups[0]?.notes[0]?.title).toBe("useDebounce hook");
+    expect(result[0]?.groups[0]?.notes[0]?.title).toBe("useLocalStorage hook");
   });
 
   it("requires every term to match, in any order", () => {
-    const ordered = filterArchive(index.domains, "hooks debounce");
-    const reversed = filterArchive(index.domains, "debounce hooks");
+    const ordered = filterArchive(index.domains, "hooks localstorage");
+    const reversed = filterArchive(index.domains, "localstorage hooks");
     expect(ordered).toEqual(reversed);
     expect(ordered).toHaveLength(1);
   });
 
   it("matches a tag that appears nowhere in the visible text", () => {
-    // "notifications" is a tag on the toast note; its title says "Notification".
-    const result = filterArchive(index.domains, "notifications");
+    // "persistence" is a tag on the useLocalStorage note and appears in none of
+    // its title, description or path.
+    const result = filterArchive(index.domains, "persistence");
     expect(result).toHaveLength(1);
-    expect(result[0]?.groups[0]?.notes[0]?.title).toBe(
-      "Toast notification stack",
-    );
+    expect(result[0]?.groups[0]?.notes[0]?.title).toBe("useLocalStorage hook");
   });
 
   it("restates each domain's count for what survived", () => {
@@ -304,7 +307,7 @@ describe("category index entries", () => {
     const slugs = (await getAllSlugs()).map((segments) => segments.join("/"));
     expect(slugs).toContain("react");
     expect(slugs).not.toContain("react/home");
-    expect(slugs).toContain("react/hooks/use-debounce");
+    expect(slugs).toContain("react/hooks/use-local-storage");
   });
 
   it("titles and describes a domain from its index entry", () => {

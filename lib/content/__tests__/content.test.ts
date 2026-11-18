@@ -300,41 +300,43 @@ describe("Content Discovery", () => {
     expect(entries.length).toBeGreaterThanOrEqual(3);
 
     const slugs = entries.map((e) => e.slug);
-    expect(slugs).toContain("react/hooks/use-debounce");
-    expect(slugs).toContain("react/components/command-menu");
+    expect(slugs).toContain("react/hooks/use-local-storage");
+    expect(slugs).toContain("react/components/virtual-list");
     expect(slugs).toContain("typescript/patterns/result-type");
   });
 
   it("getEntryBySlug retrieves entry by slug string or array", async () => {
-    const entry1 = await getEntryBySlug("react/hooks/use-debounce");
+    const entry1 = await getEntryBySlug("react/hooks/use-local-storage");
     expect(entry1).not.toBeNull();
-    expect(entry1?.title).toBe("useDebounce hook");
+    expect(entry1?.title).toBe("useLocalStorage hook");
     expect(entry1?.category).toBe("react");
     expect(entry1?.categories).toEqual(["react", "hooks"]);
 
-    const entry2 = await getEntryBySlug(["react", "hooks", "use-debounce"]);
-    expect(entry2?.slug).toBe("react/hooks/use-debounce");
+    const entry2 = await getEntryBySlug([
+      "react",
+      "hooks",
+      "use-local-storage",
+    ]);
+    expect(entry2?.slug).toBe("react/hooks/use-local-storage");
 
     const missing = await getEntryBySlug("does/not/exist");
     expect(missing).toBeNull();
   });
 
   it("discovers adjacent assets", async () => {
-    const entry = await getEntryBySlug("react/hooks/use-debounce");
-    if (!entry) {
-      throw new Error("Expected entry to exist");
+    const hook = await getEntryBySlug("react/hooks/use-local-storage");
+    const patch = await getEntryBySlug("opentui/patches/box-clip-patch");
+    if (!hook || !patch) {
+      throw new Error("Expected entries to exist");
     }
-    const assetNames = entry.assets.map((a) => a.filename);
-    expect(assetNames).toContain("use-debounce.ts");
-    expect(assetNames).toContain("debounce-diagram.svg");
 
-    const codeAsset = entry.assets.find(
-      (a) => a.filename === "use-debounce.ts",
+    const codeAsset = hook.assets.find(
+      (a) => a.filename === "use-local-storage.ts",
     );
     expect(codeAsset?.type).toBe("code");
 
-    const imageAsset = entry.assets.find(
-      (a) => a.filename === "debounce-diagram.svg",
+    const imageAsset = patch.assets.find(
+      (a) => a.filename === "border-clip-frames.svg",
     );
     expect(imageAsset?.type).toBe("image");
   });
@@ -356,13 +358,15 @@ describe("Content Discovery", () => {
 
   it("getAllSlugs returns segment arrays", async () => {
     const slugs = await getAllSlugs();
-    expect(slugs.some((s) => s.join("/") === "react/hooks/use-debounce")).toBe(
-      true,
-    );
+    expect(
+      slugs.some((s) => s.join("/") === "react/hooks/use-local-storage"),
+    ).toBe(true);
   });
 
   it("getPrevNextEntries returns neighboring entries", async () => {
-    const { prev, next } = await getPrevNextEntries("react/hooks/use-debounce");
+    const { prev, next } = await getPrevNextEntries(
+      "react/hooks/use-local-storage",
+    );
     expect(prev !== null || next !== null).toBe(true);
 
     const missing = await getPrevNextEntries("non-existent-slug");
@@ -371,7 +375,7 @@ describe("Content Discovery", () => {
   });
 
   it("getRelatedEntries finds related entries by category and tags", async () => {
-    const entry = await getEntryBySlug("react/hooks/use-debounce");
+    const entry = await getEntryBySlug("react/hooks/use-local-storage");
     if (!entry) throw new Error("Entry must exist");
     const related = await getRelatedEntries(entry, 2);
     expect(Array.isArray(related)).toBe(true);
