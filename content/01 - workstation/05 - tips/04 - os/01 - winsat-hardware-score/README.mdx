@@ -1,0 +1,43 @@
+---
+title: Windows hardware score with WinSAT
+description: Read Windows' own 1.0 to 9.9 rating of the CPU, memory, graphics and disk to find the component holding a machine back.
+date: 2024-09-08
+updated: 2026-11-18
+tags:
+  - workstation
+  - tips
+  - windows
+  - hardware
+---
+
+# Windows hardware score with WinSAT
+
+Windows still benchmarks its hardware with WinSAT, even though the score no
+longer appears anywhere in the UI. You can read it from PowerShell:
+
+```powershell
+Get-CimInstance Win32_WinSat
+```
+
+![PowerShell output of Get-CimInstance Win32_WinSat, with GraphicsScore at 6.2 and every other score at 9 or above](./winsat-output.jpg "WinSPRLevel, the overall score, is the lowest component score, here GraphicsScore")
+
+Scores range from **1.0** to **9.9**. The lowest component score points to the
+upgrade that will help most:
+
+| Low score | What it suggests |
+| --- | --- |
+| `DiskScore` | Move to an SSD, preferably NVMe |
+| `MemoryScore` | More RAM, or faster RAM |
+| `CPUScore` | A newer CPU |
+| `GraphicsScore` / `D3DScore` | A better GPU, if your work needs one |
+
+Anything at 7 or below is worth a look on a machine used for heavy work.
+
+<Callout type="note" title="Stale or missing scores">
+  The numbers come from the last assessment that ran. After a hardware change,
+  or when the results are empty, run a fresh one from an elevated terminal:
+
+  ```powershell
+  winsat formal
+  ```
+</Callout>

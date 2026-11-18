@@ -1,0 +1,83 @@
+---
+title: WSL
+description: Running a real Linux environment on Windows, WSL 1 vs WSL 2, and installing it with one command.
+date: 2024-09-08
+updated: 2026-11-18
+tags:
+  - workstation
+  - windows
+  - linux
+  - wsl
+---
+
+# WSL
+
+The Windows Subsystem for Linux runs a Linux distribution alongside Windows,
+with no separate virtual machine to manage and no dual boot. Linux tools,
+shells and scripts run as they would on Linux, the Windows drives are mounted
+under `/mnt`, and the Linux files are visible from Explorer at `\\wsl$`.
+
+## WSL 1 vs WSL 2
+
+|  | WSL 1 | WSL 2 |
+| --- | --- | --- |
+| How it works | Translates Linux system calls to Windows | A real Linux kernel in a lightweight VM |
+| Compatibility | Partial, with no full kernel | Full, including Docker |
+| Speed on Linux files | Slower | Fast |
+| Speed on Windows files (`/mnt/c`) | Fast | Slower |
+
+Use **WSL 2**. The one case where WSL 1 still wins is working directly on files
+stored on the Windows drive.
+
+<Callout type="tip" title="Keep projects inside Linux">
+  With WSL 2, clone repositories into the Linux home directory (`~/code`), not
+  `/mnt/c/...`. Crossing the filesystem boundary is what makes installs, builds
+  and file watchers slow.
+</Callout>
+
+## Install
+
+This needs Windows 10 version 2004 (build 19041) or later, or Windows 11. Older
+builds need the
+[manual install](https://learn.microsoft.com/windows/wsl/install-manual).
+
+<Steps>
+  <Step title="Install from an elevated terminal">
+    ```powershell
+    wsl --install
+    ```
+
+    This enables the required Windows features, installs WSL 2 and installs
+    Ubuntu as the default distribution.
+  </Step>
+  <Step title="Restart">
+    The features take effect after a reboot.
+  </Step>
+  <Step title="Open the distribution">
+    Launch it from Windows Terminal's dropdown or the Start menu, or run `wsl`.
+    The first launch asks for a Linux username and password.
+  </Step>
+</Steps>
+
+<Callout type="note" title="Already installed?">
+  If WSL is already present, `wsl --install` prints its help text instead of
+  installing anything. In that case, pick a distribution explicitly:
+
+  ```powershell
+  wsl --list --online
+  wsl --install -d <DistroName>
+  ```
+</Callout>
+
+## Useful commands
+
+```powershell
+wsl -l -v                       # installed distributions and their WSL version
+wsl --set-default-version 2     # make new distributions use WSL 2
+wsl --set-version <Distro> 2    # convert an existing one
+wsl --shutdown                  # stop every distribution and the VM
+wsl --unregister <Distro>       # delete a distribution and its files
+```
+
+For the rest, see the
+[WSL documentation](https://learn.microsoft.com/windows/wsl/basic-commands).

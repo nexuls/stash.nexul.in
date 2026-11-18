@@ -1,0 +1,40 @@
+---
+title: Performance tweaks
+description: Startup apps, visual effects and power mode, the three settings that make a low-end Windows machine feel faster.
+date: 2024-09-08
+updated: 2026-11-18
+tags:
+  - workstation
+  - windows
+  - performance
+---
+
+# Performance tweaks
+
+These three changes are cheap and easy to undo, and they matter most on a
+low-end machine.
+
+## Startup apps
+
+Open Task Manager (<Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>Esc</Kbd>), go to
+**Startup apps** and disable anything you don't need the moment you sign in.
+For entries that Task Manager doesn't show, such as services, scheduled tasks
+and shell extensions, use
+[Autoruns](https://learn.microsoft.com/sysinternals/downloads/autoruns).
+
+## Visual effects
+
+Animations and transparency cost GPU time on weak integrated graphics.
+
+- Run `SystemPropertiesPerformance` to open the **Performance Options** dialog
+  directly. Choose **Adjust for best performance**, then turn back on
+  **Smooth edges of screen fonts** and **Show thumbnails instead of icons**.
+- Turn off **Transparency effects** under **Settings › Personalization ›
+  Colors**.
+
+## Power mode
+
+When plugged in, set **Settings › System › Power & battery › Power mode** to
+**Best performance**. On battery, switch back to *Balanced*. For finer control,
+such as minimum processor state or sleep timers, edit the plan under
+**Control Panel › Power Options**.

@@ -1,0 +1,53 @@
+---
+title: Package managers on Windows
+description: Installing and updating software from the command line with winget and Chocolatey, and installing a whole toolset at once.
+date: 2024-09-08
+updated: 2026-11-18
+tags:
+  - workstation
+  - windows
+  - package-managers
+---
+
+# Package managers on Windows
+
+Installing from the command line can be scripted and repeated, and one command
+updates everything.
+
+## winget
+
+Windows 10 and 11 ship with it, so there's nothing to install.
+
+```powershell
+winget search vscode
+winget install --id Microsoft.VisualStudioCode -e
+winget upgrade --all
+```
+
+Use `--id` with `-e` (exact) so the install doesn't stop to ask which of
+several matches you meant. [winget.run](https://winget.run/) lets you browse
+package IDs in a browser.
+
+## Chocolatey
+
+[Chocolatey](https://chocolatey.org/) is older than winget and has a large
+community repository. It's useful for tools winget doesn't package well.
+Install it from an elevated terminal using the command on its install page,
+then:
+
+```powershell
+choco install git -y
+choco upgrade all -y
+```
+
+## Installing a whole toolset at once
+
+On a fresh machine, the **Install** tab in
+[WinUtil](/stash/workstation/systems/windows/debloat) lets you tick everything
+you want and installs it all through winget. To make the setup repeatable,
+export it and replay it on the next machine:
+
+```powershell
+winget export -o apps.json
+winget import -i apps.json
+```

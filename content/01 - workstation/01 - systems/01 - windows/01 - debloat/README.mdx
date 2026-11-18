@@ -1,0 +1,48 @@
+---
+title: Debloat Windows with WinUtil
+description: Remove preinstalled apps, unwanted services and telemetry in one pass with Chris Titus Tech's WinUtil.
+date: 2024-09-08
+updated: 2026-11-18
+tags:
+  - workstation
+  - windows
+  - debloat
+---
+
+# Debloat Windows with WinUtil
+
+You can uninstall apps one at a time from **Settings › Apps**, but that misses
+the services, scheduled tasks and leftover files that come with them.
+[WinUtil](https://github.com/ChrisTitusTech/winutil) handles all of that from a
+single window. It debloats, applies privacy and performance tweaks, and can
+install software in bulk.
+
+<Steps>
+  <Step title="Open an elevated terminal">
+    Right-click Start and choose **Terminal (Admin)**. On Windows 10 the entry is
+    **Windows PowerShell (Admin)**. You can also search for "Terminal" and press
+    <Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>Enter</Kbd>.
+  </Step>
+  <Step title="Launch WinUtil">
+    ```powershell
+    irm "https://christitus.com/win" | iex
+    ```
+
+    The window opens on the **Install** tab. Debloating is under **Tweaks**.
+
+    ![WinUtil's Install tab, with categories of software to tick](./winutil.webp "WinUtil opens on its Install tab")
+  </Step>
+  <Step title="Pick a level of tweaks">
+    Under **Tweaks**, start from the *Standard* preset and add only the extra
+    tweaks you understand. Each one says what it changes.
+  </Step>
+</Steps>
+
+<Callout type="warning" title="Read before you pipe">
+  `irm … | iex` runs a remote script with administrator rights. Check that the
+  URL is the one in the project's README, and create a restore point first.
+  WinUtil offers to create one for you.
+</Callout>
+
+The same window can also install software in bulk. See
+[package managers](/stash/workstation/systems/windows/package-managers).

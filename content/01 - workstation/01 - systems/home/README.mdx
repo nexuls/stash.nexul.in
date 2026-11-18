@@ -20,5 +20,20 @@ same way on every OS goes in **configuration** or **ecosystems**.
 
 ## Hardware baseline
 
-What hardware is enough for development work: CPU, memory, storage and
-whether a GPU is needed.
+What I'd consider the floor for a machine used for development:
+
+| Part | Minimum | Better |
+| --- | --- | --- |
+| CPU | Intel Core i5 9th gen, or AMD Ryzen 5 5000 series | Anything newer in the same tier or above |
+| Memory | 8 GB | 16 GB or more, for VMs, containers and large IDEs |
+| Storage | SSD | NVMe SSD |
+| GPU | Integrated | NVIDIA RTX, only for game development, ML or graphics work, where CUDA matters |
+
+The OS and integrated graphics take 4 to 6 GB of RAM before you open anything,
+so 8 GB leaves less room than it sounds.
+
+x86-64 is still the easy path. ARM machines run most tools now, but some
+toolchains and drivers still have gaps, so check what you need before buying.
+
+On Windows, [WinSAT](/stash/workstation/tips/os/winsat-hardware-score) shows
+which component is the weakest.
